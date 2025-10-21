@@ -104,3 +104,28 @@ def deductions_from_csv(path: str | Path) -> dict[str, Money]:
         row["category"]: Money(Decimal(row["amount"]), row["currency"])
         for _, row in df.iterrows()
     }
+
+
+def summary_to_csv(summary: dict[str, Money], path: str | Path) -> None:
+    """Write category spend summary to CSV."""
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+
+    data = [
+        {"category": cat, "total": str(money.amount), "currency": money.currency}
+        for cat, money in summary.items()
+    ]
+
+    df = pd.DataFrame(data) if data else pd.DataFrame(columns=["category", "total", "currency"])
+    df.to_csv(path, index=False)
+
+
+def summary_from_csv(path: str | Path) -> dict[str, Money]:
+    """Read category spend summary from CSV."""
+    df = pd.read_csv(path)
+    if df.empty:
+        return {}
+
+    return {
+        row["category"]: Money(Decimal(row["total"]), row["currency"])
+        for _, row in df.iterrows()
+    }

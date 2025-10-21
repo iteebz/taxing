@@ -1,10 +1,13 @@
 from dataclasses import replace
+from decimal import Decimal
 from pathlib import Path
 
 from src.core import classify, deduce, load_rules
+from src.core.models import AUD, Money
 from src.io import (
     deductions_to_csv,
     ingest_dir,
+    summary_to_csv,
     txns_to_csv,
     weights_from_csv,
 )
@@ -40,11 +43,22 @@ def run(base_dir: str | Path, fiscal_year: str) -> dict[str, dict[str, object]]:
 
         deductions = deduce(txns_classified, weights)
 
+        summary = {}
+        for t in txns_classified:
+            if t.category and not t.is_transfer and t.amount.currency == AUD:
+                for cat in t.category:
+                    if cat not in summary:
+                        summary[cat] = Money(Decimal(0), AUD)
+                    summary[cat] = Money(
+                        summary[cat].amount + t.amount.amount, AUD
+                    )
+
         data_dir = base / fiscal_year / person / "data"
         data_dir.mkdir(parents=True, exist_ok=True)
 
         txns_to_csv(txns_classified, data_dir / "transactions.csv")
         deductions_to_csv(deductions, data_dir / "deductions.csv")
+        summary_to_csv(summary, data_dir / "summary.csv")
 
         results[person] = {
             "txn_count": len(txns_person),

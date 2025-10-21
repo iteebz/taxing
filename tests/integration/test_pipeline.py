@@ -38,7 +38,9 @@ def test_pipeline_full_flow(tmp_path):
     tyson_data = Path(tmp_path) / "fy25" / "tyson" / "data"
     assert (tyson_data / "transactions.csv").exists()
     assert (tyson_data / "deductions.csv").exists()
+    assert (tyson_data / "summary.csv").exists()
 
     janice_data = Path(tmp_path) / "fy25" / "janice" / "data"
     assert (janice_data / "transactions.csv").exists()
     assert (janice_data / "deductions.csv").exists()
+    assert (janice_data / "summary.csv").exists()

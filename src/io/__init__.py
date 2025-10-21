@@ -3,6 +3,8 @@ from src.io.ingest import ingest_dir
 from src.io.persist import (
     deductions_from_csv,
     deductions_to_csv,
+    summary_from_csv,
+    summary_to_csv,
     txns_from_csv,
     txns_to_csv,
     weights_from_csv,
@@ -14,6 +16,8 @@ __all__ = [
     "ingest_dir",
     "deductions_from_csv",
     "deductions_to_csv",
+    "summary_from_csv",
+    "summary_to_csv",
     "txns_from_csv",
     "txns_to_csv",
     "weights_from_csv",
