@@ -1,0 +1,53 @@
+[project]
+name = "taxing"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "tyson",email = "tyson.chan@proton.me"}
+]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "pandas (>=2.3.0,<3.0.0)"
+]
+
+[tool.poetry]
+packages = [
+    {include = "src"}
+]
+
+[tool.poetry.group.dev.dependencies]
+pytest = ">=7.0,<8.0"
+pytest-cov = ">=4.0,<5.0"
+ruff = "^0.13.0"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "N",    # pep8-naming
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear (common bugs)
+    "C4",   # flake8-comprehensions
+    "SIM",  # flake8-simplify
+    "RET",  # flake8-return (cleaner returns)
+]
+ignore = [
+    "SIM108", # if-else-block-instead-of-if-exp (ternary not always clearer)
+    "SIM117", # combine-multiple-isinstance (sometimes separate is clearer)
+    "E501",   # line-too-long (prompts and test data often legitimately long)
+]
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
