@@ -7,10 +7,13 @@ Build a reference-grade, AI-agent-friendly tax deduction calculator for Australi
 
 ### Completed
 - **Core domain layer** (src/core/)
-  - `models.py`: `Money`, `Transaction`, `Currency`, `AUD` types (immutable, type-safe)
+  - `models.py`: `Currency`, `Transaction`, `AUD` types (immutable, type-safe)
   - `classify.py`: Pure function `classify(description, rules) → set[str]`
-  - `deduce.py`: Pure function `deduce(txns, weights) → dict[str, Money]`
-  - **Test coverage**: 26 tests, 100% coverage, zero lint
+  - `deduce.py`: Pure function `deduce(txns, weights) → dict[str, Currency]`
+  - `rules.py`: Load rules from `.txt` files, deduplicate + sort keywords
+    - `load_rules(base_dir)` → dict[category → keywords]
+    - `dedupe_keywords()` removes subsumed strings (e.g., "COLES" subsumes "COLES CHECKOUT")
+  - **Test coverage**: 40 tests, 100% coverage, zero lint
   - **Architecture**: Protocols (duck typing), no classes, immutable dataclasses
 
 - **I/O layer** (src/io/)
@@ -23,17 +26,19 @@ Build a reference-grade, AI-agent-friendly tax deduction calculator for Australi
   - `config.py`: Immutable Config dataclass (env/file resolution, no globals)
   - **Test coverage**: 25 tests, 100% coverage, zero lint
 
+- **Rules system** (rules/)
+  - 54 `.txt` files ported verbatim from tax-og (1068 total keywords)
+  - Alphabetically sorted, deduplicated on load
+  - Categories: groceries, transport, dining, car, home_office, property, etc.
+  - Append-friendly format: `echo "NEW_KEYWORD" >> rules/category.txt`
+
 - **Project structure**
   - Poetry, pytest, ruff, justfile (boilerplate from tax-og)
   - `.gitignore` (pycache, venv, .pytest_cache, .ruff_cache, .coverage, *.pyc)
-  - tests/ mirrors src/ structure
+  - tests/ mirrors src/ structure + integration tests
 
 ### Next Steps (In Order)
-1. **Rules system** (src/core/rules.py)
-   - Load rules from `rules/*.txt` files into structured dict
-   - Test: rule parsing, comment stripping, keyword matching
-
-2. **Pipeline orchestration** (src/pipeline.py)
+1. **Pipeline orchestration** (src/pipeline.py)
    - Compose: ingest → classify → deduce → persist
    - Dependency injection (no globals, no state)
    - Tests: integration/ full end-to-end
@@ -128,9 +133,9 @@ deduce(txns: list[Transaction], weights: dict[str, float]) → dict[str, Money]
 
 ### For Fresh Haiku Session
 1. **Start here**: Read CONTEXT.md (2 min)
-2. **Current state**: Core domain + I/O layer complete, 94% coverage (51 tests)
-3. **Next work**: Rules system (load `.txt` files), then pipeline orchestration
-4. **Command**: `just test` to verify all 51 tests pass
+2. **Current state**: Core + I/O + rules complete, 95% coverage (66 tests)
+3. **Next work**: Pipeline orchestration, then CLI
+4. **Command**: `just test` to verify all 66 tests pass
 
 ### Common Tasks
 ```bash
@@ -173,4 +178,4 @@ raw/fy25/{person}/*.csv
 
 **Last Updated**: Oct 21, 2025
 **Model**: claude-haiku-4-5 (session 2)
-**Status**: Core + I/O complete (94% coverage), rules system next
+**Status**: Core + I/O + rules complete (95% coverage, 66 tests), pipeline next
