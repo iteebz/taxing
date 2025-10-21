@@ -36,12 +36,18 @@ Reference-grade, AI-agent-friendly tax deduction automation for Australian house
 - PropertyExpense + PropertyExpensesSummary models
 - CLI: `taxing property --fy 25 --person alice`
 - Tests: 16 unit + 3 integration = 19 tests
-- Status: 169 tests passing
+
+**Phase 3b**: ✅ Complete (holdings model)
+- Ticker, units, cost_basis, current_price tracking
+- Current value & unrealized gain calculations
+- Load from holdings.csv
+- Tests: 10 unit + 8 I/O = 18 tests
+- Status: 187 tests passing
 
 ## entry point for new session
 
 1. Read this file (1 min)
-2. Run tests: `just test` (verify 166 pass)
+2. Run tests: `just test` (verify 187 pass)
 3. Read `docs/architecture.md` for deep design (5 min)
 4. Check Phase 2b design in `docs/phase_2b_design.md`
 
@@ -85,12 +91,6 @@ just ci                # Full CI
 
 ## shopping list
 
-**Phase 3b** (Holdings model)
-- Ticker, units, cost_basis, current_price tracking
-- Frozen dataclass
-- Enable Phase 2c gains planning
-- Effort: 1 hour
-
 **Phase 2c** (Multi-year gains planning)
 - Defer gains to next FY if better bracket
 - Loss carryforward tracking
@@ -104,4 +104,4 @@ just ci                # Full CI
 
 ---
 
-**Last Updated**: Oct 21, 2025 | **Tests**: 166 passing | **Lint**: Clean (property module)
+**Last Updated**: Oct 21, 2025 | **Tests**: 187 passing | **Lint**: Clean

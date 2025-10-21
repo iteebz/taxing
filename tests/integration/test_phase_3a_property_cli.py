@@ -1,4 +1,5 @@
 """Phase 3a property CLI integration tests."""
+
 from pathlib import Path
 
 from src.cli import cmd_property

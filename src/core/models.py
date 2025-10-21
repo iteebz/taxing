@@ -99,6 +99,25 @@ class PropertyExpensesSummary:
         return self.rent + self.water + self.council + self.strata
 
 
+@dataclass(frozen=True)
+class Holding:
+    ticker: str
+    units: Decimal
+    cost_basis: Money
+    current_price: Money
+
+    @property
+    def current_value(self) -> Money:
+        return Money(
+            self.units * self.current_price.amount,
+            self.current_price.currency,
+        )
+
+    @property
+    def unrealized_gain(self) -> Money:
+        return self.current_value - self.cost_basis
+
+
 class Classifier(Protocol):
     def classify(self, description: str) -> set[str]: ...
 

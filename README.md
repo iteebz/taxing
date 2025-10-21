@@ -70,7 +70,14 @@ tests/
 - CLI: `taxing property --fy 25 --person alice`
 - PropertyExpensesSummary with category totals
 - See `docs/phase_3a_property.md`
-- **Status**: 16 tests, 166 tests total
+- **Status**: 19 tests
+
+**Phase 3b** (complete): Holdings model
+- Ticker, units, cost_basis, current_price
+- Current value & unrealized gain properties
+- Load from holdings.csv
+- Supports fractional & large positions
+- **Status**: 18 tests, 187 tests total
 
 ## Data Model
 
@@ -93,9 +100,9 @@ Type-safe, immutable, no silent bugs. See `docs/architecture.md` for full detail
 
 ## Next Steps
 
-1. Phase 3b: Holdings model (ticker, units, cost_basis, current_price)
-2. Phase 2c: Multi-year capital gains planning (defer gains to better brackets)
-3. Phase 3c: Rental income + depreciation tracking
-4. Phase 2d: Advanced constraints (Medicare Levy, HELP, ILP)
+1. Phase 2c: Multi-year capital gains planning (defer gains to better brackets)
+2. Phase 3c: Rental income + depreciation tracking
+3. Phase 2d: Advanced constraints (Medicare Levy, HELP, ILP)
+4. Phase 3d: Portfolio rebalancing optimization
 
 See `docs/context.md` for quick reference, `docs/architecture.md` for deep design.
