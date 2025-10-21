@@ -13,12 +13,17 @@ def deduce(
         weights: Dict mapping category -> deduction percentage (0.0-1.0)
 
     Returns:
-        Dict mapping category -> total deduction amount
+        Dict mapping category -> total deduction amount (AUD only)
     """
+    from src.core.models import AUD
+    
     deductions: dict[str, Money] = {}
 
     for txn in txns:
         if txn.category is None or not txn.category:
+            continue
+        
+        if txn.amount.currency != AUD:
             continue
 
         for cat in txn.category:

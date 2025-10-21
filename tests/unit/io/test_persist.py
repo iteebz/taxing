@@ -42,9 +42,9 @@ def test_weights_roundtrip():
     with tempfile.TemporaryDirectory() as tmpdir:
         path = Path(tmpdir) / "weights.csv"
         weights = {
-            "home_office": 0.5,
-            "mobile": 0.1,
-            "therapy": 1.0,
+            "home_office": Decimal("0.5"),
+            "mobile": Decimal("0.1"),
+            "therapy": Decimal("1.0"),
         }
 
         weights_to_csv(weights, path)

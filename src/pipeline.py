@@ -3,8 +3,10 @@ from decimal import Decimal
 from pathlib import Path
 
 from src.core import classify, deduce, load_rules, process_trades
+from src.core.dedupe import dedupe
 from src.core.models import AUD, Deduction, Summary
 from src.core.transfers import is_transfer, reconcile_transfers
+from src.core.validate import validate_transactions
 from src.io import (
     ingest_trades_year,
     ingest_year,
@@ -33,6 +35,8 @@ def run(
     txns_all = ingest_year(base, year, persons=persons)
     trades_all = ingest_trades_year(base, year, persons=persons)
 
+    txns_all = dedupe(txns_all)
+
     rules = load_rules(base)
 
     weights_path = base / "weights.csv"
@@ -54,6 +58,8 @@ def run(
             )
             for t in txns_person
         ]
+
+        validate_transactions(txns_classified, year)
 
         deductions_dict = deduce(txns_classified, weights)
         deductions = [Deduction(cat, amt) for cat, amt in deductions_dict.items()]

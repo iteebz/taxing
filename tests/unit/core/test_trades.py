@@ -122,3 +122,84 @@ def test_process_trades_cgt_discount():
     assert result.raw_profit.amount == Decimal(1000)
     assert result.taxable_gain.amount == Decimal(500)
     assert result.action == "discount"
+
+
+def test_process_trades_mixed_tickers_no_cross_contamination():
+    """Mixed tickers: AAPL and MSFT buys, MSFT sell must not use AAPL buffer."""
+    trades = [
+        Trade(
+            date=date(2024, 1, 1),
+            code="AAPL",
+            action="buy",
+            units=Decimal(100),
+            price=Money(Decimal(10), AUD),
+            fee=Money(Decimal(5), AUD),
+            source_person="tyson",
+        ),
+        Trade(
+            date=date(2024, 1, 2),
+            code="MSFT",
+            action="buy",
+            units=Decimal(100),
+            price=Money(Decimal(10), AUD),
+            fee=Money(Decimal(5), AUD),
+            source_person="tyson",
+        ),
+        Trade(
+            date=date(2024, 6, 1),
+            code="MSFT",
+            action="sell",
+            units=Decimal(100),
+            price=Money(Decimal(15), AUD),
+            fee=Money(Decimal(5), AUD),
+            source_person="tyson",
+        ),
+    ]
+
+    results = process_trades(trades)
+
+    assert len(results) == 1
+    result = results[0]
+    assert result.raw_profit.amount == Decimal(495)
+    assert result.fy == 2024
+    assert result.action == "fifo"
+
+
+def test_process_trades_multiple_sells_per_ticker():
+    """Multiple buys and sells of same ticker, verify FIFO per ticker."""
+    trades = [
+        Trade(
+            date=date(2024, 1, 1),
+            code="BHP",
+            action="buy",
+            units=Decimal(100),
+            price=Money(Decimal(10), AUD),
+            fee=Money(Decimal(0), AUD),
+            source_person="tyson",
+        ),
+        Trade(
+            date=date(2024, 1, 2),
+            code="BHP",
+            action="buy",
+            units=Decimal(100),
+            price=Money(Decimal(12), AUD),
+            fee=Money(Decimal(0), AUD),
+            source_person="tyson",
+        ),
+        Trade(
+            date=date(2024, 6, 1),
+            code="BHP",
+            action="sell",
+            units=Decimal(100),
+            price=Money(Decimal(15), AUD),
+            fee=Money(Decimal(0), AUD),
+            source_person="tyson",
+        ),
+    ]
+
+    results = process_trades(trades)
+
+    assert len(results) == 1
+    result = results[0]
+    assert result.raw_profit.amount == Decimal(500)
+    assert result.action == "fifo"

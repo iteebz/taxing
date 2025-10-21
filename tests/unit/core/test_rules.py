@@ -95,3 +95,12 @@ def test_load_path_object(tmp_path):
 
     result = load_rules(Path(tmp_path))
     assert result == {"cat": ["KW1", "KW2"]}
+
+
+def test_load_rules_from_actual_data_dir():
+    """Test loading rules from taxing project's actual rules directory."""
+    result = load_rules(".")
+    assert len(result) > 0
+    assert "groceries" in result
+    # Rules are loaded from actual files, just verify non-empty
+    assert len(result["groceries"]) > 0

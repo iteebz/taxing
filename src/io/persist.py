@@ -138,14 +138,14 @@ def dicts_from_csv(path: str | Path) -> list[dict]:
 
 
 
-def weights_to_csv(weights: dict[str, float], path: str | Path) -> None:
+def weights_to_csv(weights: dict[str, Decimal], path: str | Path) -> None:
     """Write weights to CSV."""
-    dicts_to_csv([{"category": k, "weight": v} for k, v in weights.items()], path)
+    dicts_to_csv([{"category": k, "weight": str(v)} for k, v in weights.items()], path)
 
 
-def weights_from_csv(path: str | Path) -> dict[str, float]:
+def weights_from_csv(path: str | Path) -> dict[str, Decimal]:
     """Read weights from CSV."""
     dicts = dicts_from_csv(path)
-    return {d["category"]: d["weight"] for d in dicts}
+    return {d["category"]: Decimal(str(d["weight"])) for d in dicts}
 
 

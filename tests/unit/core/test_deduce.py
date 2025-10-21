@@ -110,3 +110,26 @@ def test_preserves_currency():
     )
     deductions = deduce([txn], {"groceries": 0.5})
     assert deductions["groceries"].currency == AUD
+
+
+def test_ignores_foreign_currency():
+    """Test that non-AUD transactions are skipped in deduction calculation."""
+    EUR = "EUR"
+    aud_txn = Transaction(
+        date=date(2024, 10, 1),
+        amount=Money(Decimal("100.00"), AUD),
+        description="WOOLWORTHS",
+        source_bank="anz",
+        source_person="tyson",
+        category={"groceries"},
+    )
+    eur_txn = Transaction(
+        date=date(2024, 10, 2),
+        amount=Money(Decimal("100.00"), EUR),
+        description="FOREIGN SHOP",
+        source_bank="wise",
+        source_person="tyson",
+        category={"groceries"},
+    )
+    deductions = deduce([aud_txn, eur_txn], {"groceries": 0.5})
+    assert deductions["groceries"] == Money(Decimal("50.00"), AUD)

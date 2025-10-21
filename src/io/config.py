@@ -1,6 +1,20 @@
 import os
 from dataclasses import dataclass
+from decimal import Decimal
 from pathlib import Path
+
+from src.core.models import AUD, Money
+
+
+TAX_BRACKETS_FY25 = [
+    (0, Money(Decimal("0"), AUD)),
+    (45000, Money(Decimal("0.16"), AUD)),
+    (135000, Money(Decimal("0.30"), AUD)),
+    (190000, Money(Decimal("0.37"), AUD)),
+    (float("inf"), Money(Decimal("0.45"), AUD)),
+]
+
+MEDICARE_LEVY = Decimal("0.02")
 
 
 @dataclass

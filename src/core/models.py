@@ -39,6 +39,14 @@ class Transaction:
     category: set[str] | None = None
     is_transfer: bool = False
     claimant: str | None = None
+    sources: frozenset[str] = None
+    source_txn_ids: tuple[str, ...] = None
+
+    def __post_init__(self):
+        if self.sources is None:
+            object.__setattr__(self, "sources", frozenset({self.source_bank}))
+        if self.source_txn_ids is None:
+            object.__setattr__(self, "source_txn_ids", ())
 
 
 @dataclass(frozen=True)

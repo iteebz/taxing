@@ -22,16 +22,21 @@ def process_trades(trades: list[Trade]) -> list[Gain]:
     1. For each sell, prioritize loss positions (buy >= sell price)
     2. Then prioritize 365+ day holdings for CGT discount
     3. Fall back to FIFO (first in, first out)
+    
+    CRITICAL: Buffer is keyed per code to prevent cross-ticker contamination.
     """
     results = []
-    buff = []
+    buffers: dict[str, list[Trade]] = {}
 
     sorted_trades = sorted(trades, key=lambda t: (t.code, t.date))
 
     for trade in sorted_trades:
         if trade.action == "buy":
-            buff.append(trade)
+            if trade.code not in buffers:
+                buffers[trade.code] = []
+            buffers[trade.code].append(trade)
         else:
+            buff = buffers.get(trade.code, [])
             units_to_sell = trade.units
             fy = calc_fy(trade.date)
 

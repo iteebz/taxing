@@ -13,14 +13,15 @@ def test_pipeline_full_flow(tmp_path):
     rules_dir.mkdir()
     (rules_dir / "groceries.txt").write_text("COLES\nWOOLWORTHS")
     (rules_dir / "transport.txt").write_text("UBER")
+    (rules_dir / "uncategorized.txt").write_text("RANDOM")
 
     tyson_cba = tyson_raw / "cba.csv"
     tyson_cba.write_text(
-        "01/01/2025,50.00,COLES CHECKOUT,5000.00\n02/01/2025,30.00,UBER TRIP,4970.00\n"
+        "15/11/2024,50.00,COLES CHECKOUT,5000.00\n16/11/2024,30.00,UBER TRIP,4970.00\n"
     )
 
     janice_cba = janice_raw / "cba.csv"
-    janice_cba.write_text("03/01/2025,100.00,RANDOM SHOP,9900.00\n")
+    janice_cba.write_text("20/11/2024,100.00,RANDOM SHOP,9900.00\n")
 
     tyson_trades = Path(tmp_path) / "data" / "fy25" / "tyson" / "trades.csv"
     tyson_trades.write_text(
@@ -47,7 +48,7 @@ def test_pipeline_full_flow(tmp_path):
     assert result["tyson"]["gains_count"] == 1
 
     assert result["janice"]["txn_count"] == 1
-    assert result["janice"]["classified_count"] == 0
+    assert result["janice"]["classified_count"] == 1
     assert result["janice"]["gains_count"] == 0
 
     tyson_data = Path(tmp_path) / "data" / "fy25" / "tyson" / "data"
