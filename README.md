@@ -77,7 +77,14 @@ tests/
 - Current value & unrealized gain properties
 - Load from holdings.csv
 - Supports fractional & large positions
-- **Status**: 18 tests, 187 tests total
+- **Status**: 18 tests
+
+**Phase 2c** (complete): Multi-year capital gains planning
+- Loss carryforward tracking indefinitely across years
+- Realize gains in lowest-bracket years first
+- Harvest losses to offset current & future gains
+- CLI: `taxing gains-plan --projection 25:30%,26:45% --gains [...] --losses [...]`
+- **Status**: 18 tests, 205 tests total
 
 ## Data Model
 
@@ -100,9 +107,8 @@ Type-safe, immutable, no silent bugs. See `docs/architecture.md` for full detail
 
 ## Next Steps
 
-1. Phase 2c: Multi-year capital gains planning (defer gains to better brackets)
-2. Phase 3c: Rental income + depreciation tracking
-3. Phase 2d: Advanced constraints (Medicare Levy, HELP, ILP)
-4. Phase 3d: Portfolio rebalancing optimization
+1. Phase 3c: Rental income + depreciation tracking
+2. Phase 2d: Advanced constraints (Medicare Levy, HELP, ILP)
+3. Phase 3d: Portfolio rebalancing optimization
 
 See `docs/context.md` for quick reference, `docs/architecture.md` for deep design.

@@ -118,6 +118,13 @@ class Holding:
         return self.current_value - self.cost_basis
 
 
+@dataclass(frozen=True)
+class Loss:
+    fy: int
+    amount: Money
+    source_fy: int
+
+
 class Classifier(Protocol):
     def classify(self, description: str) -> set[str]: ...
 

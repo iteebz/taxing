@@ -42,7 +42,14 @@ Reference-grade, AI-agent-friendly tax deduction automation for Australian house
 - Current value & unrealized gain calculations
 - Load from holdings.csv
 - Tests: 10 unit + 8 I/O = 18 tests
-- Status: 187 tests passing
+
+**Phase 2c**: ✅ Complete (multi-year gains planning)
+- Loss carryforward tracking across years
+- plan_gains(): Realize gains in lowest-bracket years
+- harvest_losses(): Offset gains with losses, carry forward excess
+- CLI: `taxing gains-plan --projection 25:30%,26:45% --gains [...] --losses [...]`
+- Tests: 13 unit + 5 integration = 18 tests
+- Status: 205 tests passing
 
 ## entry point for new session
 
@@ -91,17 +98,20 @@ just ci                # Full CI
 
 ## shopping list
 
-**Phase 2c** (Multi-year gains planning)
-- Defer gains to next FY if better bracket
-- Loss carryforward tracking
-- Holdings integration for position tracking
-- Requires: Phase 3b (Holdings)
-
 **Phase 3c** (Rental income + depreciation)
 - Property-level rental income tracking
 - Capital works deduction schedule
 - Depreciation via ATO depreciation tool
 
+**Phase 2d** (Advanced constraints)
+- Medicare Levy optimization
+- HELP repayment tracking
+- ILP (Income-linked Participation) optimization
+
+**Phase 3d** (Portfolio rebalancing)
+- Rebalance recommendations based on gains/losses
+- Tax-efficient rebalancing strategies
+
 ---
 
-**Last Updated**: Oct 21, 2025 | **Tests**: 187 passing | **Lint**: Clean
+**Last Updated**: Oct 21, 2025 | **Tests**: 205 passing | **Lint**: Clean
