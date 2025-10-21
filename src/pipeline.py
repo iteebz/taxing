@@ -53,8 +53,8 @@ def run(
         txns_classified = [
             replace(
                 t,
-                category=classify(t.description, rules),
-                is_transfer=is_transfer(replace(t, category=classify(t.description, rules))),
+                category=(cat := classify(t.description, rules)),
+                is_transfer=is_transfer(replace(t, category=cat)),
             )
             for t in txns_person
         ]
