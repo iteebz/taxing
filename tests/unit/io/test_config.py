@@ -6,7 +6,7 @@ import pytest
 from src.io.config import Config
 
 
-def test_config_from_env(monkeypatch):
+def test_from_env(monkeypatch):
     monkeypatch.setenv("FY", "fy25")
     monkeypatch.setenv("PERSONS", "tyson,jaynice")
     monkeypatch.setenv("BEEM_USERNAMES", '{"tyson": "tysonchan"}')
@@ -18,7 +18,7 @@ def test_config_from_env(monkeypatch):
     assert cfg.beem_usernames == {"tyson": "tysonchan"}
 
 
-def test_config_from_file():
+def test_from_file():
     with tempfile.TemporaryDirectory() as tmpdir:
         config_file = Path(tmpdir) / "config"
         config_file.write_text("fy25/tyson\n")
@@ -29,7 +29,7 @@ def test_config_from_file():
         assert cfg.persons == ["tyson"]
 
 
-def test_config_env_overrides_file(monkeypatch):
+def test_env_overrides_file(monkeypatch):
     monkeypatch.setenv("FY", "fy26")
     monkeypatch.setenv("PERSONS", "alice,bob")
 
@@ -43,12 +43,12 @@ def test_config_env_overrides_file(monkeypatch):
         assert cfg.persons == ["alice", "bob"]
 
 
-def test_config_missing_file():
+def test_missing_file():
     with pytest.raises(FileNotFoundError):
         Config.from_env(Path("/nonexistent/config"))
 
 
-def test_config_empty_file():
+def test_empty_file():
     with tempfile.TemporaryDirectory() as tmpdir:
         config_file = Path(tmpdir) / "config"
         config_file.write_text("")
@@ -57,7 +57,7 @@ def test_config_empty_file():
             Config.from_env(config_file)
 
 
-def test_config_default_beem_usernames():
+def test_default_beem_usernames():
     with tempfile.TemporaryDirectory() as tmpdir:
         config_file = Path(tmpdir) / "config"
         config_file.write_text("fy25/tyson\n")

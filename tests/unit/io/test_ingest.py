@@ -46,7 +46,7 @@ def wise_csv():
         return Path(f.name)
 
 
-def test_ingest_anz_file(anz_csv):
+def test_ingest_anz(anz_csv):
     txns = ingest_file(anz_csv, "anz", "tyson")
 
     assert len(txns) == 2
@@ -55,7 +55,7 @@ def test_ingest_anz_file(anz_csv):
     assert txns[1].amount.amount == -25.00
 
 
-def test_ingest_wise_file(wise_csv):
+def test_ingest_wise(wise_csv):
     txns = ingest_file(wise_csv, "wise", "tyson")
 
     assert len(txns) == 1
@@ -68,7 +68,7 @@ def test_ingest_unknown_bank(anz_csv):
         ingest_file(anz_csv, "unknown", "tyson")
 
 
-def test_ingest_beem_requires_username(anz_csv):
+def test_ingest_beem_needs_user(anz_csv):
     with pytest.raises(ValueError, match="beem_username required"):
         ingest_file(anz_csv, "beem", "tyson")
 

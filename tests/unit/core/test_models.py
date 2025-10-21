@@ -18,7 +18,7 @@ def test_money_immutable():
         m.amount = Decimal("200.00")
 
 
-def test_money_add_same_currency():
+def test_money_add_same_curr():
     m1 = Money(Decimal("100.00"), "AUD")
     m2 = Money(Decimal("50.00"), "AUD")
     result = m1 + m2
@@ -26,7 +26,7 @@ def test_money_add_same_currency():
     assert result.currency == "AUD"
 
 
-def test_money_add_different_currency_raises():
+def test_money_add_diff_curr_raises():
     m1 = Money(Decimal("100.00"), "AUD")
     m2 = Money(Decimal("50.00"), "USD")
     with pytest.raises(ValueError):
@@ -40,7 +40,7 @@ def test_money_multiply():
     assert result.currency == "AUD"
 
 
-def test_transaction_creation():
+def test_txn_creation():
     t = Transaction(
         date=date(2024, 10, 1),
         amount=Money(Decimal("50.00"), "AUD"),
@@ -53,7 +53,7 @@ def test_transaction_creation():
     assert t.is_transfer is False
 
 
-def test_transaction_with_category():
+def test_txn_with_category():
     t = Transaction(
         date=date(2024, 10, 1),
         amount=Money(Decimal("50.00"), "AUD"),
@@ -65,7 +65,7 @@ def test_transaction_with_category():
     assert "groceries" in t.category
 
 
-def test_transaction_immutable():
+def test_txn_immutable():
     t = Transaction(
         date=date(2024, 10, 1),
         amount=Money(Decimal("50.00"), "AUD"),

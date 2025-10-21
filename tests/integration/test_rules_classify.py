@@ -2,7 +2,7 @@ from src.core.classify import classify
 from src.core.rules import load_rules
 
 
-def test_rules_with_classify(tmp_path):
+def test_rules_classify(tmp_path):
     rules_dir = tmp_path / "rules"
     rules_dir.mkdir()
 
@@ -15,7 +15,7 @@ def test_rules_with_classify(tmp_path):
     assert classify("RANDOM", rules) == set()
 
 
-def test_real_rules_basic(tmp_path):
+def test_real_rules(tmp_path):
     import shutil
     from pathlib import Path
 

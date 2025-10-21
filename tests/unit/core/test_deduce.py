@@ -45,34 +45,34 @@ def sample_weights():
     }
 
 
-def test_deduce_single_category(sample_txns, sample_weights):
+def test_single_category(sample_txns, sample_weights):
     deductions = deduce(sample_txns[:1], sample_weights)
     assert deductions["groceries"] == Money(Decimal("5.00"), AUD)
 
 
-def test_deduce_multiple_txns_same_category(sample_txns, sample_weights):
+def test_multiple_txns_same_category(sample_txns, sample_weights):
     deductions = deduce(sample_txns[:2], sample_weights)
     assert deductions["groceries"] == Money(Decimal("7.50"), AUD)
 
 
-def test_deduce_multiple_categories(sample_txns, sample_weights):
+def test_multiple_categories(sample_txns, sample_weights):
     deductions = deduce(sample_txns, sample_weights)
     assert deductions["groceries"] == Money(Decimal("7.50"), AUD)
     assert deductions["home_office"] == Money(Decimal("160.00"), AUD)
 
 
-def test_deduce_missing_weight_defaults_to_zero(sample_txns):
+def test_missing_weight_defaults_to_zero(sample_txns):
     weights = {}
     deductions = deduce(sample_txns, weights)
     assert deductions["groceries"] == Money(Decimal("0.00"), AUD)
 
 
-def test_deduce_empty_transactions():
+def test_empty_transactions():
     deductions = deduce([], {})
     assert deductions == {}
 
 
-def test_deduce_txn_no_category(sample_weights):
+def test_txn_no_category(sample_weights):
     txn = Transaction(
         date=date(2024, 10, 1),
         amount=Money(Decimal("100.00"), AUD),
@@ -85,7 +85,7 @@ def test_deduce_txn_no_category(sample_weights):
     assert deductions == {}
 
 
-def test_deduce_multiple_categories_per_txn(sample_weights):
+def test_multiple_categories_per_txn(sample_weights):
     txn = Transaction(
         date=date(2024, 10, 1),
         amount=Money(Decimal("100.00"), AUD),
@@ -99,7 +99,7 @@ def test_deduce_multiple_categories_per_txn(sample_weights):
     assert deductions["home_office"] == Money(Decimal("80.00"), AUD)
 
 
-def test_deduce_preserves_currency():
+def test_preserves_currency():
     txn = Transaction(
         date=date(2024, 10, 1),
         amount=Money(Decimal("100.00"), AUD),

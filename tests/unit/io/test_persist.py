@@ -5,6 +5,8 @@ from pathlib import Path
 
 from src.core.models import AUD, Money, Transaction
 from src.io.persist import (
+    summary_from_csv,
+    summary_to_csv,
     txns_from_csv,
     txns_to_csv,
     weights_from_csv,
@@ -12,7 +14,7 @@ from src.io.persist import (
 )
 
 
-def test_txns_to_csv_and_back(sample_txn, sample_txn_with_category):
+def test_txns_roundtrip(sample_txn, sample_txn_with_category):
     with tempfile.TemporaryDirectory() as tmpdir:
         path = Path(tmpdir) / "txns.csv"
 
@@ -27,7 +29,7 @@ def test_txns_to_csv_and_back(sample_txn, sample_txn_with_category):
         assert loaded[1].category == {"groceries", "supermarkets"}
 
 
-def test_txns_to_csv_creates_dir():
+def test_txns_csv_creates_dir():
     with tempfile.TemporaryDirectory() as tmpdir:
         path = Path(tmpdir) / "subdir" / "txns.csv"
 
@@ -43,7 +45,7 @@ def test_txns_to_csv_creates_dir():
         assert path.exists()
 
 
-def test_weights_to_csv_and_back():
+def test_weights_roundtrip():
     with tempfile.TemporaryDirectory() as tmpdir:
         path = Path(tmpdir) / "weights.csv"
         weights = {
@@ -66,7 +68,7 @@ def test_txns_empty():
         assert loaded == []
 
 
-def test_txns_no_category():
+def test_txns_no_cat():
     with tempfile.TemporaryDirectory() as tmpdir:
         path = Path(tmpdir) / "txns.csv"
 
@@ -83,3 +85,25 @@ def test_txns_no_category():
         loaded = txns_from_csv(path)
 
         assert loaded[0].category is None
+
+
+def test_summary_roundtrip():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        path = Path(tmpdir) / "summary.csv"
+        summary = {
+            "groceries": Money(Decimal("250.50"), AUD),
+            "transport": Money(Decimal("75.25"), AUD),
+        }
+
+        summary_to_csv(summary, path)
+        loaded = summary_from_csv(path)
+
+        assert loaded == summary
+
+
+def test_summary_empty():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        path = Path(tmpdir) / "summary.csv"
+        summary_to_csv({}, path)
+        loaded = summary_from_csv(path)
+        assert loaded == {}
