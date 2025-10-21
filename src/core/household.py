@@ -1,177 +1,284 @@
-from dataclasses import dataclass
-from decimal import Decimal
+from __future__ import annotations
 
+from dataclasses import dataclass, replace
+from decimal import ROUND_HALF_UP, Decimal
+from functools import lru_cache
+from typing import Iterable, Literal, Sequence
+
+from src.core.config import Bracket, FYConfig, MedicareConfig, load_config
 from src.core.models import AUD, Individual, Money
 
-TAX_FREE_THRESHOLD = {
-    23: Decimal("18200"),
-    24: Decimal("18200"),
-    25: Decimal("18200"),
-}
+
+def _zero() -> Money:
+    return Money(Decimal("0"), AUD)
 
 
-def allocate_deductions(
-    your_income: Money,
-    janice_income: Money,
-    shared_deductions: list[Money],
-    fy: int,
-) -> tuple[Money, Money]:
-    """Allocate shared deductions to minimize household taxable income.
+@dataclass(frozen=True)
+class Liability:
+    income_tax: Money
+    medicare_levy: Money
+    medicare_surcharge: Money = _zero()
 
-    Strategy:
-    1. Fill tax-free thresholds first (no tax benefit, but preserves bracket space)
-    2. Route excess to lower-bracket person (maximize tax saving)
-    """
-    if not shared_deductions:
-        return Money(Decimal("0"), AUD), Money(Decimal("0"), AUD)
-
-    threshold = TAX_FREE_THRESHOLD.get(fy, Decimal("18200"))
-    total_ded = sum(shared_deductions, Money(Decimal("0"), AUD))
-
-    your_buf = max(Decimal("0"), threshold - your_income.amount)
-    janice_buf = max(Decimal("0"), threshold - janice_income.amount)
-
-    your_alloc = Money(Decimal("0"), AUD)
-    janice_alloc = Money(Decimal("0"), AUD)
-    remain = total_ded.amount
-
-    if your_buf > 0:
-        your_alloc = Money(min(your_buf, remain), AUD)
-        remain -= your_alloc.amount
-
-    if remain > 0 and janice_buf > 0:
-        janice_alloc = Money(min(janice_buf, remain), AUD)
-        remain -= janice_alloc.amount
-
-    if remain > 0:
-        your_rate = _tax_rate(your_income.amount, fy)
-        janice_rate = _tax_rate(janice_income.amount, fy)
-
-        if janice_rate < your_rate:
-            janice_alloc = Money(janice_alloc.amount + remain, AUD)
-        else:
-            your_alloc = Money(your_alloc.amount + remain, AUD)
-
-    return your_alloc, janice_alloc
+    @property
+    def total(self) -> Money:
+        return self.income_tax + self.medicare_levy + self.medicare_surcharge
 
 
 @dataclass(frozen=True)
 class Allocation:
     yours: Individual
     janice: Individual
-    your_tax: Money
-    janice_tax: Money
+    your_liability: Liability
+    janice_liability: Liability
 
     @property
     def total(self) -> Money:
-        return self.your_tax + self.janice_tax
+        return self.your_liability.total + self.janice_liability.total
 
 
-BRACKETS = {
-    23: [
-        (0, Decimal("0")),
-        (18200, Decimal("0.19")),
-        (45000, Decimal("0.325")),
-        (120000, Decimal("0.37")),
-        (180000, Decimal("0.45")),
-    ],
-    24: [
-        (0, Decimal("0")),
-        (18200, Decimal("0.19")),
-        (45000, Decimal("0.325")),
-        (120000, Decimal("0.37")),
-        (180000, Decimal("0.45")),
-    ],
-    25: [
-        (0, Decimal("0")),
-        (18200, Decimal("0.16")),
-        (45000, Decimal("0.30")),
-        (135000, Decimal("0.37")),
-        (190000, Decimal("0.45")),
-    ],
-}
+def _quantize(amount: Decimal) -> Decimal:
+    return amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
-def _tax_rate(income: Decimal, fy: int) -> Decimal:
-    """Get marginal tax rate for income (rate at which last dollar is taxed)."""
-    brackets = BRACKETS.get(fy, BRACKETS[25])
-    rate = Decimal("0")
-    for threshold, r in brackets:
-        if income >= threshold:
-            rate = r
-    return rate
+def _effective_income(amount: Decimal) -> Decimal:
+    return max(amount, Decimal("0"))
 
 
-def _tax_liability(income: Money, fy: int) -> Money:
-    amt = income.amount
-    threshold = TAX_FREE_THRESHOLD.get(fy, TAX_FREE_THRESHOLD[25])
-    if amt <= threshold:
-        return Money(Decimal("0"), AUD)
-
-    brackets = BRACKETS.get(fy, BRACKETS[25])
+def _income_tax(amount: Decimal, brackets: Sequence[Bracket]) -> Decimal:
+    taxable = _effective_income(amount)
     tax = Decimal("0")
+    for bracket in brackets:
+        lower_threshold = Decimal(bracket.from_val - 1)
+        upper_threshold = Decimal(bracket.to_val)
+        if taxable <= lower_threshold:
+            continue
+        taxable_portion = min(taxable, upper_threshold) - lower_threshold
+        if taxable_portion <= 0:
+            continue
+        tax += taxable_portion * bracket.rate
+    return tax
 
-    for i, (threshold, rate) in enumerate(brackets):
-        if amt <= threshold:
+
+def _medicare_levy_single(
+    taxable_amount: Decimal,
+    medicare: MedicareConfig,
+) -> Decimal:
+    taxable = _effective_income(taxable_amount)
+    if taxable == 0:
+        return Decimal("0")
+
+    threshold = Decimal(medicare.low_income_threshold_single)
+    if taxable <= threshold:
+        return Decimal("0")
+
+    full_levy = taxable * medicare.base_rate
+    reduction = (taxable - threshold) * medicare.phase_in_rate_single
+    if reduction <= 0:
+        return Decimal("0")
+    return min(full_levy, reduction)
+
+
+def _medicare_levy_family(
+    individual_amount: Decimal,
+    family_income: Decimal,
+    dependents: int,
+    medicare: MedicareConfig,
+) -> Decimal:
+    if family_income <= 0:
+        return Decimal("0")
+
+    threshold = Decimal(medicare.low_income_threshold_family) + Decimal(
+        medicare.dependent_increment * dependents
+    )
+    if family_income <= threshold:
+        return Decimal("0")
+
+    full_family_levy = family_income * medicare.base_rate
+    reduction = (family_income - threshold) * medicare.phase_in_rate_family
+    family_levy = min(full_family_levy, reduction) if reduction > 0 else full_family_levy
+
+    individual_share = Decimal("0") if family_income == 0 else individual_amount / family_income
+    individual_full_levy = _effective_income(individual_amount) * medicare.base_rate
+    calculated_share = family_levy * individual_share
+    return min(individual_full_levy, calculated_share)
+
+
+def _surcharge_rate(
+    taxable_amount: Decimal,
+    medicare: MedicareConfig,
+    status: Literal["single", "family"],
+    dependents: int,
+) -> Decimal:
+    surcharge = medicare.surcharge
+    if surcharge is None:
+        return Decimal("0")
+
+    tiers = surcharge.single if status == "single" else surcharge.family
+    if not tiers:
+        return Decimal("0")
+
+    adjustment = Decimal("0")
+    if status == "family":
+        adjustment = Decimal(surcharge.dependent_increment * dependents)
+
+    applicable_rate = Decimal("0")
+    for tier in tiers:
+        threshold = Decimal(tier.threshold) + adjustment
+        if taxable_amount > threshold:
+            applicable_rate = tier.rate
+        else:
             break
-        nxt = brackets[i + 1][0] if i + 1 < len(brackets) else amt
-        taxable = min(amt, nxt) - threshold
-        if taxable > 0:
-            tax += taxable * rate
-
-    return Money(tax, AUD)
+    return applicable_rate
 
 
-def optimize_household(
+def _medicare_surcharge_amount(
+    taxable_amount: Decimal,
+    medicare: MedicareConfig,
+    status: Literal["single", "family"],
+    dependents: int,
+    has_private_health_cover: bool,
+    surcharge_income: Decimal,
+) -> Decimal:
+    if has_private_health_cover:
+        return Decimal("0")
+    rate = _surcharge_rate(surcharge_income, medicare, status, dependents)
+    if rate == 0:
+        return Decimal("0")
+    return _effective_income(taxable_amount) * rate
+
+
+def _resolve_fy_key(fy: int) -> int:
+    return fy if fy >= 1900 else 2000 + fy
+
+
+@lru_cache(maxsize=16)
+def _load_config(fy: int) -> FYConfig:
+    return load_config(_resolve_fy_key(fy))
+
+
+def _tax_liability(
+    taxable_income: Money,
+    fy: int,
+    *,
+    medicare_status: Literal["single", "family"] = "single",
+    medicare_dependents: int = 0,
+    has_private_health_cover: bool = True,
+    family_taxable_income: Decimal | None = None,
+    family_dependents: int = 0,
+) -> Liability:
+    config = _load_config(fy)
+
+    taxable_amount = _effective_income(taxable_income.amount)
+    income_tax = _income_tax(taxable_amount, config.brackets)
+
+    medicare = config.medicare
+    if medicare_status == "family":
+        combined = family_taxable_income if family_taxable_income is not None else taxable_amount
+        levy = _medicare_levy_family(
+            taxable_amount,
+            combined,
+            family_dependents,
+            medicare,
+        )
+        surcharge_base = combined
+    else:
+        levy = _medicare_levy_single(taxable_amount, medicare)
+        surcharge_base = taxable_amount
+
+    surcharge = _medicare_surcharge_amount(
+        taxable_amount,
+        medicare,
+        medicare_status,
+        medicare_dependents if medicare_status == "single" else family_dependents,
+        has_private_health_cover,
+        surcharge_base,
+    )
+
+    return Liability(
+        income_tax=Money(_quantize(income_tax), AUD),
+        medicare_levy=Money(_quantize(levy), AUD),
+        medicare_surcharge=Money(_quantize(surcharge), AUD),
+    )
+
+
+def _evaluate_allocation(
     yours: Individual,
     janice: Individual,
+    yours_deductions: Sequence[Money],
+    janice_deductions: Sequence[Money],
 ) -> Allocation:
-    """Allocate deductions & gains to minimize household tax.
+    updated_yours = replace(yours, deductions=list(yours_deductions), medicare_status="family")
+    updated_janice = replace(janice, deductions=list(janice_deductions), medicare_status="family")
 
-    Strategy:
-    - Fill tax-free thresholds first, then route deductions by marginal rate
-    - Preserve gains/losses on original claimant
-    - Minimize: your_tax + janice_tax
-    """
-    shared_deductions = yours.deductions + janice.deductions
-    your_shared, janice_shared = allocate_deductions(
-        yours.income,
-        janice.income,
-        shared_deductions,
-        fy=yours.fy,
+    your_taxable = updated_yours.taxable_income
+    janice_taxable = updated_janice.taxable_income
+
+    family_income = your_taxable.amount + janice_taxable.amount
+    family_dependents = updated_yours.medicare_dependents + updated_janice.medicare_dependents
+
+    your_liability = _tax_liability(
+        your_taxable,
+        updated_yours.fy,
+        medicare_status="family",
+        medicare_dependents=updated_yours.medicare_dependents,
+        has_private_health_cover=updated_yours.has_private_health_cover,
+        family_taxable_income=family_income,
+        family_dependents=family_dependents,
     )
-
-    your_deductions = []
-    if your_shared.amount > 0:
-        your_deductions.append(your_shared)
-
-    janice_deductions = []
-    if janice_shared.amount > 0:
-        janice_deductions.append(janice_shared)
-
-    your_a = Individual(
-        name=yours.name,
-        fy=yours.fy,
-        income=yours.income,
-        deductions=your_deductions,
-        gains=yours.gains,
-        losses=yours.losses,
+    janice_liability = _tax_liability(
+        janice_taxable,
+        updated_janice.fy,
+        medicare_status="family",
+        medicare_dependents=updated_janice.medicare_dependents,
+        has_private_health_cover=updated_janice.has_private_health_cover,
+        family_taxable_income=family_income,
+        family_dependents=family_dependents,
     )
-    janice_a = Individual(
-        name=janice.name,
-        fy=janice.fy,
-        income=janice.income,
-        deductions=janice_deductions,
-        gains=janice.gains,
-        losses=janice.losses,
-    )
-
-    your_tax = _tax_liability(your_a.taxable_income, your_a.fy)
-    janice_tax = _tax_liability(janice_a.taxable_income, janice_a.fy)
 
     return Allocation(
-        yours=your_a,
-        janice=janice_a,
-        your_tax=your_tax,
-        janice_tax=janice_tax,
+        yours=updated_yours,
+        janice=updated_janice,
+        your_liability=your_liability,
+        janice_liability=janice_liability,
     )
+
+
+def _combine_deductions(yours: Individual, janice: Individual) -> Sequence[Money]:
+    return tuple(yours.deductions + janice.deductions)
+
+
+def _iter_allocations(
+    deductions: Sequence[Money],
+) -> Iterable[tuple[Sequence[Money], Sequence[Money]]]:
+    if not deductions:
+        yield (), ()
+        return
+
+    def backtrack(idx: int, left: tuple[Money, ...], right: tuple[Money, ...]):
+        if idx == len(deductions):
+            yield left, right
+            return
+        current = deductions[idx]
+        yield from backtrack(idx + 1, left + (current,), right)
+        yield from backtrack(idx + 1, left, right + (current,))
+
+    yield from backtrack(0, tuple(), tuple())
+
+
+def optimize_household(yours: Individual, janice: Individual) -> Allocation:
+    deductions = _combine_deductions(yours, janice)
+    best_allocation: Allocation | None = None
+    best_total: Decimal | None = None
+
+    for yours_alloc, janice_alloc in _iter_allocations(deductions):
+        allocation = _evaluate_allocation(yours, janice, yours_alloc, janice_alloc)
+        total = allocation.total.amount
+        if best_total is None or total < best_total:
+            best_total = total
+            best_allocation = allocation
+
+    if best_allocation is None:
+        # No deductions to allocate, still compute baseline liabilities.
+        best_allocation = _evaluate_allocation(yours, janice, (), ())
+
+    return best_allocation

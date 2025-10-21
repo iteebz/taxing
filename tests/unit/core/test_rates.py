@@ -1,18 +1,23 @@
 import pytest
 
 from src.core.rates import (
-    ATO_ALIGNED_RATES_CONSERVATIVE,
-    ATO_ALIGNED_RATES_STANDARD,
-    get_rate,
+    DeductionDivision,
+    DEDUCTIBLE_DIVISIONS,
     get_rate_basis,
     validate_category,
 )
 
 
 def test_validate_category_valid():
+    # Test categories that are in DEDUCTIBLE_DIVISIONS and are deductible
     assert validate_category("work_accessories") is None
     assert validate_category("software") is None
-    assert validate_category("home_office") is None
+
+
+def test_validate_category_not_in_deductible_divisions():
+    # Test a category that is not in DEDUCTIBLE_DIVISIONS (e.g., a sub-category for actual cost)
+    # It should not raise an error, as the calling function will handle it.
+    assert validate_category("electricity") is None
 
 
 def test_validate_category_prohibited():
@@ -30,36 +35,17 @@ def test_validate_category_error():
 
 
 def test_validate_category_unknown():
-    with pytest.raises(ValueError, match="Unknown category"):
-        validate_category("invalid_category_xyz")
+    # This case should now be handled by the calling function, not raise an error here
+    assert validate_category("invalid_category_xyz") is None
 
 
-def test_get_rate_standard():
-    assert get_rate("home_office", conservative=False) == ATO_ALIGNED_RATES_STANDARD["home_office"]
-    assert get_rate("vehicle", conservative=False) == ATO_ALIGNED_RATES_STANDARD["vehicle"]
+def test_get_rate_basis_mapped():
+    assert get_rate_basis("home_office") == "ATO_DIVISION_63_ACTUAL_COST"
+    assert get_rate_basis("vehicle") == "ATO_ITAA97_S8_1_ACTUAL_COST"
+    assert get_rate_basis("donations") == "ATO_DIVISION_30"
+    assert get_rate_basis("meals") == "ATO_50PCT_RULE"
 
 
-def test_get_rate_conservative():
-    assert (
-        get_rate("home_office", conservative=True) == ATO_ALIGNED_RATES_CONSERVATIVE["home_office"]
-    )
-    assert get_rate("vehicle", conservative=True) == ATO_ALIGNED_RATES_CONSERVATIVE["vehicle"]
-    assert get_rate("home_office", conservative=True) < get_rate("home_office", conservative=False)
-
-
-def test_get_rate_prohibited():
-    with pytest.raises(ValueError, match="never deductible"):
-        get_rate("clothing")
-
-
-def test_get_rate_basis():
-    assert "DIVISION_63" in get_rate_basis("home_office")
-    assert "S8_1" in get_rate_basis("vehicle")
-
-
-def test_rates_conservative_lte_standard():
-    for category in ATO_ALIGNED_RATES_STANDARD:
-        assert category in ATO_ALIGNED_RATES_CONSERVATIVE
-        conservative = ATO_ALIGNED_RATES_CONSERVATIVE[category]
-        standard = ATO_ALIGNED_RATES_STANDARD[category]
-        assert conservative <= standard
+def test_get_rate_basis_default():
+    assert get_rate_basis("software") == "ITAA97_DIVISION_8_NEXUS_SOFTWARE"
+    assert get_rate_basis("work_accessories") == "ITAA97_DIVISION_8_NEXUS_WORK_ACCESSORIES"

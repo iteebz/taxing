@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
-from typing import NewType, Protocol
+from typing import Literal, NewType, Protocol
 
 Currency = NewType("Currency", str)
 AUD = Currency("AUD")
@@ -260,6 +260,9 @@ class Individual:
     deductions: list[Money] = field(default_factory=list)
     gains: list[Gain] = field(default_factory=list)
     losses: list[Loss] = field(default_factory=list)
+    medicare_status: Literal["single", "family"] = "single"
+    medicare_dependents: int = 0
+    has_private_health_cover: bool = True
 
     @property
     def total_deductions(self) -> Money:

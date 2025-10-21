@@ -61,7 +61,7 @@ def run(
 
         validate_transactions(txns_classified, year)
 
-        deductions = deduce(txns_classified, fy=year, weights=weights)
+        deductions = deduce(txns_classified, fy=year, business_percentages={})
 
         summary_dict = {}
         for t in txns_classified:

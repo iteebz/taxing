@@ -1,4 +1,3 @@
-from decimal import Decimal
 from enum import Enum
 
 
@@ -83,49 +82,9 @@ CATEGORY_NEXUS = {
     "nicotine": ("Personal tobacco/nicotine, not deductible"),
 }
 
-ATO_ALIGNED_RATES_STANDARD = {
-    "home_office": Decimal("0.45"),
-    "vehicle": Decimal("0.67"),
-    "subscriptions": Decimal("1.0"),
-    "internet": Decimal("0.3"),
-    "mobile": Decimal("0.5"),
-    "software": Decimal("1.0"),
-    "books": Decimal("1.0"),
-    "electronics": Decimal("0.8"),
-    "professional_fees": Decimal("1.0"),
-    "training": Decimal("1.0"),
-    "self_education": Decimal("1.0"),
-    "travel": Decimal("1.0"),
-    "accom": Decimal("1.0"),
-    "meals": Decimal("0.5"),
-    "donations": Decimal("1.0"),
-    "investment": Decimal("0.8"),
-    "work_accessories": Decimal("0.85"),
-}
-
-ATO_ALIGNED_RATES_CONSERVATIVE = {
-    "home_office": Decimal("0.30"),
-    "vehicle": Decimal("0.55"),
-    "subscriptions": Decimal("0.8"),
-    "internet": Decimal("0.2"),
-    "mobile": Decimal("0.35"),
-    "software": Decimal("0.8"),
-    "books": Decimal("0.8"),
-    "electronics": Decimal("0.6"),
-    "professional_fees": Decimal("0.8"),
-    "training": Decimal("0.8"),
-    "self_education": Decimal("0.8"),
-    "travel": Decimal("0.8"),
-    "accom": Decimal("0.8"),
-    "meals": Decimal("0.3"),
-    "donations": Decimal("0.9"),
-    "investment": Decimal("0.6"),
-    "work_accessories": Decimal("0.7"),
-}
-
 RATE_BASIS_MAP = {
-    "home_office": "ATO_DIVISION_63_SIMPLIFIED",
-    "vehicle": "ATO_ITAA97_S8_1_SIMPLIFIED",
+    "home_office": "ATO_DIVISION_63_ACTUAL_COST",
+    "vehicle": "ATO_ITAA97_S8_1_ACTUAL_COST",
     "donations": "ATO_DIVISION_30",
     "meals": "ATO_50PCT_RULE",
 }
@@ -134,24 +93,15 @@ RATE_BASIS_MAP = {
 def validate_category(category: str) -> None:
     """Validate that category is deductible and not in error state."""
     if category not in DEDUCTIBLE_DIVISIONS:
-        raise ValueError(f"Unknown category: {category}")
+        # This can happen if a category is in actual_cost_categories but not in DEDUCTIBLE_DIVISIONS
+        # We should not raise an error here, but let the caller handle it.
+        return
 
     division = DEDUCTIBLE_DIVISIONS[category]
     if division == DeductionDivision.PROHIBITED:
         raise ValueError(f"Category '{category}' is never deductible under Australian tax law")
     if division == DeductionDivision.ERROR:
         raise ValueError(f"Category '{category}' is income, not a deduction")
-
-
-def get_rate(
-    category: str,
-    conservative: bool = False,
-) -> Decimal:
-    """Get ATO-aligned deduction rate for category."""
-    validate_category(category)
-
-    rates = ATO_ALIGNED_RATES_CONSERVATIVE if conservative else ATO_ALIGNED_RATES_STANDARD
-    return rates.get(category, Decimal("0"))
 
 
 def get_rate_basis(category: str) -> str:

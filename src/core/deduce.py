@@ -1,123 +1,102 @@
 from decimal import Decimal
 
-from src.core.models import AUD, Car, Deduction, Money, Transaction
-from src.core.rates import get_rate, get_rate_basis, validate_category
+from src.core.config import load_config
+from src.core.models import AUD, Deduction, Money, Transaction
+from src.core.rates import get_rate_basis, validate_category
 
 
 def deduce(
     txns: list[Transaction],
     fy: int,
-    conservative: bool = False,
+    business_percentages: dict[str, float],
     min_confidence: float = 0.5,
-    weights: dict[str, float] | None = None,
 ) -> list[Deduction]:
     """
-    Calculate deductions by applying ATO-aligned rates to categorized transactions.
+    Calculate deductions using the actual cost method based on config.
 
     Args:
-        txns: List of categorized transactions (must have classification confidence ≥ min_confidence)
-        fy: Fiscal year for audit trail
-        conservative: Use conservative (lower) rates if True
-        min_confidence: Minimum classification confidence to process (0.0-1.0, default 0.5)
-        weights: Override rates by category (e.g., {"electronics": 1.0}). Takes precedence over conservative flag.
+        txns: List of categorized transactions.
+        fy: Fiscal year to load config for.
+        business_percentages: Map of deduction group (e.g., 'home_office') to business use percentage (0.0-1.0).
+        min_confidence: Minimum classification confidence to process.
 
     Returns:
-        List of Deduction records with audit trail (category, amount, rate, rate_basis)
+        List of Deduction records.
     """
-    if weights is None:
-        weights = {}
-    deductions_by_category: dict[str, Deduction] = {}
+    config = load_config(fy)
+    deductions: dict[str, Deduction] = {}
+
+    # 1. Handle Actual Cost Deductions
+    # Create a reverse map from sub-category to main deduction group
+    sub_to_main_cat = {
+        sub_cat: main_cat
+        for main_cat, sub_cats in config.actual_cost_categories.items()
+        for sub_cat in sub_cats
+    }
+
+    actual_cost_totals: dict[str, Money] = {
+        main_cat: Money(Decimal("0"), AUD) for main_cat in config.actual_cost_categories
+    }
 
     for txn in txns:
         if txn.category is None or not txn.category:
             continue
-
-        if txn.amount.currency != AUD:
-            continue
-
-        if txn.confidence < min_confidence:
+        if txn.amount.currency != AUD or txn.confidence < min_confidence:
             continue
 
         for cat in txn.category:
-            try:
-                validate_category(cat)
-            except ValueError:
-                continue
+            if cat in sub_to_main_cat:
+                main_cat = sub_to_main_cat[cat]
+                actual_cost_totals[main_cat] += txn.amount
 
-            if cat in weights:
-                rate = Decimal(str(weights[cat]))
-            else:
-                rate = get_rate(cat, conservative)
-            if rate == 0:
-                continue
-
-            business_pct = 1 - txn.personal_pct
-            deductible_amount = txn.amount * float(rate) * float(business_pct)
-
-            rate_basis = get_rate_basis(cat)
-
-            deduction = Deduction(
-                category=cat,
-                amount=deductible_amount,
-                rate=rate,
-                rate_basis=rate_basis,
-                fy=fy,
-            )
-
-            if cat in deductions_by_category:
-                existing = deductions_by_category[cat]
-                deductions_by_category[cat] = Deduction(
-                    category=cat,
-                    amount=existing.amount + deductible_amount,
-                    rate=rate,
-                    rate_basis=rate_basis,
-                    fy=fy,
-                )
-            else:
-                deductions_by_category[cat] = deduction
-
-    return list(deductions_by_category.values())
-
-
-def deduce_car(
-    txns: list[Transaction],
-    deductible_pct: Decimal,
-    fy: int,
-    min_confidence: float = 0.5,
-) -> tuple[Car, Deduction]:
-    """
-    Calculate car deduction via implied km method.
-
-    Args:
-        txns: List of vehicle category transactions
-        deductible_pct: Claimed deductible % of total spend (0.0-1.0)
-        fy: Fiscal year
-        min_confidence: Minimum classification confidence to process
-
-    Returns:
-        Tuple of (Car model with implied_km, corresponding Deduction record)
-    """
-    vehicle_total = Money(Decimal("0"), AUD)
-
-    for txn in txns:
-        if txn.category is None or "vehicle" not in txn.category:
-            continue
-        if txn.amount.currency != AUD:
-            continue
-        if txn.confidence < min_confidence:
-            continue
-
-        business_pct = 1 - txn.personal_pct
-        vehicle_total = vehicle_total + (txn.amount * float(business_pct))
-
-    car = Car(total_spend=vehicle_total, deductible_pct=deductible_pct)
-
-    deduction = Deduction(
-        category="vehicle",
-        amount=car.deductible_amount,
-        rate=Decimal("0.67"),
-        rate_basis="ATO_ITAA97_S8_1_SIMPLIFIED_IMPLIED_KM",
-        fy=fy,
-    )
-
-    return car, deduction
+    for main_cat, total_amount in actual_cost_totals.items():
+                    if total_amount.amount > 0:
+                        business_pct = Decimal(str(business_percentages.get(main_cat, 0.0)))
+                        deductible_amount = total_amount * float(business_pct)
+                        if deductible_amount.amount > 0: # Only create deduction if amount is greater than zero
+                            deductions[main_cat] = Deduction(
+                                category=main_cat,
+                                amount=deductible_amount,
+                                rate=business_pct,  # The 'rate' is now the business use percentage
+                                rate_basis=get_rate_basis(main_cat),
+                                fy=fy,
+                            )
+        
+            # 2. Handle Fixed Rate Deductions
+            for txn in txns:
+                if txn.category is None or not txn.category:
+                    continue
+                if txn.amount.currency != AUD or txn.confidence < min_confidence:
+                    continue
+        
+                for cat in txn.category:
+                    if cat in config.fixed_rates:
+                        try:
+                            validate_category(cat)
+                        except ValueError:
+                            continue
+        
+                        rate = config.fixed_rates[cat]
+                        business_pct = 1 - txn.personal_pct
+                        deductible_amount = txn.amount * float(rate) * float(business_pct)
+        
+                        if deductible_amount.amount > 0: # Only create deduction if amount is greater than zero
+                            if cat in deductions:
+                                existing = deductions[cat]
+                                deductions[cat] = Deduction(
+                                    category=cat,
+                                    amount=existing.amount + deductible_amount,
+                                    rate=rate,
+                                    rate_basis=get_rate_basis(cat),
+                                    fy=fy,
+                                )
+                            else:
+                                deductions[cat] = Deduction(
+                                    category=cat,
+                                    amount=deductible_amount,
+                                    rate=rate,
+                                    rate_basis=get_rate_basis(cat),
+                                    fy=fy,
+                                )
+        
+            return list(deductions.values())

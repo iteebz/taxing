@@ -1,0 +1,155 @@
+fy_2023:
+  brackets:
+    - rate: 0.19
+      from: 18201
+      to: 45000
+    - rate: 0.325
+      from: 45001
+      to: 120000
+    - rate: 0.37
+      from: 120001
+      to: 180000
+    - rate: 0.45
+      from: 180001
+      to: 999999999
+  medicare:
+    base_rate: 0.02
+    low_income_threshold_single: 24276
+    phase_in_rate_single: 0.10
+    low_income_threshold_family: 40939
+    phase_in_rate_family: 0.10
+    dependent_increment: 3760
+    surcharge:
+      dependent_increment: 1500
+      single:
+        - threshold: 93000
+          rate: 0.01
+        - threshold: 108000
+          rate: 0.0125
+        - threshold: 144000
+          rate: 0.015
+      family:
+        - threshold: 186000
+          rate: 0.01
+        - threshold: 216000
+          rate: 0.0125
+        - threshold: 288000
+          rate: 0.015
+  actual_cost_categories:
+    home_office:
+      - electricity
+      - gas
+      - internet
+      - rent
+    vehicle:
+      - fuel
+      - insurance
+      - registration
+      - maintenance
+  fixed_rates:
+    meals: 0.5
+    donations: 1.0
+
+fy_2024:
+  brackets:
+    - rate: 0.19
+      from: 18201
+      to: 45000
+    - rate: 0.325
+      from: 45001
+      to: 120000
+    - rate: 0.37
+      from: 120001
+      to: 180000
+    - rate: 0.45
+      from: 180001
+      to: 999999999
+  medicare:
+    base_rate: 0.02
+    low_income_threshold_single: 24276
+    phase_in_rate_single: 0.10
+    low_income_threshold_family: 40939
+    phase_in_rate_family: 0.10
+    dependent_increment: 3760
+    surcharge:
+      dependent_increment: 1500
+      single:
+        - threshold: 93000
+          rate: 0.01
+        - threshold: 108000
+          rate: 0.0125
+        - threshold: 144000
+          rate: 0.015
+      family:
+        - threshold: 186000
+          rate: 0.01
+        - threshold: 216000
+          rate: 0.0125
+        - threshold: 288000
+          rate: 0.015
+  actual_cost_categories:
+    home_office:
+      - electricity
+      - gas
+      - internet
+      - rent
+    vehicle:
+      - fuel
+      - insurance
+      - registration
+      - maintenance
+  fixed_rates:
+    meals: 0.5
+    donations: 1.0
+
+fy_2025:
+  brackets:
+    - rate: 0.16
+      from: 18201
+      to: 45000
+    - rate: 0.30
+      from: 45001
+      to: 135000
+    - rate: 0.37
+      from: 135001
+      to: 190000
+    - rate: 0.45
+      from: 190001
+      to: 999999999
+  medicare:
+    base_rate: 0.02
+    low_income_threshold_single: 24276
+    phase_in_rate_single: 0.10
+    low_income_threshold_family: 40939
+    phase_in_rate_family: 0.10
+    dependent_increment: 3760
+    surcharge:
+      dependent_increment: 1500
+      single:
+        - threshold: 93000
+          rate: 0.01
+        - threshold: 108000
+          rate: 0.0125
+        - threshold: 144000
+          rate: 0.015
+      family:
+        - threshold: 186000
+          rate: 0.01
+        - threshold: 216000
+          rate: 0.0125
+        - threshold: 288000
+          rate: 0.015
+  actual_cost_categories:
+    home_office:
+      - electricity
+      - gas
+      - internet
+      - rent
+    vehicle:
+      - fuel
+      - insurance
+      - registration
+      - maintenance
+  fixed_rates:
+    meals: 0.5
+    donations: 1.0
