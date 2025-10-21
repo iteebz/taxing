@@ -1,5 +1,11 @@
 from src.io.config import Config
-from src.io.ingest import ingest_dir, ingest_trades, ingest_trades_dir
+from src.io.ingest import (
+    ingest_dir,
+    ingest_trades,
+    ingest_trades_dir,
+    ingest_trades_year,
+    ingest_year,
+)
 from src.io.persist import (
     deductions_from_csv,
     deductions_to_csv,
@@ -20,6 +26,8 @@ __all__ = [
     "ingest_dir",
     "ingest_trades",
     "ingest_trades_dir",
+    "ingest_year",
+    "ingest_trades_year",
     "deductions_from_csv",
     "deductions_to_csv",
     "gains_from_csv",

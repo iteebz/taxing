@@ -7,34 +7,41 @@ from src.core.models import AUD, Money
 from src.io import (
     deductions_to_csv,
     gains_to_csv,
-    ingest_dir,
-    ingest_trades_dir,
+    ingest_trades_year,
+    ingest_year,
     summary_to_csv,
     txns_to_csv,
     weights_from_csv,
 )
 
 
-def run(base_dir: str | Path, fiscal_year: str) -> dict[str, dict[str, object]]:
-    """Execute full pipeline: ingest → classify → deduce → trades → persist (all persons).
+def run(
+    base_dir: str | Path, year: int, persons: list[str] | None = None
+) -> dict[str, dict[str, object]]:
+    """Execute full pipeline: ingest → classify → deduce → trades → persist.
+
+    Uses standardized directory structure: {base_dir}/data/fy{year}/{person}/
 
     Args:
-        base_dir: Root directory (contains rules/, fy*/{person}/{raw,data}/, weights.csv)
-        fiscal_year: Financial year (e.g., 'fy25')
+        base_dir: Root directory
+        year: Fiscal year (e.g., 25 for FY2025)
+        persons: List of persons to process (if None, auto-detect)
 
     Returns:
-        Dict mapping person -> {txn_count, classified_count, deductions, gains}
+        Dict mapping person -> {txn_count, classified_count, deductions, gains_count}
     """
     base = Path(base_dir)
-    raw_dir = base / fiscal_year / "raw"
 
-    txns_all = ingest_dir(raw_dir)
-    trades_all = ingest_trades_dir(base / fiscal_year)
+    txns_all = ingest_year(base, year, persons=persons)
+    trades_all = ingest_trades_year(base, year, persons=persons)
 
     rules = load_rules(base)
 
     weights_path = base / "weights.csv"
     weights = weights_from_csv(weights_path) if weights_path.exists() else {}
+
+    if not txns_all:
+        return {}
 
     results = {}
     for person in sorted({t.source_person for t in txns_all}):
@@ -55,7 +62,7 @@ def run(base_dir: str | Path, fiscal_year: str) -> dict[str, dict[str, object]]:
 
         gains = process_trades(trades_person)
 
-        data_dir = base / fiscal_year / person / "data"
+        data_dir = base / "data" / f"fy{year}" / person / "data"
         data_dir.mkdir(parents=True, exist_ok=True)
 
         txns_to_csv(txns_classified, data_dir / "transactions.csv")

@@ -206,3 +206,69 @@ def ingest_trades_dir(base_dir: str | Path, persons: list[str] | None = None) ->
 
     all_trades.sort(key=lambda t: (t.code, t.date))
     return all_trades
+
+
+def ingest_year(
+    base_dir: str | Path, year: int, persons: list[str] | None = None
+) -> list[Transaction]:
+    """
+    Load all transactions for a fiscal year using standardized structure.
+
+    Structure: {base_dir}/data/fy{year}/{person}/raw/*.csv
+
+    Args:
+        base_dir: Root directory
+        year: Fiscal year (e.g., 25 for FY2025)
+        persons: List of persons to load (if None, auto-detect)
+
+    Returns:
+        Combined list of all transactions for the year
+    """
+    base = Path(base_dir)
+    fy_dir = base / "data" / f"fy{year}"
+
+    if not fy_dir.exists():
+        return []
+
+    if persons is None:
+        persons = [p.name for p in fy_dir.iterdir() if p.is_dir()]
+
+    return ingest_dir(fy_dir, persons=sorted(persons))
+
+
+def ingest_trades_year(
+    base_dir: str | Path, year: int, persons: list[str] | None = None
+) -> list[Trade]:
+    """
+    Load all trades for a fiscal year using standardized structure.
+
+    Structure: {base_dir}/data/fy{year}/{person}/trades.csv
+
+    Args:
+        base_dir: Root directory
+        year: Fiscal year (e.g., 25 for FY2025)
+        persons: List of persons to load (if None, auto-detect)
+
+    Returns:
+        Combined list of all trades for the year
+    """
+    base = Path(base_dir)
+    fy_dir = base / "data" / f"fy{year}"
+
+    if not fy_dir.exists():
+        return []
+
+    if persons is None:
+        persons = [p.name for p in fy_dir.iterdir() if p.is_dir()]
+
+    all_trades = []
+    for person in sorted(persons):
+        person_dir = fy_dir / person
+        trades_file = person_dir / "trades.csv"
+
+        if trades_file.exists():
+            trades = ingest_trades(trades_file, person)
+            all_trades.extend(trades)
+
+    all_trades.sort(key=lambda t: (t.code, t.date))
+    return all_trades

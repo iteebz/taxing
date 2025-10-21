@@ -5,3 +5,6 @@ dist/
 .ruff_cache
 .coverage
 *.pyc
+
+data/
+output/
