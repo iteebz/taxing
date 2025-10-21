@@ -13,8 +13,8 @@ def tax_og_equity_file():
     return Path("/Users/teebz/space/tax-og/equity/tyson.csv")
 
 
-def test_parity_with_tax_og(tax_og_equity_file):
-    """Verify our algorithm matches tax-og's output on real data."""
+def test_process_real_trade_data(tax_og_equity_file):
+    """Verify trade processing works with real data."""
     if not tax_og_equity_file.exists():
         pytest.skip("tax-og reference file not available")
 

@@ -18,7 +18,7 @@ def handle(args):
 
     unlabeled = [t for t in txns if t.category is None or not t.category]
     if not unlabeled:
-        print(f"\n✓ All transactions categorized!")
+        print("\n✓ All transactions categorized!")
         return
 
     print(f"\n📊 Analyzing {len(unlabeled)} unlabeled transactions...")
@@ -30,7 +30,7 @@ def handle(args):
         print("No suggestions found.")
         return
 
-    print(f"\n✅ Suggested Rules (by evidence)\n")
+    print("\n✅ Suggested Rules (by evidence)\n")
     print(f"{'Keyword':<20} {'Category':<20} {'Evidence':<10}")
     print("-" * 50)
 

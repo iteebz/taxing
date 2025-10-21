@@ -38,7 +38,7 @@ def run(
     txns_all = dedupe(txns_all)
 
     rules = load_rules(base)
-    
+
     weights_path = base / "data" / f"fy{year}" / "weights.csv"
     weights = weights_from_csv(weights_path) if weights_path.exists() else {}
 

@@ -11,8 +11,8 @@ def calc_fy(d: date) -> int:
 
 
 def is_cgt_discount_eligible(hold_days: int) -> bool:
-    """CGT discount eligibility: held >365 days."""
-    return hold_days > 365
+    """CGT discount eligibility: held ≥365 days (12 months)."""
+    return hold_days >= 365
 
 
 def process_trades(trades: list[Trade]) -> list[Gain]:
@@ -25,7 +25,8 @@ def process_trades(trades: list[Trade]) -> list[Gain]:
 
     def sort_priority(lot: Trade, sell_price: Decimal, sell_date: date) -> tuple:
         is_loss = lot.price.amount >= sell_price
-        is_discounted = (sell_date - lot.date).days > 365
+        hold_days = (sell_date - lot.date).days
+        is_discounted = is_cgt_discount_eligible(hold_days)
         return (not is_loss, not is_discounted, lot.date)
 
     results = []
@@ -42,6 +43,10 @@ def process_trades(trades: list[Trade]) -> list[Gain]:
             units_to_sell = trade.units
             fy = calc_fy(trade.date)
 
+            sell_fee_per_unit = (
+                trade.fee.amount / trade.units if trade.units and trade.units > 0 else Decimal("0")
+            )
+
             while buff and units_to_sell > Decimal(0):
                 sell_lot = min(buff, key=lambda t: sort_priority(t, trade.price.amount, trade.date))
                 hold_days = (trade.date - sell_lot.date).days
@@ -51,8 +56,10 @@ def process_trades(trades: list[Trade]) -> list[Gain]:
                 action = "loss" if is_loss else ("discount" if is_discounted else "fifo")
 
                 if units_to_sell >= sell_lot.units:
-                    profit = sell_lot.units * (trade.price.amount - sell_lot.price.amount)
+                    units_matched = sell_lot.units
+                    profit = units_matched * (trade.price.amount - sell_lot.price.amount)
                     profit -= sell_lot.fee.amount
+                    profit -= units_matched * sell_fee_per_unit
                     gain = profit / 2 if is_discounted else profit
 
                     results.append(
@@ -65,11 +72,13 @@ def process_trades(trades: list[Trade]) -> list[Gain]:
                     )
 
                     buff.remove(sell_lot)
-                    units_to_sell -= sell_lot.units
+                    units_to_sell -= units_matched
                 else:
-                    profit = units_to_sell * (trade.price.amount - sell_lot.price.amount)
-                    partial_fee = (units_to_sell / sell_lot.units) * sell_lot.fee.amount
+                    units_matched = units_to_sell
+                    profit = units_matched * (trade.price.amount - sell_lot.price.amount)
+                    partial_fee = (units_matched / sell_lot.units) * sell_lot.fee.amount
                     profit -= partial_fee
+                    profit -= units_matched * sell_fee_per_unit
                     gain = profit / 2 if is_discounted else profit
 
                     results.append(

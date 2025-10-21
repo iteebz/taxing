@@ -4,6 +4,8 @@ from decimal import Decimal
 from src.core.models import AUD, Individual, Money
 
 TAX_FREE_THRESHOLD = {
+    23: Decimal("18200"),
+    24: Decimal("18200"),
     25: Decimal("18200"),
 }
 
@@ -66,13 +68,27 @@ class Allocation:
 
 
 BRACKETS = {
-    25: [
+    23: [
         (0, Decimal("0")),
         (18200, Decimal("0.19")),
         (45000, Decimal("0.325")),
         (120000, Decimal("0.37")),
         (180000, Decimal("0.45")),
-    ]
+    ],
+    24: [
+        (0, Decimal("0")),
+        (18200, Decimal("0.19")),
+        (45000, Decimal("0.325")),
+        (120000, Decimal("0.37")),
+        (180000, Decimal("0.45")),
+    ],
+    25: [
+        (0, Decimal("0")),
+        (18200, Decimal("0.16")),
+        (45000, Decimal("0.30")),
+        (135000, Decimal("0.37")),
+        (190000, Decimal("0.45")),
+    ],
 }
 
 
@@ -88,7 +104,8 @@ def _tax_rate(income: Decimal, fy: int) -> Decimal:
 
 def _tax_liability(income: Money, fy: int) -> Money:
     amt = income.amount
-    if amt <= 18200:
+    threshold = TAX_FREE_THRESHOLD.get(fy, TAX_FREE_THRESHOLD[25])
+    if amt <= threshold:
         return Money(Decimal("0"), AUD)
 
     brackets = BRACKETS.get(fy, BRACKETS[25])
@@ -112,34 +129,42 @@ def optimize_household(
     """Allocate deductions & gains to minimize household tax.
 
     Strategy:
-    - Route deductions to lower-bracket person (Janice if employed FY25)
-    - Route gains to person with loss carryforwards (you)
+    - Fill tax-free thresholds first, then route deductions by marginal rate
+    - Preserve gains/losses on original claimant
     - Minimize: your_tax + janice_tax
     """
-    your_rate = _tax_rate(yours.income.amount, yours.fy)
-    janice_rate = _tax_rate(janice.income.amount, janice.fy)
+    shared_deductions = yours.deductions + janice.deductions
+    your_shared, janice_shared = allocate_deductions(
+        yours.income,
+        janice.income,
+        shared_deductions,
+        fy=yours.fy,
+    )
 
-    your_a = yours
-    janice_a = janice
+    your_deductions = []
+    if your_shared.amount > 0:
+        your_deductions.append(your_shared)
 
-    if janice_rate < your_rate:
-        total_ded = sum(yours.deductions + janice.deductions, Money(Decimal("0"), AUD))
-        your_a = Individual(
-            name=yours.name,
-            fy=yours.fy,
-            income=yours.income,
-            deductions=[],
-            gains=yours.gains,
-            losses=yours.losses,
-        )
-        janice_a = Individual(
-            name=janice.name,
-            fy=janice.fy,
-            income=janice.income,
-            deductions=[total_ded],
-            gains=janice.gains,
-            losses=janice.losses,
-        )
+    janice_deductions = []
+    if janice_shared.amount > 0:
+        janice_deductions.append(janice_shared)
+
+    your_a = Individual(
+        name=yours.name,
+        fy=yours.fy,
+        income=yours.income,
+        deductions=your_deductions,
+        gains=yours.gains,
+        losses=yours.losses,
+    )
+    janice_a = Individual(
+        name=janice.name,
+        fy=janice.fy,
+        income=janice.income,
+        deductions=janice_deductions,
+        gains=janice.gains,
+        losses=janice.losses,
+    )
 
     your_tax = _tax_liability(your_a.taxable_income, your_a.fy)
     janice_tax = _tax_liability(janice_a.taxable_income, janice_a.fy)

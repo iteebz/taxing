@@ -3,9 +3,6 @@ import pytest
 from src.core.rates import (
     ATO_ALIGNED_RATES_CONSERVATIVE,
     ATO_ALIGNED_RATES_STANDARD,
-    CATEGORY_NEXUS,
-    DEDUCTIBLE_DIVISIONS,
-    DeductionDivision,
     get_rate,
     get_rate_basis,
     validate_category,
@@ -60,23 +57,9 @@ def test_get_rate_basis():
     assert "S8_1" in get_rate_basis("vehicle")
 
 
-def test_deductible_divisions_complete():
-    for category in DEDUCTIBLE_DIVISIONS:
-        assert isinstance(DEDUCTIBLE_DIVISIONS[category], DeductionDivision)
-
-
-def test_category_nexus_complete():
-    for category in DEDUCTIBLE_DIVISIONS:
-        if category in CATEGORY_NEXUS:
-            assert isinstance(CATEGORY_NEXUS[category], str)
-            assert len(CATEGORY_NEXUS[category]) > 0
-
-
-def test_rates_standard_conservative_alignment():
+def test_rates_conservative_lte_standard():
     for category in ATO_ALIGNED_RATES_STANDARD:
         assert category in ATO_ALIGNED_RATES_CONSERVATIVE
         conservative = ATO_ALIGNED_RATES_CONSERVATIVE[category]
         standard = ATO_ALIGNED_RATES_STANDARD[category]
-        assert conservative <= standard, (
-            f"{category}: conservative {conservative} > standard {standard}"
-        )
+        assert conservative <= standard

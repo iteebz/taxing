@@ -1,4 +1,4 @@
-"""Phase 2c multi-year gains planning CLI integration tests."""
+"""Gains planning CLI integration tests."""
 
 from decimal import Decimal
 

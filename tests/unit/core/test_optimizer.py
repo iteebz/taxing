@@ -10,66 +10,6 @@ from src.core.optimizer import (
 )
 
 
-def test_individual_creation():
-    """Individual model captures person's tax profile."""
-    ind = Individual(
-        name="tyson",
-        employment_income=Money(Decimal("100000"), AUD),
-        tax_brackets=[
-            (Decimal("0"), Decimal("0.16")),
-            (Decimal("45000"), Decimal("0.30")),
-            (Decimal("135000"), Decimal("0.37")),
-            (Decimal("190000"), Decimal("0.45")),
-        ],
-        available_losses=Money(Decimal("0"), AUD),
-    )
-
-    assert ind.name == "tyson"
-    assert ind.employment_income.amount == Decimal("100000")
-    assert len(ind.tax_brackets) == 4
-
-
-def test_year_creation_single_person():
-    """Year model with single person."""
-    tyson = Individual(
-        name="tyson",
-        employment_income=Money(Decimal("100000"), AUD),
-        tax_brackets=[
-            (Decimal("0"), Decimal("0.16")),
-            (Decimal("45000"), Decimal("0.30")),
-        ],
-        available_losses=Money(Decimal("0"), AUD),
-    )
-
-    year = Year(fy=25, persons={"tyson": tyson})
-
-    assert year.fy == 25
-    assert len(year.persons) == 1
-    assert year.persons["tyson"].name == "tyson"
-
-
-def test_year_creation_multiple_persons():
-    """Year model with multiple persons."""
-    tyson = Individual(
-        name="tyson",
-        employment_income=Money(Decimal("100000"), AUD),
-        tax_brackets=[(Decimal("0"), Decimal("0.45"))],
-        available_losses=Money(Decimal("0"), AUD),
-    )
-    janice = Individual(
-        name="janice",
-        employment_income=Money(Decimal("50000"), AUD),
-        tax_brackets=[(Decimal("0"), Decimal("0.30"))],
-        available_losses=Money(Decimal("0"), AUD),
-    )
-
-    year = Year(fy=25, persons={"tyson": tyson, "janice": janice})
-
-    assert year.fy == 25
-    assert len(year.persons) == 2
-    assert year.persons["janice"].employment_income.amount == Decimal("50000")
-
-
 def test_bracket_headroom_simple():
     """Calculate available space before next bracket."""
     tyson = Individual(

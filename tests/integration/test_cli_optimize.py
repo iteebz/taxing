@@ -1,3 +1,5 @@
+"""Tax optimization CLI integration tests."""
+
 import json
 
 import pytest

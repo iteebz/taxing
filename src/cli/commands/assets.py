@@ -34,9 +34,7 @@ def register(subparsers):
     parser = subparsers.add_parser("asset-depreciation", help="Calculate asset depreciation")
     parser.add_argument("--description", required=True, help="Asset description")
     parser.add_argument("--cost", type=float, required=True, help="Asset cost in AUD")
-    parser.add_argument(
-        "--fy-purchased", type=int, required=True, help="FY purchased (e.g., 25)"
-    )
+    parser.add_argument("--fy-purchased", type=int, required=True, help="FY purchased (e.g., 25)")
     parser.add_argument("--life-years", type=int, required=True, help="Useful life in years")
     parser.add_argument(
         "--to-fy", type=int, help="Generate schedule to FY (default: fy_purchased + 5)"

@@ -15,10 +15,7 @@ def handle(args):
         return
 
     with open(rule_file) as f:
-        existing = {
-            line.strip() for line in f
-            if line.strip() and not line.strip().startswith("#")
-        }
+        existing = {line.strip() for line in f if line.strip() and not line.strip().startswith("#")}
 
     if keyword in existing:
         print(f"\n✓ Rule already exists: {keyword} -> {category}")

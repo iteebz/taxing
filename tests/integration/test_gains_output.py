@@ -91,4 +91,4 @@ def test_gains_multi_ticker():
     assert all(g.action in ["discount", "loss"] for g in gains)
 
     profit_amts = sorted([g.raw_profit.amount for g in gains])
-    assert profit_amts == [Decimal(-105), Decimal(195)]
+    assert profit_amts == [Decimal(-110), Decimal(190)]

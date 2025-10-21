@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from src.core.models import AUD, Money, Transaction
+from src.core.models import AUD, Transaction
 
 
 def coverage(txns: list[Transaction]) -> dict[str, float]:
@@ -87,9 +87,7 @@ def household_metrics(txns: list[Transaction]) -> dict[str, any]:
 
     for txn in txns:
         person = txn.source_person
-        is_transfer = txn.is_transfer or (
-            txn.category is not None and "transfers" in txn.category
-        )
+        is_transfer = txn.is_transfer or (txn.category is not None and "transfers" in txn.category)
 
         if txn.amount.currency != AUD:
             continue
@@ -116,7 +114,9 @@ def household_metrics(txns: list[Transaction]) -> dict[str, any]:
     return {
         "spending_by_person": {p: float(spending_by_person.get(p, Decimal("0"))) for p in persons},
         "income_by_person": {p: float(income_by_person.get(p, Decimal("0"))) for p in persons},
-        "transfers_by_person": {p: float(transfers_by_person.get(p, Decimal("0"))) for p in persons},
+        "transfers_by_person": {
+            p: float(transfers_by_person.get(p, Decimal("0"))) for p in persons
+        },
         "total_spending": float(total_spending),
         "total_income": float(total_income),
         "total_transfers": float(total_transfers),

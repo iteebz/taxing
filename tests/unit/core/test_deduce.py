@@ -3,7 +3,7 @@ from decimal import Decimal
 
 import pytest
 
-from src.core.deduce import deduce
+from src.core.deduce import deduce, deduce_car
 from src.core.models import AUD, Money, Transaction
 
 
@@ -159,6 +159,7 @@ def test_ignores_foreign_currency():
     assert len(ded_list) == 1
     assert ded_list[0].amount.amount == Decimal("100.00")
 
+
 def test_confidence_filtering():
     high_conf = Transaction(
         date=date(2024, 10, 1),
@@ -182,6 +183,7 @@ def test_confidence_filtering():
     assert len(ded_list) == 1
     assert ded_list[0].amount.amount == Decimal("100.00")
 
+
 def test_weights_override():
     txn = Transaction(
         date=date(2024, 10, 1),
@@ -193,6 +195,71 @@ def test_weights_override():
     )
     standard = deduce([txn], fy=25)
     assert standard[0].amount.amount == Decimal("80.00")
-    
+
     override = deduce([txn], fy=25, weights={"electronics": 1.0})
     assert override[0].amount.amount == Decimal("100.00")
+
+
+def test_deduce_car_basic():
+    txn = Transaction(
+        date=date(2024, 10, 1),
+        amount=Money(Decimal("1000.00"), AUD),
+        description="CAR SERVICE",
+        source_bank="anz",
+        source_person="tyson",
+        category={"vehicle"},
+        personal_pct=Decimal("0"),
+    )
+    car, ded = deduce_car([txn], deductible_pct=Decimal("0.8"), fy=25)
+
+    assert car.total_spend.amount == Decimal("1000.00")
+    assert car.deductible_pct == Decimal("0.8")
+    assert car.implied_km == Decimal("1000.00") * Decimal("0.8") / Decimal("0.67")
+    assert ded.category == "vehicle"
+    assert ded.amount == car.deductible_amount
+    assert ded.rate == Decimal("0.67")
+
+
+def test_deduce_car_multiple_txns():
+    txn1 = Transaction(
+        date=date(2024, 10, 1),
+        amount=Money(Decimal("500.00"), AUD),
+        description="CAR SERVICE",
+        source_bank="anz",
+        source_person="tyson",
+        category={"vehicle"},
+    )
+    txn2 = Transaction(
+        date=date(2024, 10, 2),
+        amount=Money(Decimal("300.00"), AUD),
+        description="CAR FUEL",
+        source_bank="anz",
+        source_person="tyson",
+        category={"vehicle"},
+    )
+    car, ded = deduce_car([txn1, txn2], deductible_pct=Decimal("0.9"), fy=25)
+
+    assert car.total_spend.amount == Decimal("800.00")
+    assert abs(ded.amount.amount - Decimal("720.00")) < Decimal("0.01")
+
+
+def test_deduce_car_personal_pct():
+    txn = Transaction(
+        date=date(2024, 10, 1),
+        amount=Money(Decimal("1000.00"), AUD),
+        description="CAR",
+        source_bank="anz",
+        source_person="tyson",
+        category={"vehicle"},
+        personal_pct=Decimal("0.2"),
+    )
+    car, ded = deduce_car([txn], deductible_pct=Decimal("1.0"), fy=25)
+
+    assert car.total_spend.amount == Decimal("800.00")
+
+
+def test_deduce_car_zero_spend():
+    car, ded = deduce_car([], deductible_pct=Decimal("0.8"), fy=25)
+
+    assert car.total_spend.amount == Decimal("0")
+    assert ded.amount.amount == Decimal("0")

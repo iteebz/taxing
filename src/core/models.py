@@ -84,6 +84,26 @@ class Deduction:
 
 
 @dataclass(frozen=True)
+class Car:
+    total_spend: Money
+    deductible_pct: Decimal
+
+    def __post_init__(self):
+        if not isinstance(self.deductible_pct, Decimal):
+            object.__setattr__(self, "deductible_pct", Decimal(str(self.deductible_pct)))
+        if self.deductible_pct < 0 or self.deductible_pct > 1:
+            raise ValueError(f"deductible_pct must be 0.0-1.0, got {self.deductible_pct}")
+
+    @property
+    def implied_km(self) -> Decimal:
+        return (self.total_spend.amount * self.deductible_pct) / Decimal("0.67")
+
+    @property
+    def deductible_amount(self) -> Money:
+        return Money(self.implied_km * Decimal("0.67"), self.total_spend.currency)
+
+
+@dataclass(frozen=True)
 class Summary:
     category: str
     credit_amount: Decimal
@@ -141,6 +161,7 @@ class Asset:
     cost: Money
     life_years: int
     depreciation_method: str = "PC"
+    purchase_date: date | None = None
 
 
 @dataclass(frozen=True)
@@ -268,4 +289,10 @@ class Classifier(Protocol):
 
 
 class Deducer(Protocol):
-    def deduce(self, txns: list[Transaction], fy: int, conservative: bool = False, weights: dict[str, float] | None = None) -> list[Deduction]: ...
+    def deduce(
+        self,
+        txns: list[Transaction],
+        fy: int,
+        conservative: bool = False,
+        weights: dict[str, float] | None = None,
+    ) -> list[Deduction]: ...

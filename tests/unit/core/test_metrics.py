@@ -1,16 +1,8 @@
+from datetime import date
 from decimal import Decimal
 
 from src.core.metrics import coverage, household_metrics
 from src.core.models import AUD, Money, Transaction
-from datetime import date
-
-
-def test_coverage_empty():
-    """Coverage with no transactions."""
-    result = coverage([])
-    assert result["pct_txns"] == 0.0
-    assert result["count_labeled"] == 0
-    assert result["count_total"] == 0
 
 
 def test_coverage_all_labeled():

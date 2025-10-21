@@ -1,4 +1,3 @@
-import re
 from dataclasses import dataclass
 
 from src.core.models import Transaction
@@ -47,15 +46,10 @@ GENERIC_WORDS = {
 def extract_keywords(desc: str, min_len: int = 3) -> list[str]:
     """Extract candidate keywords from description (alphanumeric, min length)."""
     words = desc.lower().split()
-    keywords = [
-        w.strip(".,!?;:") for w in words if len(w.strip(".,!?;:")) >= min_len
-    ]
-    return keywords
+    return [w.strip(".,!?;:") for w in words if len(w.strip(".,!?;:")) >= min_len]
 
 
-def find_similar_labeled(
-    txns: list[Transaction], unlabeled_desc: str
-) -> list[Transaction]:
+def find_similar_labeled(txns: list[Transaction], unlabeled_desc: str) -> list[Transaction]:
     """Find categorized txns with keyword overlap to unlabeled desc."""
     keywords = extract_keywords(unlabeled_desc)
     if not keywords:
@@ -120,9 +114,7 @@ def score_suggestions(suggestions: list[RuleSuggestion]) -> list[RuleSuggestion]
     if not suggestions:
         return []
 
-    filtered_suggestions = [
-        s for s in suggestions if s.keyword.lower() not in GENERIC_WORDS
-    ]
+    filtered_suggestions = [s for s in suggestions if s.keyword.lower() not in GENERIC_WORDS]
 
     if not filtered_suggestions:
         return []
@@ -147,7 +139,7 @@ def score_suggestions(suggestions: list[RuleSuggestion]) -> list[RuleSuggestion]
         )
 
     filtered = []
-    for kw in set(s.keyword for s in scored):
+    for kw in {s.keyword for s in scored}:
         kw_rules = [s for s in scored if s.keyword == kw]
         total_ev = sum(s.evidence for s in kw_rules)
 

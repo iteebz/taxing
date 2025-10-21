@@ -1,6 +1,6 @@
-"""Phase 3a property CLI integration tests."""
+"""Property CLI integration tests."""
 
-from src.cli import cmd_property
+from src.cli.commands.property_ import handle as cmd_property
 
 
 class Args:

@@ -43,6 +43,7 @@ def handle(args):
 def register(subparsers):
     """Register gains-plan command."""
     import json
+
     parser = subparsers.add_parser("gains-plan", help="Plan multi-year gains realization")
     parser.add_argument(
         "--projection",

@@ -64,6 +64,9 @@ CATEGORY_NEXUS = {
     "electronics": ("Work-related IT equipment and consumables (ITAA97 s8-1)"),
     "professional_fees": ("Professional development and licensing fees (ITAA97 s8-1)"),
     "training": ("Work-related training and education (ITAA97 s8-1, subject to nexus)"),
+    "self_education": (
+        "Self-education in field of income production (ITAA97 s8-1, excludes degree pursuit)"
+    ),
     "travel": ("Work-related travel expenses (ITAA97 s8-1, subject to nexus)"),
     "accom": ("Accommodation for work-related travel (ITAA97 s8-1, subject to nexus)"),
     "meals": ("Meal expenses during work-related travel (ITAA97 s8-1, 50% deductible)"),
@@ -91,6 +94,7 @@ ATO_ALIGNED_RATES_STANDARD = {
     "electronics": Decimal("0.8"),
     "professional_fees": Decimal("1.0"),
     "training": Decimal("1.0"),
+    "self_education": Decimal("1.0"),
     "travel": Decimal("1.0"),
     "accom": Decimal("1.0"),
     "meals": Decimal("0.5"),
@@ -110,6 +114,7 @@ ATO_ALIGNED_RATES_CONSERVATIVE = {
     "electronics": Decimal("0.6"),
     "professional_fees": Decimal("0.8"),
     "training": Decimal("0.8"),
+    "self_education": Decimal("0.8"),
     "travel": Decimal("0.8"),
     "accom": Decimal("0.8"),
     "meals": Decimal("0.3"),

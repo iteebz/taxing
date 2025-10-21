@@ -6,10 +6,10 @@ Deep dive into tax bracket math, household optimization, and deduction allocatio
 
 ```
 $0 - $18,200:          0%      (tax-free threshold)
-$18,200 - $45,000:     19%
-$45,000 - $120,000:    32.5%
-$120,000 - $180,000:   37%
-$180,000+:             45%
+$18,200 - $45,000:     16%
+$45,000 - $135,000:    30%
+$135,000 - $190,000:   37%
+$190,000+:             45%
 ```
 
 ---
@@ -53,22 +53,22 @@ But Janice's threshold is exhausted. Routing deductions to Tyson defers his futu
 
 ### Example: $50,000 income
 
-Marginal rate = 32.5% (in the $45-120k bracket)
+Marginal rate = 30% (in the $45-135k bracket)
 Effective rate = total_tax / 50000
 
 ```
 Tax calculation:
   $0-$18,200:        $0 (0% of $18,200)
-  $18,200-$45,000:   $26,800 * 0.19 = $5,092
-  $45,000-$50,000:   $5,000 * 0.325 = $1,625
+  $18,200-$45,000:   $26,800 * 0.16 = $4,288
+  $45,000-$50,000:   $5,000 * 0.30 = $1,500
   
-Total tax = $6,717
-Effective rate = $6,717 / $50,000 = 13.4%
+Total tax = $5,788
+Effective rate = $5,788 / $50,000 = 11.6%
 ```
 
 **Deduction impact**:
-- Extra $1,000 deduction saves $325 (32.5% marginal)
-- NOT 13.4% (effective rate)
+- Extra $1,000 deduction saves $300 (30% marginal)
+- NOT 11.6% (effective rate)
 
 ---
 

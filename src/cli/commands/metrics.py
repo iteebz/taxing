@@ -24,11 +24,17 @@ def handle(args):
 
     print(f"\nCoverage Metrics - FY{fy}")
     print("-" * 70)
-    print(f"{'Transactions Categorized':<35} {cov['pct_txns']:>6.1f}% ({cov['count_labeled']}/{cov['count_total']})")
-    print(f"{'Outbound Spending Categorized':<35} {cov['pct_debit']:>6.1f}% (${cov['debit_labeled']:>12,.0f}/${cov['debit_total']:>12,.0f})")
-    print(f"{'Inbound Income Categorized':<35} {cov['pct_credit']:>6.1f}% (${cov['credit_labeled']:>12,.0f}/${cov['credit_total']:>12,.0f})")
+    print(
+        f"{'Transactions Categorized':<35} {cov['pct_txns']:>6.1f}% ({cov['count_labeled']}/{cov['count_total']})"
+    )
+    print(
+        f"{'Outbound Spending Categorized':<35} {cov['pct_debit']:>6.1f}% (${cov['debit_labeled']:>12,.0f}/${cov['debit_total']:>12,.0f})"
+    )
+    print(
+        f"{'Inbound Income Categorized':<35} {cov['pct_credit']:>6.1f}% (${cov['credit_labeled']:>12,.0f}/${cov['credit_total']:>12,.0f})"
+    )
 
-    print(f"\nHousehold Metrics")
+    print("\nHousehold Metrics")
     print("-" * 70)
     print(f"{'Person':<20} {'Spending':<18} {'Income':<18} {'Transfers':<18}")
     print("-" * 70)

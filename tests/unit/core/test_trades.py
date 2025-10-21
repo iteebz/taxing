@@ -14,11 +14,11 @@ def test_calc_fy_after_july():
 
 
 def test_cgt_discount_eligible_over_365_days():
-    assert is_cgt_discount_eligible(366) is True
+    assert is_cgt_discount_eligible(365) is True
 
 
 def test_cgt_discount_not_eligible_under_365_days():
-    assert is_cgt_discount_eligible(365) is False
+    assert is_cgt_discount_eligible(364) is False
 
 
 def test_process_trades_simple_buy_sell():
@@ -49,7 +49,7 @@ def test_process_trades_simple_buy_sell():
     assert len(results) == 1
     result = results[0]
     assert result.fy == 2024
-    assert result.raw_profit.amount == Decimal(490)
+    assert result.raw_profit.amount == Decimal(480)
     assert result.action == "fifo"
 
 
@@ -160,7 +160,7 @@ def test_process_trades_mixed_tickers_no_cross_contamination():
 
     assert len(results) == 1
     result = results[0]
-    assert result.raw_profit.amount == Decimal(495)
+    assert result.raw_profit.amount == Decimal(490)
     assert result.fy == 2024
     assert result.action == "fifo"
 

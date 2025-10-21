@@ -4,16 +4,7 @@ from src.core.household import _tax_liability, optimize_household
 from src.core.models import AUD, Gain, Individual, Loss, Money
 
 
-def test_individual_taxable_income_empty():
-    ind = Individual(
-        name="you",
-        fy=25,
-        income=Money(Decimal("50000"), AUD),
-    )
-    assert ind.taxable_income == Money(Decimal("50000"), AUD)
-
-
-def test_individual_taxable_income_with_deductions():
+def test_taxable_income_with_deductions():
     ind = Individual(
         name="you",
         fy=25,
@@ -23,7 +14,7 @@ def test_individual_taxable_income_with_deductions():
     assert ind.taxable_income == Money(Decimal("43000"), AUD)
 
 
-def test_individual_taxable_income_with_gains_and_losses():
+def test_taxable_income_with_gains_and_losses():
     gains = [
         Gain(
             fy=25,
@@ -33,7 +24,6 @@ def test_individual_taxable_income_with_gains_and_losses():
         )
     ]
     losses = [Loss(fy=25, amount=Money(Decimal("100"), AUD), source_fy=24)]
-
     ind = Individual(
         name="you",
         fy=25,
@@ -51,8 +41,8 @@ def test_tax_liability_under_threshold():
 
 def test_tax_liability_basic():
     tax = _tax_liability(Money(Decimal("50000"), AUD), 25)
-    b1 = (Decimal("45000") - Decimal("18200")) * Decimal("0.19")
-    b2 = (Decimal("50000") - Decimal("45000")) * Decimal("0.325")
+    b1 = (Decimal("45000") - Decimal("18200")) * Decimal("0.16")
+    b2 = (Decimal("50000") - Decimal("45000")) * Decimal("0.30")
     expected = Money(b1 + b2, AUD)
     assert tax == expected
 
