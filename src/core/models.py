@@ -1,7 +1,7 @@
-from typing import Protocol, Set, NewType
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
+from typing import NewType, Protocol
 
 Currency = NewType("Currency", str)
 AUD = Currency("AUD")
@@ -36,19 +36,19 @@ class Transaction:
     description: str
     source_bank: str
     source_person: str
-    category: Set[str] | None = None
+    category: set[str] | None = None
     is_transfer: bool = False
 
 
 class Classifier(Protocol):
-    def classify(self, description: str) -> Set[str]:
+    def classify(self, description: str) -> set[str]:
         ...
 
 
 class Deducer(Protocol):
     def deduce(
-        self, 
-        txns: list[Transaction], 
+        self,
+        txns: list[Transaction],
         weights: dict[str, float]
     ) -> dict[str, Money]:
         ...

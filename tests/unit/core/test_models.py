@@ -1,6 +1,8 @@
-from decimal import Decimal
 from datetime import date
+from decimal import Decimal
+
 import pytest
+
 from src.core.models import Money, Transaction
 
 
