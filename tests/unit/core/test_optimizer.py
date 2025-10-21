@@ -223,7 +223,7 @@ def test_greedy_allocation_two_persons_different_brackets():
 
 
 def test_greedy_allocation_respects_headroom():
-    """Deductions don't exceed bracket headroom."""
+    """Deductions capped at bracket headroom with sufficient total headroom."""
     janice = Individual(
         name="janice",
         employment_income=Money(Decimal("40000"), AUD),
@@ -233,16 +233,27 @@ def test_greedy_allocation_respects_headroom():
         ],
         available_losses=Money(Decimal("0"), AUD),
     )
+    tyson = Individual(
+        name="tyson",
+        employment_income=Money(Decimal("100000"), AUD),
+        tax_brackets=[
+            (Decimal("0"), Decimal("0.16")),
+            (Decimal("45000"), Decimal("0.30")),
+            (Decimal("135000"), Decimal("0.37")),
+        ],
+        available_losses=Money(Decimal("0"), AUD),
+    )
 
-    year = Year(fy=25, persons={"janice": janice})
+    year = Year(fy=25, persons={"janice": janice, "tyson": tyson})
 
     deductions = [
-        Money(Decimal("10000"), AUD),
+        Money(Decimal("40000"), AUD),
     ]
 
     allocation = greedy_allocation(year, deductions)
 
     assert allocation["janice"] == Money(Decimal("5000"), AUD)
+    assert allocation["tyson"] == Money(Decimal("35000"), AUD)
 
 
 def test_greedy_allocation_multiple_persons_fills_lowest_first():
@@ -334,3 +345,25 @@ def test_tax_savings_different_brackets():
 
     assert janice_savings == Decimal("3000")
     assert tyson_savings == Decimal("0")
+
+
+def test_greedy_allocation_unallocable_deductions_raises():
+    """Deductions exceeding total headroom raise ValueError."""
+    janice = Individual(
+        name="janice",
+        employment_income=Money(Decimal("40000"), AUD),
+        tax_brackets=[
+            (Decimal("0"), Decimal("0.16")),
+            (Decimal("45000"), Decimal("0.30")),
+        ],
+        available_losses=Money(Decimal("0"), AUD),
+    )
+
+    year = Year(fy=25, persons={"janice": janice})
+    deductions = [Money(Decimal("100000"), AUD)]
+
+    try:
+        greedy_allocation(year, deductions)
+        raise AssertionError("Expected ValueError for unallocable deductions")
+    except ValueError as e:
+        assert "unallocable" in str(e).lower()

@@ -51,9 +51,9 @@ def test_tax_liability_under_threshold():
 
 def test_tax_liability_basic():
     tax = _tax_liability(Money(Decimal("50000"), AUD), 25)
-    bracket1 = (Decimal("45000") - Decimal("18200")) * Decimal("0.19")
-    bracket2 = (Decimal("50000") - Decimal("45000")) * Decimal("0.325")
-    expected = Money(bracket1 + bracket2, AUD)
+    b1 = (Decimal("45000") - Decimal("18200")) * Decimal("0.19")
+    b2 = (Decimal("50000") - Decimal("45000")) * Decimal("0.325")
+    expected = Money(b1 + b2, AUD)
     assert tax == expected
 
 
@@ -121,4 +121,4 @@ def test_optimize_household_household_tax():
 
     result = optimize_household(yours, janice)
 
-    assert result.household_tax == result.your_tax + result.janice_tax
+    assert result.total == result.your_tax + result.janice_tax

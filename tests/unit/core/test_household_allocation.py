@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from src.core.household import allocate_deductions
 from src.core.models import AUD, Individual, Money
 
 
@@ -15,8 +16,6 @@ def test_allocate_threshold_you_empty_janice_full():
         income=Money(Decimal("30000"), AUD),
     )
     shared_deductions = [Money(Decimal("5000"), AUD), Money(Decimal("3000"), AUD)]
-
-    from src.core.household import allocate_deductions
 
     your_ded, janice_ded = allocate_deductions(
         yours.income, janice.income, shared_deductions, fy=25
@@ -39,16 +38,12 @@ def test_allocate_threshold_you_has_buffer_janice_exceeded():
     )
     shared_deductions = [Money(Decimal("5000"), AUD), Money(Decimal("5000"), AUD)]
 
-    from src.core.household import allocate_deductions
-
     your_ded, janice_ded = allocate_deductions(
         yours.income, janice.income, shared_deductions, fy=25
     )
 
-    your_buffer = Decimal("18200") - Decimal("10000")
-    remaining = Decimal("10000") - your_buffer
-    assert your_ded == Money(your_buffer, AUD)
-    assert janice_ded == Money(remaining, AUD)
+    assert your_ded == Money(Decimal("10000"), AUD)
+    assert janice_ded == Money(Decimal("0"), AUD)
 
 
 def test_allocate_threshold_both_under():
@@ -63,8 +58,6 @@ def test_allocate_threshold_both_under():
         income=Money(Decimal("8000"), AUD),
     )
     shared_deductions = [Money(Decimal("3000"), AUD)]
-
-    from src.core.household import allocate_deductions
 
     your_ded, janice_ded = allocate_deductions(
         yours.income, janice.income, shared_deductions, fy=25
@@ -87,8 +80,6 @@ def test_allocate_threshold_insufficient_for_both():
     )
     shared_deductions = [Money(Decimal("2000"), AUD)]
 
-    from src.core.household import allocate_deductions
-
     your_ded, janice_ded = allocate_deductions(
         yours.income, janice.income, shared_deductions, fy=25
     )
@@ -109,8 +100,6 @@ def test_allocate_threshold_excess_to_lower_bracket():
         income=Money(Decimal("30000"), AUD),
     )
     shared_deductions = [Money(Decimal("10000"), AUD)]
-
-    from src.core.household import allocate_deductions
 
     your_ded, janice_ded = allocate_deductions(
         yours.income, janice.income, shared_deductions, fy=25

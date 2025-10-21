@@ -26,44 +26,42 @@ def allocate_deductions(
     threshold = TAX_FREE_THRESHOLD.get(fy, Decimal("18200"))
     total_ded = sum(shared_deductions, Money(Decimal("0"), AUD))
 
-    your_buffer = max(Decimal("0"), threshold - your_income.amount)
-    janice_buffer = max(Decimal("0"), threshold - janice_income.amount)
+    your_buf = max(Decimal("0"), threshold - your_income.amount)
+    janice_buf = max(Decimal("0"), threshold - janice_income.amount)
 
     your_alloc = Money(Decimal("0"), AUD)
     janice_alloc = Money(Decimal("0"), AUD)
-    remaining = total_ded.amount
+    remain = total_ded.amount
 
-    if your_buffer > 0:
-        take_your = min(your_buffer, remaining)
-        your_alloc = Money(take_your, AUD)
-        remaining -= take_your
+    if your_buf > 0:
+        your_alloc = Money(min(your_buf, remain), AUD)
+        remain -= your_alloc.amount
 
-    if remaining > 0 and janice_buffer > 0:
-        take_janice = min(janice_buffer, remaining)
-        janice_alloc = Money(janice_alloc.amount + take_janice, AUD)
-        remaining -= take_janice
+    if remain > 0 and janice_buf > 0:
+        janice_alloc = Money(min(janice_buf, remain), AUD)
+        remain -= janice_alloc.amount
 
-    if remaining > 0:
+    if remain > 0:
         your_rate = _tax_rate(your_income.amount, fy)
         janice_rate = _tax_rate(janice_income.amount, fy)
 
         if janice_rate < your_rate:
-            janice_alloc = Money(janice_alloc.amount + remaining, AUD)
+            janice_alloc = Money(janice_alloc.amount + remain, AUD)
         else:
-            your_alloc = Money(your_alloc.amount + remaining, AUD)
+            your_alloc = Money(your_alloc.amount + remain, AUD)
 
     return your_alloc, janice_alloc
 
 
 @dataclass(frozen=True)
-class HouseholdAllocation:
+class Allocation:
     yours: Individual
     janice: Individual
     your_tax: Money
     janice_tax: Money
 
     @property
-    def household_tax(self) -> Money:
+    def total(self) -> Money:
         return self.your_tax + self.janice_tax
 
 
@@ -95,15 +93,14 @@ def _tax_liability(income: Money, fy: int) -> Money:
 
     brackets = BRACKETS.get(fy, BRACKETS[25])
     tax = Decimal("0")
-    prev_threshold = 0
 
-    for threshold, rate in brackets:
-        if amt <= prev_threshold:
+    for i, (threshold, rate) in enumerate(brackets):
+        if amt <= threshold:
             break
-        taxable_in_bracket = min(amt, Decimal(threshold)) - Decimal(prev_threshold)
-        if taxable_in_bracket > 0:
-            tax += taxable_in_bracket * rate
-        prev_threshold = threshold
+        nxt = brackets[i + 1][0] if i + 1 < len(brackets) else amt
+        taxable = min(amt, nxt) - threshold
+        if taxable > 0:
+            tax += taxable * rate
 
     return Money(tax, AUD)
 
@@ -111,7 +108,7 @@ def _tax_liability(income: Money, fy: int) -> Money:
 def optimize_household(
     yours: Individual,
     janice: Individual,
-) -> HouseholdAllocation:
+) -> Allocation:
     """Allocate deductions & gains to minimize household tax.
 
     Strategy:
@@ -122,12 +119,12 @@ def optimize_household(
     your_rate = _tax_rate(yours.income.amount, yours.fy)
     janice_rate = _tax_rate(janice.income.amount, janice.fy)
 
-    your_alloc = yours
-    janice_alloc = janice
+    your_a = yours
+    janice_a = janice
 
     if janice_rate < your_rate:
         total_ded = sum(yours.deductions + janice.deductions, Money(Decimal("0"), AUD))
-        your_alloc = Individual(
+        your_a = Individual(
             name=yours.name,
             fy=yours.fy,
             income=yours.income,
@@ -135,7 +132,7 @@ def optimize_household(
             gains=yours.gains,
             losses=yours.losses,
         )
-        janice_alloc = Individual(
+        janice_a = Individual(
             name=janice.name,
             fy=janice.fy,
             income=janice.income,
@@ -144,12 +141,12 @@ def optimize_household(
             losses=janice.losses,
         )
 
-    your_tax = _tax_liability(your_alloc.taxable_income, your_alloc.fy)
-    janice_tax = _tax_liability(janice_alloc.taxable_income, janice_alloc.fy)
+    your_tax = _tax_liability(your_a.taxable_income, your_a.fy)
+    janice_tax = _tax_liability(janice_a.taxable_income, janice_a.fy)
 
-    return HouseholdAllocation(
-        yours=your_alloc,
-        janice=janice_alloc,
+    return Allocation(
+        yours=your_a,
+        janice=janice_a,
         your_tax=your_tax,
         janice_tax=janice_tax,
     )

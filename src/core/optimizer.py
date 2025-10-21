@@ -102,6 +102,9 @@ def greedy_allocation(
     Returns:
         Dict mapping person name -> Money allocated
 
+    Raises:
+        ValueError: If total deductions exceed total available headroom
+
     Example:
         alice (50% bracket, $10k headroom) + bob (30% bracket, $50k headroom)
         $60k deductions:
@@ -110,8 +113,13 @@ def greedy_allocation(
     """
     result = {name: Money(Decimal("0"), AUD) for name in year.persons}
 
-    remaining = sum((d.amount for d in deductions), Decimal("0"))
+    total_deductions = sum((d.amount for d in deductions), Decimal("0"))
+    total_headroom = sum(bracket_headroom(p) for p in year.persons.values())
 
+    if total_deductions > total_headroom:
+        raise ValueError(f"Unallocable deductions: {total_deductions} > {total_headroom}")
+
+    remaining = total_deductions
     persons_by_bracket = sorted(
         year.persons.items(),
         key=lambda x: current_bracket(x[1]),

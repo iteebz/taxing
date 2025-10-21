@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
 from typing import NewType, Protocol
@@ -40,14 +40,12 @@ class Transaction:
     is_transfer: bool = False
     claimant: str | None = None
     sources: frozenset[str] = None
-    source_txn_ids: tuple[str, ...] = None
+    source_txn_ids: tuple[str, ...] = field(default_factory=tuple)
     personal_pct: Decimal = Decimal("0")
 
     def __post_init__(self):
         if self.sources is None:
             object.__setattr__(self, "sources", frozenset({self.source_bank}))
-        if self.source_txn_ids is None:
-            object.__setattr__(self, "source_txn_ids", ())
         if not isinstance(self.personal_pct, Decimal):
             object.__setattr__(self, "personal_pct", Decimal(str(self.personal_pct)))
         if self.personal_pct < 0 or self.personal_pct > 1:
@@ -195,26 +193,14 @@ class Property:
     owner: str
     fy: int
     occupancy_pct: Decimal
-    rents: list[Rent] = None
-    waters: list[Water] = None
-    councils: list[Council] = None
-    stratas: list[Strata] = None
-    capital_works: list[CapitalWorks] = None
-    interests: list[Interest] = None
+    rents: list[Rent] = field(default_factory=list)
+    waters: list[Water] = field(default_factory=list)
+    councils: list[Council] = field(default_factory=list)
+    stratas: list[Strata] = field(default_factory=list)
+    capital_works: list[CapitalWorks] = field(default_factory=list)
+    interests: list[Interest] = field(default_factory=list)
 
     def __post_init__(self):
-        if self.rents is None:
-            object.__setattr__(self, "rents", [])
-        if self.waters is None:
-            object.__setattr__(self, "waters", [])
-        if self.councils is None:
-            object.__setattr__(self, "councils", [])
-        if self.stratas is None:
-            object.__setattr__(self, "stratas", [])
-        if self.capital_works is None:
-            object.__setattr__(self, "capital_works", [])
-        if self.interests is None:
-            object.__setattr__(self, "interests", [])
         if not isinstance(self.occupancy_pct, Decimal):
             object.__setattr__(self, "occupancy_pct", Decimal(str(self.occupancy_pct)))
         if self.occupancy_pct < 0 or self.occupancy_pct > 1:
@@ -247,17 +233,9 @@ class Individual:
     name: str
     fy: int
     income: Money
-    deductions: list[Money] = None
-    gains: list[Gain] = None
-    losses: list[Loss] = None
-
-    def __post_init__(self):
-        if self.deductions is None:
-            object.__setattr__(self, "deductions", [])
-        if self.gains is None:
-            object.__setattr__(self, "gains", [])
-        if self.losses is None:
-            object.__setattr__(self, "losses", [])
+    deductions: list[Money] = field(default_factory=list)
+    gains: list[Gain] = field(default_factory=list)
+    losses: list[Loss] = field(default_factory=list)
 
     @property
     def total_deductions(self) -> Money:

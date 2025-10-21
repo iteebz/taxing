@@ -1,12 +1,13 @@
 from dataclasses import replace
+from datetime import date
 from decimal import Decimal
 
 from src.core.models import AUD, Gain, Money, Trade
 
 
-def calc_fy(date) -> int:
+def calc_fy(d: date) -> int:
     """Calculate financial year (FY starts July 1)."""
-    return date.year if date.month < 7 else date.year + 1
+    return d.year if d.month < 7 else d.year + 1
 
 
 def is_cgt_discount_eligible(hold_days: int) -> bool:
@@ -18,16 +19,17 @@ def process_trades(trades: list[Trade]) -> list[Gain]:
     """
     Process trades using FIFO with loss harvesting + CGT discount prioritization.
 
-    Strategy:
-    1. For each sell, prioritize loss positions (buy >= sell price)
-    2. Then prioritize 365+ day holdings for CGT discount
-    3. Fall back to FIFO (first in, first out)
-
-    CRITICAL: Buffer is keyed per code to prevent cross-ticker contamination.
+    Priority: losses > discounted (365+ days) > FIFO (oldest first).
+    Per-ticker buffers prevent cross-contamination.
     """
+
+    def sort_priority(lot: Trade, sell_price: Decimal, sell_date: date) -> tuple:
+        is_loss = lot.price.amount >= sell_price
+        is_discounted = (sell_date - lot.date).days > 365
+        return (not is_loss, not is_discounted, lot.date)
+
     results = []
     buffers: dict[str, list[Trade]] = {}
-
     sorted_trades = sorted(trades, key=lambda t: (t.code, t.date))
 
     for trade in sorted_trades:
@@ -40,22 +42,13 @@ def process_trades(trades: list[Trade]) -> list[Gain]:
             units_to_sell = trade.units
             fy = calc_fy(trade.date)
 
-            while len(buff) > 0 and units_to_sell > Decimal(0):
-                loss_positions = [t for t in buff if t.price.amount >= trade.price.amount]
-                disc_positions = [t for t in buff if (trade.date - t.date).days > 365]
-
-                if loss_positions:
-                    action = "loss"
-                    sell_lot = loss_positions[0]
-                elif disc_positions:
-                    action = "discount"
-                    sell_lot = disc_positions[0]
-                else:
-                    action = "fifo"
-                    sell_lot = buff[0]
-
+            while buff and units_to_sell > Decimal(0):
+                sell_lot = min(buff, key=lambda t: sort_priority(t, trade.price.amount, trade.date))
                 hold_days = (trade.date - sell_lot.date).days
                 is_discounted = is_cgt_discount_eligible(hold_days)
+
+                is_loss = sell_lot.price.amount >= trade.price.amount
+                action = "loss" if is_loss else ("discount" if is_discounted else "fifo")
 
                 if units_to_sell >= sell_lot.units:
                     profit = sell_lot.units * (trade.price.amount - sell_lot.price.amount)
@@ -73,7 +66,6 @@ def process_trades(trades: list[Trade]) -> list[Gain]:
 
                     buff.remove(sell_lot)
                     units_to_sell -= sell_lot.units
-
                 else:
                     profit = units_to_sell * (trade.price.amount - sell_lot.price.amount)
                     partial_fee = (units_to_sell / sell_lot.units) * sell_lot.fee.amount
@@ -94,8 +86,7 @@ def process_trades(trades: list[Trade]) -> list[Gain]:
                         units=sell_lot.units - units_to_sell,
                         fee=Money(sell_lot.fee.amount - partial_fee, AUD),
                     )
-                    idx = buff.index(sell_lot)
-                    buff[idx] = updated_lot
+                    buff[buff.index(sell_lot)] = updated_lot
                     units_to_sell = Decimal(0)
 
     return results
