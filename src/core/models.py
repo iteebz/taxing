@@ -144,9 +144,102 @@ class Asset:
 
 @dataclass(frozen=True)
 class Rent:
-    fy: int
+    date: date
     amount: Money
-    source_person: str
+    tenant: str
+    fy: int
+
+
+@dataclass(frozen=True)
+class Water:
+    date: date
+    amount: Money
+    fy: int
+
+
+@dataclass(frozen=True)
+class Council:
+    date: date
+    amount: Money
+    fy: int
+
+
+@dataclass(frozen=True)
+class Strata:
+    date: date
+    amount: Money
+    fy: int
+
+
+@dataclass(frozen=True)
+class CapitalWorks:
+    date: date
+    amount: Money
+    description: str
+    life_years: int
+    asset_id: str
+    fy: int
+
+
+@dataclass(frozen=True)
+class Interest:
+    date: date
+    amount: Money
+    loan_id: str
+    fy: int
+
+
+@dataclass(frozen=True)
+class Property:
+    address: str
+    owner: str
+    fy: int
+    occupancy_pct: Decimal
+    rents: list[Rent] = None
+    waters: list[Water] = None
+    councils: list[Council] = None
+    stratas: list[Strata] = None
+    capital_works: list[CapitalWorks] = None
+    interests: list[Interest] = None
+
+    def __post_init__(self):
+        if self.rents is None:
+            object.__setattr__(self, "rents", [])
+        if self.waters is None:
+            object.__setattr__(self, "waters", [])
+        if self.councils is None:
+            object.__setattr__(self, "councils", [])
+        if self.stratas is None:
+            object.__setattr__(self, "stratas", [])
+        if self.capital_works is None:
+            object.__setattr__(self, "capital_works", [])
+        if self.interests is None:
+            object.__setattr__(self, "interests", [])
+        if not isinstance(self.occupancy_pct, Decimal):
+            object.__setattr__(self, "occupancy_pct", Decimal(str(self.occupancy_pct)))
+        if self.occupancy_pct < 0 or self.occupancy_pct > 1:
+            raise ValueError(f"occupancy_pct must be 0.0-1.0, got {self.occupancy_pct}")
+
+    @property
+    def total_rental_income(self) -> Money:
+        if not self.rents:
+            return Money(Decimal("0"), AUD)
+        return sum((r.amount for r in self.rents), Money(Decimal("0"), AUD))
+
+    @property
+    def total_expenses(self) -> Money:
+        items = self.waters + self.councils + self.stratas
+        if not items:
+            return Money(Decimal("0"), AUD)
+        return sum((i.amount for i in items), Money(Decimal("0"), AUD))
+
+    @property
+    def deductible_expenses(self) -> Money:
+        return self.total_expenses * self.occupancy_pct
+
+    @property
+    def net_rental_income(self) -> Money:
+        return self.total_rental_income - self.deductible_expenses
 
 
 class Classifier(Protocol):

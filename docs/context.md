@@ -51,6 +51,14 @@ Reference-grade, AI-agent-friendly tax deduction automation for Australian house
 - Tests: 13 unit + 5 integration = 18 tests
 - Status: 205 tests passing
 
+**Phase 3c**: ✅ Complete (asset depreciation - prime cost)
+- Asset, Rent models (minimal: fy, description, cost, life_years, depreciation_method)
+- Prime cost depreciation (straight-line: cost / life_years per year)
+- calc_depreciation, calc_cumulative_depreciation, calc_book_value, depreciation_schedule
+- CLI: `taxing asset-depreciation --description "..." --cost 5000 --fy-purchased 25 --life-years 5`
+- Tests: 11 unit tests
+- Status: 237 tests passing
+
 ## entry point for new session
 
 1. Read this file (1 min)
@@ -98,14 +106,14 @@ just ci                # Full CI
 
 ## shopping list
 
-**Phase 3c** (Rental income + home office depreciation)
-- Rental income tracking (e.g., Janice renting FY25 only)
-- Shared expense allocation (rates, insurance, maintenance split by occupancy %)
-- Home office depreciation (appliances, fixtures, building improvements)
-- Audit trail for rental expenses vs. rental income
-- MVP: CSV loader, depreciation calculator, CLI command, ~8-10 tests
-- Status: Scoped for your PPOR + Janice rental arrangement (FY25 only)
-- *Note*: Does NOT include optimization logic (deduction routing); that's Phase 4
+**Phase 3c.2** (Rental income + expense allocation) — NEXT
+- Load rental income from CSV (tenant, amount, fy)
+- Load rental expenses (maintenance, repairs on rental portion)
+- Allocate property expenses to rental % (rates, insurance split by occupancy %)
+- Calculate net rental income/loss
+- Track loss carryforward integration (Phase 2c)
+- CLI: `taxing rental --fy 25 --property "123 Main St" --occupancy-pct 30`
+- Estimate: 4-6 hours
 
 **Phase 4** (Multi-person household optimization) — FUTURE
 - Model both your and Janice's tax positions separately (income, marginal rates, losses)
@@ -127,4 +135,9 @@ just ci                # Full CI
 
 ---
 
-**Last Updated**: Oct 21, 2025 | **Tests**: 205 passing | **Lint**: Clean
+**Last Updated**: Oct 21, 2025 | **Tests**: 237 passing | **Lint**: Clean
+
+## next immediate step
+
+**Phase 3c.2**: Rental income + expense allocation for your PPOR/Janice arrangement (FY25 only).
+Start with RentalIncome model and CSV loader.
