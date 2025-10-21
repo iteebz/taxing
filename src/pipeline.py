@@ -4,6 +4,7 @@ from pathlib import Path
 
 from src.core import classify, deduce, load_rules, process_trades
 from src.core.models import AUD, Deduction, Summary
+from src.core.transfers import is_transfer, reconcile_transfers
 from src.io import (
     ingest_trades_year,
     ingest_year,
@@ -45,7 +46,14 @@ def run(
         txns_person = [t for t in txns_all if t.source_person == person]
         trades_person = [t for t in trades_all if t.source_person == person]
 
-        txns_classified = [replace(t, category=classify(t.description, rules)) for t in txns_person]
+        txns_classified = [
+            replace(
+                t,
+                category=classify(t.description, rules),
+                is_transfer=is_transfer(replace(t, category=classify(t.description, rules))),
+            )
+            for t in txns_person
+        ]
 
         deductions_dict = deduce(txns_classified, weights)
         deductions = [Deduction(cat, amt) for cat, amt in deductions_dict.items()]
@@ -82,5 +90,8 @@ def run(
             "deductions": deductions,
             "gains_count": len(gains),
         }
+
+    transfers = reconcile_transfers(txns_all)
+    results["_transfers"] = transfers
 
     return results

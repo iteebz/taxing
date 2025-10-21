@@ -37,9 +37,10 @@ def test_pipeline_full_flow(tmp_path):
 
     result = run(tmp_path, 25)
 
-    assert len(result) == 2
+    assert len(result) == 3
     assert "tyson" in result
     assert "janice" in result
+    assert "_transfers" in result
 
     assert result["tyson"]["txn_count"] == 2
     assert result["tyson"]["classified_count"] == 2
