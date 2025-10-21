@@ -12,7 +12,7 @@ from src.core.transfers import (
 
 def _txn(
     desc: str,
-    person: str = "bob",
+    person: str = "janice",
     amount: Decimal = Decimal("100.00"),
     category: set[str] | None = None,
 ):
@@ -43,11 +43,11 @@ def test_is_transfer_none_category():
 
 
 def test_extract_recipient_transfer_to():
-    assert extract_recipient("TRANSFER TO ALICE") == "alice"
+    assert extract_recipient("TRANSFER TO JANICE") == "janice"
 
 
 def test_extract_recipient_direct_credit():
-    assert extract_recipient("DIRECT CREDIT 141000 ALICE") == "alice"
+    assert extract_recipient("DIRECT CREDIT 141000 JANICE") == "janice"
 
 
 def test_extract_recipient_transfer_to_ignore_bank():
@@ -66,10 +66,10 @@ def test_reconcile_empty():
 
 
 def test_reconcile_single_transfer():
-    txn = _txn("TRANSFER TO ALICE", category={"transfers"})
+    txn = _txn("TRANSFER TO TYSON", category={"transfers"})
     result = reconcile_transfers([txn])
     assert len(result) == 1
-    key = ("bob", "alice")
+    key = ("janice", "tyson")
     assert key in result
     assert result[key].amount.amount == Decimal("100.00")
     assert result[key].txn_count == 1
@@ -79,21 +79,21 @@ def test_reconcile_multiple_transfers_same_person():
     txn1 = Transaction(
         date=date(2024, 1, 1),
         amount=Money(Decimal("50.00"), AUD),
-        description="TRANSFER TO ALICE",
+        description="TRANSFER TO TYSON",
         source_bank="anz",
-        source_person="bob",
+        source_person="janice",
         category={"transfers"},
     )
     txn2 = Transaction(
         date=date(2024, 1, 5),
         amount=Money(Decimal("75.00"), AUD),
-        description="TRANSFER TO ALICE",
+        description="TRANSFER TO TYSON",
         source_bank="cba",
-        source_person="bob",
+        source_person="janice",
         category={"transfers"},
     )
     result = reconcile_transfers([txn1, txn2])
-    key = ("bob", "alice")
+    key = ("janice", "tyson")
     assert result[key].amount.amount == Decimal("125.00")
     assert result[key].txn_count == 2
     assert result[key].date_first == "2024-01-01"
@@ -102,32 +102,32 @@ def test_reconcile_multiple_transfers_same_person():
 
 def test_net_position_owes():
     transfers = reconcile_transfers(
-        [_txn("TRANSFER TO ALICE", person="bob", category={"transfers"})]
+        [_txn("TRANSFER TO ALICE", person="janice", category={"transfers"})]
     )
-    net = net_position(transfers, "bob")
+    net = net_position(transfers, "janice")
     assert net.amount == Decimal("100.00")
 
 
 def test_net_position_owed():
     transfers = reconcile_transfers(
-        [_txn("TRANSFER TO ALICE", person="bob", category={"transfers"})]
+        [_txn("TRANSFER TO TYSON", person="janice", category={"transfers"})]
     )
-    net = net_position(transfers, "alice")
+    net = net_position(transfers, "tyson")
     assert net.amount == Decimal("-100.00")
 
 
 def test_net_position_balanced():
-    bob_to_alice = _txn("TRANSFER TO ALICE", person="bob", category={"transfers"})
-    alice_to_bob = Transaction(
+    janice_to_tyson = _txn("TRANSFER TO TYSON", person="janice", category={"transfers"})
+    tyson_to_janice = Transaction(
         date=date(2024, 1, 2),
         amount=Money(Decimal("100.00"), AUD),
-        description="TRANSFER TO BOB",
+        description="TRANSFER TO JANICE",
         source_bank="anz",
-        source_person="alice",
+        source_person="tyson",
         category={"transfers"},
     )
-    transfers = reconcile_transfers([bob_to_alice, alice_to_bob])
-    bob_net = net_position(transfers, "bob")
-    alice_net = net_position(transfers, "alice")
-    assert bob_net.amount == Decimal("0.00")
-    assert alice_net.amount == Decimal("0.00")
+    transfers = reconcile_transfers([janice_to_tyson, tyson_to_janice])
+    janice_net = net_position(transfers, "janice")
+    tyson_net = net_position(transfers, "tyson")
+    assert janice_net.amount == Decimal("0.00")
+    assert tyson_net.amount == Decimal("0.00")

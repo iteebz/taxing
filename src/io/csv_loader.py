@@ -2,16 +2,16 @@ from dataclasses import fields
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
-from typing import Type, TypeVar
+from typing import TypeVar
 
 from src.core.models import AUD, Money
 
 T = TypeVar("T")
 
 
-def load_csv(path: Path, model_class: Type[T], fy: int) -> list[T]:
+def load_csv(path: Path, model_class: type[T], fy: int) -> list[T]:
     """Load CSV into list of dataclass instances.
-    
+
     CSV columns must match dataclass field names.
     Special handling for:
     - date: parsed from YYYY-MM-DD format
@@ -24,7 +24,9 @@ def load_csv(path: Path, model_class: Type[T], fy: int) -> list[T]:
     items = []
     try:
         with open(path) as f:
-            lines = [line.strip() for line in f if line.strip() and not line.strip().startswith("#")]
+            lines = [
+                line.strip() for line in f if line.strip() and not line.strip().startswith("#")
+            ]
             if not lines:
                 return []
 
@@ -52,7 +54,7 @@ def load_csv(path: Path, model_class: Type[T], fy: int) -> list[T]:
     return items
 
 
-def _parse_row(row: dict, model_class: Type[T], fy: int) -> T:
+def _parse_row(row: dict, model_class: type[T], fy: int) -> T:
     """Parse CSV row into dataclass instance."""
     kwargs = {}
 
@@ -70,13 +72,13 @@ def _parse_row(row: dict, model_class: Type[T], fy: int) -> T:
 
         value = row.get(field.name, "")
 
-        if field.type == date:
+        if field.type is date:
             kwargs[field.name] = date.fromisoformat(value)
-        elif field.type == Money:
+        elif field.type is Money:
             kwargs[field.name] = Money(Decimal(value), AUD)
-        elif field.type == int:
+        elif field.type is int:
             kwargs[field.name] = int(value)
-        elif field.type == Decimal:
+        elif field.type is Decimal:
             kwargs[field.name] = Decimal(value)
         else:
             kwargs[field.name] = value

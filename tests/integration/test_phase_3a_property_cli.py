@@ -15,7 +15,7 @@ class Args:
 def test_property_cli_complete(tmp_path, capsys):
     """Full CLI flow: load CSVs → aggregate → display."""
     fy = 25
-    person = "alice"
+    person = "tyson"
 
     property_dir = tmp_path / "archive" / str(fy) / person / "property"
     property_dir.mkdir(parents=True)
@@ -30,7 +30,7 @@ def test_property_cli_complete(tmp_path, capsys):
 
     captured = capsys.readouterr()
 
-    assert "alice" in captured.out
+    assert "tyson" in captured.out
     assert "FY25" in captured.out
     assert "4000" in captured.out or "4,000" in captured.out
     assert "Rent" in captured.out
@@ -43,7 +43,7 @@ def test_property_cli_complete(tmp_path, capsys):
 def test_property_cli_missing_property_dir(tmp_path, capsys):
     """No property directory returns graceful message."""
     fy = 25
-    person = "bob"
+    person = "janice"
 
     args = Args(fy=fy, person=person, base_dir=str(tmp_path))
     cmd_property(args)
@@ -57,7 +57,7 @@ def test_property_cli_missing_property_dir(tmp_path, capsys):
 def test_property_cli_partial_categories(tmp_path, capsys):
     """Only rent provided; other categories show zero."""
     fy = 25
-    person = "charlie"
+    person = "luna"
 
     property_dir = tmp_path / "archive" / str(fy) / person / "property"
     property_dir.mkdir(parents=True)

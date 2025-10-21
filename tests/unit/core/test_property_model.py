@@ -65,7 +65,9 @@ def test_property_deductible_expenses_30_percent():
 
 
 def test_property_net_rental_income():
-    rents = [Rent(date=date(2025, 7, 1), amount=Money(Decimal("2000"), AUD), tenant="janice", fy=25)]
+    rents = [
+        Rent(date=date(2025, 7, 1), amount=Money(Decimal("2000"), AUD), tenant="janice", fy=25)
+    ]
     waters = [Water(date=date(2025, 7, 1), amount=Money(Decimal("100"), AUD), fy=25)]
     councils = [Council(date=date(2025, 7, 1), amount=Money(Decimal("200"), AUD), fy=25)]
     stratas = [Strata(date=date(2025, 7, 1), amount=Money(Decimal("150"), AUD), fy=25)]
@@ -122,6 +124,6 @@ def test_property_invalid_occupancy_pct():
             fy=25,
             occupancy_pct=Decimal("1.5"),
         )
-        assert False, "Should raise ValueError"
+        raise AssertionError("Should raise ValueError")
     except ValueError as e:
         assert "occupancy_pct" in str(e)

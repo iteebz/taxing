@@ -31,7 +31,7 @@ def test_from_file():
 
 def test_env_overrides_file(monkeypatch):
     monkeypatch.setenv("FY", "fy26")
-    monkeypatch.setenv("PERSONS", "alice,bob")
+    monkeypatch.setenv("PERSONS", "tyson,janice")
 
     with tempfile.TemporaryDirectory() as tmpdir:
         config_file = Path(tmpdir) / "config"
@@ -40,7 +40,7 @@ def test_env_overrides_file(monkeypatch):
         cfg = Config.from_env(config_file)
 
         assert cfg.fy == "fy26"
-        assert cfg.persons == ["alice", "bob"]
+        assert cfg.persons == ["tyson", "janice"]
 
 
 def test_missing_file():

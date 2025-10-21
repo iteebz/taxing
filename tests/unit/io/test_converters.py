@@ -30,17 +30,17 @@ def test_beem_received(sample_beem_row):
     assert txn.date == date(2024, 10, 3)
     assert txn.amount.amount == Decimal("250.00")
     assert txn.amount.currency == AUD
-    assert "from alice" in txn.description
+    assert "from tyson" in txn.description
     assert "dinner split" in txn.description
     assert txn.source_bank == "beem"
 
 
 def test_beem_sent(sample_beem_row):
-    sample_beem_row["recipient"] = "alice"
+    sample_beem_row["recipient"] = "tyson"
     sample_beem_row["payer"] = "tysonchan"
     txn = beem(sample_beem_row, "tysonchan")
     assert txn.amount.amount == Decimal("-250.00")
-    assert "to alice" in txn.description
+    assert "to tyson" in txn.description
 
 
 def test_wise_out(sample_wise_row):
@@ -48,7 +48,7 @@ def test_wise_out(sample_wise_row):
     assert txn.date == date(2024, 10, 4)
     assert txn.amount.amount == Decimal("-302.00")
     assert txn.amount.currency == "USD"
-    assert "alice smith" in txn.description
+    assert "janice quach" in txn.description
     assert txn.source_bank == "wise"
 
 

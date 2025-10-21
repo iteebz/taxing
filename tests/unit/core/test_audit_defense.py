@@ -38,15 +38,15 @@ def test_validate_loss_reconciliation_wrong_sequence():
 
 def test_detect_suspicious_patterns_zero_income_with_deductions():
     persons = {
-        "alice": Individual(
-            name="alice",
+        "tyson": Individual(
+            name="tyson",
             employment_income=Money(Decimal("0"), AUD),
             tax_brackets=[],
             available_losses=Money(Decimal("0"), AUD),
         )
     }
     deductions = {
-        "alice": [
+        "tyson": [
             Deduction(
                 category="software",
                 amount=Money(Decimal("5000"), AUD),
@@ -63,15 +63,15 @@ def test_detect_suspicious_patterns_zero_income_with_deductions():
 
 def test_detect_suspicious_patterns_high_deduction_rate():
     persons = {
-        "alice": Individual(
-            name="alice",
+        "tyson": Individual(
+            name="tyson",
             employment_income=Money(Decimal("100000"), AUD),
             tax_brackets=[],
             available_losses=Money(Decimal("0"), AUD),
         )
     }
     deductions = {
-        "alice": [
+        "tyson": [
             Deduction(
                 category="software",
                 amount=Money(Decimal("60000"), AUD),
@@ -88,15 +88,15 @@ def test_detect_suspicious_patterns_high_deduction_rate():
 
 def test_detect_suspicious_patterns_extreme_deduction_rate():
     persons = {
-        "alice": Individual(
-            name="alice",
+        "tyson": Individual(
+            name="tyson",
             employment_income=Money(Decimal("100000"), AUD),
             tax_brackets=[],
             available_losses=Money(Decimal("0"), AUD),
         )
     }
     deductions = {
-        "alice": [
+        "tyson": [
             Deduction(
                 category="software",
                 amount=Money(Decimal("80000"), AUD),
@@ -113,15 +113,15 @@ def test_detect_suspicious_patterns_extreme_deduction_rate():
 
 def test_detect_suspicious_patterns_normal_rate():
     persons = {
-        "alice": Individual(
-            name="alice",
+        "tyson": Individual(
+            name="tyson",
             employment_income=Money(Decimal("100000"), AUD),
             tax_brackets=[],
             available_losses=Money(Decimal("0"), AUD),
         )
     }
     deductions = {
-        "alice": [
+        "tyson": [
             Deduction(
                 category="software",
                 amount=Money(Decimal("10000"), AUD),

@@ -106,7 +106,7 @@ def test_depreciation_schedule_five_year_asset():
         life_years=5,
     )
     schedule = depreciation_schedule(asset, 29)
-    
+
     assert len(schedule) == 5
     assert all(v == Money(Decimal("200"), AUD) for v in schedule.values())
 
@@ -119,7 +119,7 @@ def test_depreciation_schedule_starts_at_purchase_year():
         life_years=5,
     )
     schedule = depreciation_schedule(asset, 30)
-    
+
     assert 25 not in schedule
     assert 26 in schedule
     assert 30 in schedule

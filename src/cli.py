@@ -3,7 +3,7 @@ import json
 from decimal import Decimal
 from pathlib import Path
 
-from src.core.depreciation import calc_depreciation, depreciation_schedule
+from src.core.depreciation import depreciation_schedule
 from src.core.models import AUD, Asset, Money
 from src.core.optimizer import Individual, Year, greedy_allocation
 from src.core.planning import plan_gains
@@ -192,25 +192,21 @@ def cmd_asset_depreciation(args):
         cost=Money(Decimal(str(args.cost)), AUD),
         life_years=args.life_years,
     )
-    
+
     to_fy = args.to_fy or args.fy_purchased + 5
     schedule = depreciation_schedule(asset, to_fy)
-    
+
     print(f"\nAsset Depreciation Schedule - {asset.description}")
     print(f"Cost: ${asset.cost.amount:,.2f} | Life: {asset.life_years} years | Method: Prime Cost")
     print("-" * 60)
     print(f"{'Year':<10} {'Annual Deduction':<20} {'Cumulative':<20}")
     print("-" * 60)
-    
+
     cumulative = Decimal("0")
     for fy in sorted(schedule.keys()):
         annual = schedule[fy].amount
         cumulative += annual
-        print(
-            f"FY{fy:<8} "
-            f"${annual:<19,.2f} "
-            f"${cumulative:<19,.2f}"
-        )
+        print(f"FY{fy:<8} ${annual:<19,.2f} ${cumulative:<19,.2f}")
 
 
 def main():
@@ -243,18 +239,12 @@ def main():
     plan_parser.set_defaults(func=cmd_gains_plan)
 
     asset_parser = subparsers.add_parser("asset-depreciation", help="Calculate asset depreciation")
-    asset_parser.add_argument(
-        "--description", required=True, help="Asset description"
-    )
-    asset_parser.add_argument(
-        "--cost", type=float, required=True, help="Asset cost in AUD"
-    )
+    asset_parser.add_argument("--description", required=True, help="Asset description")
+    asset_parser.add_argument("--cost", type=float, required=True, help="Asset cost in AUD")
     asset_parser.add_argument(
         "--fy-purchased", type=int, required=True, help="FY purchased (e.g., 25)"
     )
-    asset_parser.add_argument(
-        "--life-years", type=int, required=True, help="Useful life in years"
-    )
+    asset_parser.add_argument("--life-years", type=int, required=True, help="Useful life in years")
     asset_parser.add_argument(
         "--to-fy", type=int, help="Generate schedule to FY (default: fy_purchased + 5)"
     )

@@ -21,7 +21,7 @@ def load_property(
     occupancy_pct: Decimal,
 ) -> Property:
     """Load complete property record from CSV files.
-    
+
     Expected structure:
     archive/{fy}/{address}/
       ├── rent.csv (date, amount, tenant)

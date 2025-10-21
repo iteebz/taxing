@@ -9,13 +9,6 @@
 - **Type safety**: Decimal + Money prevent silent arithmetic bugs (USD vs AUD)
 - **No globals**: Config passed as arguments (not `conf.py` globals)
 
-### why not tax-og architecture
-1. **Global state**: `conf.py` at import time → hard to test, compose, run in parallel
-2. **I/O tangled with logic**: CSV read/write mixed with calculations
-3. **Imperative scripts**: Sequential 1_ingest.py → 2_label.py → hard to reuse
-4. **No type safety**: Strings everywhere, easy to mix currencies or forget categories
-5. **Opaque rules**: Text files with no validation on load
-
 ## domain model
 
 ### Money (type-safe arithmetic)

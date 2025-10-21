@@ -6,7 +6,7 @@ from src.io.property import load_property_expenses
 def test_load_property_expenses_complete(tmp_path):
     """Load all four property expense categories."""
     fy = 25
-    person = "alice"
+    person = "tyson"
 
     property_dir = tmp_path / "archive" / str(fy) / person / "property"
     property_dir.mkdir(parents=True)
@@ -27,14 +27,14 @@ def test_load_property_expenses_complete(tmp_path):
 
 def test_load_property_expenses_missing_directory(tmp_path):
     """Missing property directory returns empty list."""
-    expenses = load_property_expenses(tmp_path, 25, "alice")
+    expenses = load_property_expenses(tmp_path, 25, "tyson")
     assert expenses == []
 
 
 def test_load_property_expenses_partial_categories(tmp_path):
     """Load subset of categories gracefully."""
     fy = 25
-    person = "alice"
+    person = "tyson"
 
     property_dir = tmp_path / "archive" / str(fy) / person / "property"
     property_dir.mkdir(parents=True)
@@ -50,7 +50,7 @@ def test_load_property_expenses_partial_categories(tmp_path):
 def test_load_property_expenses_decimal_values(tmp_path):
     """Load decimal amounts correctly."""
     fy = 25
-    person = "alice"
+    person = "tyson"
 
     property_dir = tmp_path / "archive" / str(fy) / person / "property"
     property_dir.mkdir(parents=True)
@@ -67,7 +67,7 @@ def test_load_property_expenses_decimal_values(tmp_path):
 def test_load_property_expenses_skip_comments(tmp_path):
     """Skip comment lines in CSV."""
     fy = 25
-    person = "alice"
+    person = "tyson"
 
     property_dir = tmp_path / "archive" / str(fy) / person / "property"
     property_dir.mkdir(parents=True)
@@ -83,7 +83,7 @@ def test_load_property_expenses_skip_comments(tmp_path):
 def test_load_property_expenses_skip_invalid(tmp_path):
     """Skip invalid amount lines."""
     fy = 25
-    person = "alice"
+    person = "tyson"
 
     property_dir = tmp_path / "archive" / str(fy) / person / "property"
     property_dir.mkdir(parents=True)
@@ -100,7 +100,7 @@ def test_load_property_expenses_skip_invalid(tmp_path):
 def test_load_property_expenses_empty_file(tmp_path):
     """Empty file returns no expenses."""
     fy = 25
-    person = "alice"
+    person = "tyson"
 
     property_dir = tmp_path / "archive" / str(fy) / person / "property"
     property_dir.mkdir(parents=True)

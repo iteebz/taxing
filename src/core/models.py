@@ -242,6 +242,46 @@ class Property:
         return self.total_rental_income - self.deductible_expenses
 
 
+@dataclass(frozen=True)
+class Individual:
+    name: str
+    fy: int
+    income: Money
+    deductions: list[Money] = None
+    gains: list[Gain] = None
+    losses: list[Loss] = None
+
+    def __post_init__(self):
+        if self.deductions is None:
+            object.__setattr__(self, "deductions", [])
+        if self.gains is None:
+            object.__setattr__(self, "gains", [])
+        if self.losses is None:
+            object.__setattr__(self, "losses", [])
+
+    @property
+    def total_deductions(self) -> Money:
+        if not self.deductions:
+            return Money(Decimal("0"), AUD)
+        return sum(self.deductions, Money(Decimal("0"), AUD))
+
+    @property
+    def total_gains(self) -> Money:
+        if not self.gains:
+            return Money(Decimal("0"), AUD)
+        return sum((g.taxable_gain for g in self.gains), Money(Decimal("0"), AUD))
+
+    @property
+    def total_losses(self) -> Money:
+        if not self.losses:
+            return Money(Decimal("0"), AUD)
+        return sum((loss.amount for loss in self.losses), Money(Decimal("0"), AUD))
+
+    @property
+    def taxable_income(self) -> Money:
+        return self.income + self.total_gains - self.total_deductions - self.total_losses
+
+
 class Classifier(Protocol):
     def classify(self, description: str) -> set[str]: ...
 
