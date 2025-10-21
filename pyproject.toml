@@ -13,6 +13,7 @@ dependencies = [
 
 [project.scripts]
 tax = "src.cli:main"
+taxing = "src.cli:main"
 
 [tool.poetry]
 packages = [

@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from src.cli import cmd_optimize
+from src.cli.commands.optimize import handle as cmd_optimize
 
 
 class Args:

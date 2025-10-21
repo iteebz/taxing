@@ -2,7 +2,7 @@
 
 from decimal import Decimal
 
-from src.cli import cmd_gains_plan
+from src.cli.commands.gains import handle as cmd_gains_plan
 from src.core.models import AUD, Gain, Loss, Money
 
 
