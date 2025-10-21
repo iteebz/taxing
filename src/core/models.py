@@ -40,6 +40,25 @@ class Transaction:
     is_transfer: bool = False
 
 
+@dataclass(frozen=True)
+class Trade:
+    date: date
+    code: str
+    action: str
+    units: Decimal
+    price: Money
+    fee: Money
+    source_person: str
+
+
+@dataclass(frozen=True)
+class Gain:
+    fy: int
+    raw_profit: Money
+    taxable_gain: Money
+    action: str
+
+
 class Classifier(Protocol):
     def classify(self, description: str) -> set[str]: ...
 

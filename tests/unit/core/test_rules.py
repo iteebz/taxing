@@ -54,9 +54,7 @@ def test_load_from_files(tmp_path):
     rules_dir = tmp_path / "rules"
     rules_dir.mkdir()
 
-    (rules_dir / "groceries.txt").write_text(
-        "COLES\nCOLES CHECKOUT\nWOOLWORTHS\n# comment\n\nALDI"
-    )
+    (rules_dir / "groceries.txt").write_text("COLES\nCOLES CHECKOUT\nWOOLWORTHS\n# comment\n\nALDI")
     (rules_dir / "transport.txt").write_text("UBER\nLYFT\n")
 
     result = load_rules(tmp_path)

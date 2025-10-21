@@ -11,11 +11,13 @@ install:
     @poetry lock
     @poetry install --with dev
 
-ci: clean install test
-    @echo "✓ CI passed"
+ci: format fix test build
 
 test:
     @poetry run pytest tests/ -v
+
+build:
+    @poetry build
 
 cov:
     @poetry run pytest tests/ --cov=src --cov-report=term-missing

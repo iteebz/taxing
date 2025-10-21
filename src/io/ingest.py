@@ -1,8 +1,9 @@
+from decimal import Decimal
 from pathlib import Path
 
 import pandas as pd
 
-from src.core.models import Transaction
+from src.core.models import AUD, Money, Trade, Transaction
 from src.io.converters import CONVERTERS
 
 BANK_FIELD_SPECS = {
@@ -153,3 +154,55 @@ def ingest_dir(
 
     all_txns.sort(key=lambda t: (t.date, t.source_person, t.source_bank))
     return all_txns
+
+
+def ingest_trades(path: str | Path, person: str) -> list[Trade]:
+    """
+    Load equity trades from CSV.
+
+    Format: date, code, action, units, price, fee, source_person
+    """
+    df = pd.read_csv(path)
+    if df.empty:
+        return []
+
+    trades = []
+    for _, row in df.iterrows():
+        trade = Trade(
+            date=pd.to_datetime(row["date"]).date(),
+            code=row["code"],
+            action=row["action"],
+            units=Decimal(row["units"]),
+            price=Money(Decimal(row["price"]), AUD),
+            fee=Money(Decimal(row["fee"]), AUD),
+            source_person=person,
+        )
+        trades.append(trade)
+
+    return trades
+
+
+def ingest_trades_dir(base_dir: str | Path, persons: list[str] | None = None) -> list[Trade]:
+    """
+    Load all equity trades from directory structure.
+
+    Looks for {base_dir}/{person}/raw/equity.csv
+    """
+    all_trades = []
+    base = Path(base_dir)
+
+    if persons is None:
+        persons = [p.name for p in base.iterdir() if p.is_dir()]
+
+    for person in sorted(persons):
+        person_dir = base / person / "raw"
+        if not person_dir.exists():
+            continue
+
+        equity_file = person_dir / "equity.csv"
+        if equity_file.exists():
+            trades = ingest_trades(equity_file, person)
+            all_trades.extend(trades)
+
+    all_trades.sort(key=lambda t: (t.code, t.date))
+    return all_trades

@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from src.core.models import Money, Transaction
+from src.core.models import Gain, Money, Trade, Transaction
 
 
 def txns_to_csv(txns: list[Transaction], path: str | Path) -> None:
@@ -101,8 +101,7 @@ def deductions_from_csv(path: str | Path) -> dict[str, Money]:
         return {}
 
     return {
-        row["category"]: Money(Decimal(row["amount"]), row["currency"])
-        for _, row in df.iterrows()
+        row["category"]: Money(Decimal(row["amount"]), row["currency"]) for _, row in df.iterrows()
     }
 
 
@@ -126,6 +125,89 @@ def summary_from_csv(path: str | Path) -> dict[str, Money]:
         return {}
 
     return {
-        row["category"]: Money(Decimal(row["total"]), row["currency"])
-        for _, row in df.iterrows()
+        row["category"]: Money(Decimal(row["total"]), row["currency"]) for _, row in df.iterrows()
     }
+
+
+def trades_to_csv(trades: list[Trade], path: str | Path) -> None:
+    """Write trades to CSV."""
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+
+    columns = ["date", "code", "action", "units", "price", "fee", "source_person"]
+
+    data = [
+        {
+            "date": t.date.isoformat(),
+            "code": t.code,
+            "action": t.action,
+            "units": str(t.units),
+            "price": str(t.price.amount),
+            "fee": str(t.fee.amount),
+            "source_person": t.source_person,
+        }
+        for t in trades
+    ]
+
+    df = pd.DataFrame(data, columns=columns) if data else pd.DataFrame(columns=columns)
+    df.to_csv(path, index=False)
+
+
+def trades_from_csv(path: str | Path) -> list[Trade]:
+    """Read trades from CSV."""
+    df = pd.read_csv(path)
+    if df.empty:
+        return []
+
+    trades = []
+    for _, row in df.iterrows():
+        trade = Trade(
+            date=pd.to_datetime(row["date"]).date(),
+            code=row["code"],
+            action=row["action"],
+            units=Decimal(row["units"]),
+            price=Money(Decimal(row["price"]), "AUD"),
+            fee=Money(Decimal(row["fee"]), "AUD"),
+            source_person=row["source_person"],
+        )
+        trades.append(trade)
+
+    return trades
+
+
+def gains_to_csv(gains: list[Gain], path: str | Path) -> None:
+    """Write gains to CSV."""
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+
+    columns = ["fy", "raw_profit", "taxable_gain", "action"]
+
+    data = [
+        {
+            "fy": g.fy,
+            "raw_profit": str(g.raw_profit.amount),
+            "taxable_gain": str(g.taxable_gain.amount),
+            "action": g.action,
+        }
+        for g in gains
+    ]
+
+    df = pd.DataFrame(data, columns=columns) if data else pd.DataFrame(columns=columns)
+    df.to_csv(path, index=False)
+
+
+def gains_from_csv(path: str | Path) -> list[Gain]:
+    """Read gains from CSV."""
+    df = pd.read_csv(path)
+    if df.empty:
+        return []
+
+    gains = []
+    for _, row in df.iterrows():
+        gain = Gain(
+            fy=int(row["fy"]),
+            raw_profit=Money(Decimal(row["raw_profit"]), "AUD"),
+            taxable_gain=Money(Decimal(row["taxable_gain"]), "AUD"),
+            action=row["action"],
+        )
+        gains.append(gain)
+
+    return gains
