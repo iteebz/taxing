@@ -117,9 +117,7 @@ def test_net_position_owed():
 
 
 def test_net_position_balanced():
-    bob_to_alice = _txn(
-        "TRANSFER TO ALICE", person="bob", category={"transfers"}
-    )
+    bob_to_alice = _txn("TRANSFER TO ALICE", person="bob", category={"transfers"})
     alice_to_bob = Transaction(
         date=date(2024, 1, 2),
         amount=Money(Decimal("100.00"), AUD),

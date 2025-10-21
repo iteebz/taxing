@@ -76,9 +76,7 @@ def run(
                         summary_dict[cat] = (credit + amt, debit)
                     else:
                         summary_dict[cat] = (credit, debit + abs(amt))
-        summary = [
-            Summary(cat, credit, debit) for cat, (credit, debit) in summary_dict.items()
-        ]
+        summary = [Summary(cat, credit, debit) for cat, (credit, debit) in summary_dict.items()]
 
         gains = process_trades(trades_person)
 

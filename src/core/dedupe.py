@@ -18,10 +18,7 @@ def _normalize_desc(desc: str) -> str:
 def _is_transfer_desc(desc: str) -> bool:
     """Check if description is transfer-like (before classification)."""
     desc_lower = desc.lower()
-    return any(
-        x in desc_lower
-        for x in ["transfer", "direct credit", "swift"]
-    )
+    return any(x in desc_lower for x in ["transfer", "direct credit", "swift"])
 
 
 def fingerprint(txn: Transaction) -> str:

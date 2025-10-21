@@ -45,23 +45,32 @@ tests/
 
 **Phase 1** (complete): Transaction pipeline
 - Ingest: Multi-bank support (ANZ, CBA, Beem, Wise)
-- Classify: Rule-based categorization
+- Classify: Rule-based categorization (54 categories)
 - Deduce: Percentage-based deductions
 - Persist: CSV outputs (transactions, deductions, summary)
-- **Status**: 79 tests passing, zero lint
+- **Status**: 114 tests, zero lint
 
 **Phase 2a** (complete): Capital gains core
 - FIFO with loss harvesting prioritization
 - CGT discount (50% for holdings >365 days)
 - Trade ingestion (ingest_trades, ingest_trades_dir)
 - Integrated into pipeline
-- **Status**: 79 tests passing, parity validated vs tax-og
+- **Status**: 29 tests, parity validated vs tax-og
 
-**Phase 2b** (next): Bracket-aware sequencing
-- Tax bracket awareness
-- Multi-year planning
-- Loss carryforward tracking
-- See `docs/phase_2b_design.md`
+**Phase 2b** (complete): Bracket-aware deduction optimizer
+- Greedy algorithm: allocate to lowest-bracket persons first
+- CLI: `taxing optimize --fy 25 --persons alice,bob`
+- Reads Phase 1 outputs (deductions per person)
+- Pools and optimally allocates to minimize total tax
+- See `docs/phase_2b_cli.md`
+- **Status**: 8 tests
+
+**Phase 3a** (complete): Property expense aggregator
+- Aggregates rent, water, council, strata from CSV files
+- CLI: `taxing property --fy 25 --person alice`
+- PropertyExpensesSummary with category totals
+- See `docs/phase_3a_property.md`
+- **Status**: 16 tests, 166 tests total
 
 ## Data Model
 
@@ -84,8 +93,9 @@ Type-safe, immutable, no silent bugs. See `docs/architecture.md` for full detail
 
 ## Next Steps
 
-1. Phase 2b: Bracket-aware sequencing (maximize tax efficiency across income levels)
+1. Phase 3b: Holdings model (ticker, units, cost_basis, current_price)
 2. Phase 2c: Multi-year capital gains planning (defer gains to better brackets)
-3. Phase 2d: Advanced constraints (Medicare Levy, HELP repayment, ILP optimization)
+3. Phase 3c: Rental income + depreciation tracking
+4. Phase 2d: Advanced constraints (Medicare Levy, HELP, ILP)
 
 See `docs/context.md` for quick reference, `docs/architecture.md` for deep design.

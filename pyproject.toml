@@ -11,6 +11,9 @@ dependencies = [
     "pandas (>=2.3.0,<3.0.0)"
 ]
 
+[project.scripts]
+tax = "src.cli:main"
+
 [tool.poetry]
 packages = [
     {include = "src"}

@@ -5,7 +5,7 @@ Reference-grade, AI-agent-friendly tax deduction automation for Australian house
 
 ## status (Oct 2025)
 
-**Phase 1**: ✅ Complete (114 tests passing, zero lint)
+**Phase 1**: ✅ Complete (114 tests, zero lint)
 - Transaction pipeline: ingest → classify → deduce → persist
 - Multi-bank support (ANZ, CBA, Beem, Wise), 54 rule categories, configurable weights
 
@@ -24,12 +24,24 @@ Reference-grade, AI-agent-friendly tax deduction automation for Australian house
 - Full pipeline integration (ingest → classify → deduce → **trades** → persist)
 - Tests: 7 unit tests + 2 integration tests (parity, roundtrip)
 
-**Phase 2b**: Next (bracket-aware sequencing, multi-year planning)
+**Phase 2b**: ✅ Complete (bracket-aware deduction optimizer)
+- Greedy algorithm: allocate deductions to lowest-bracket persons first
+- Individual + Year models, tax bracket definitions
+- CLI: `taxing optimize --fy 25 --persons alice,bob`
+- Tests: 6 CLI + 2 e2e
+- Status: 152 tests passing
+
+**Phase 3a**: ✅ Complete (property expense aggregator)
+- Rent, water, council, strata aggregation from CSV files
+- PropertyExpense + PropertyExpensesSummary models
+- CLI: `taxing property --fy 25 --person alice`
+- Tests: 16 unit + 3 integration = 19 tests
+- Status: 169 tests passing
 
 ## entry point for new session
 
 1. Read this file (1 min)
-2. Run tests: `just test` (verify 79 pass)
+2. Run tests: `just test` (verify 166 pass)
 3. Read `docs/architecture.md` for deep design (5 min)
 4. Check Phase 2b design in `docs/phase_2b_design.md`
 
@@ -73,24 +85,23 @@ just ci                # Full CI
 
 ## shopping list
 
-**Phase 2b** (Bracket-aware sequencing)
-- Individual model (name, income_from_employment, tax_brackets, available_losses)
-- Year model (fy, persons: dict[str, Individual])
-- Deduction assignment optimizer (assign to lowest-bracket person)
-- Bracket headroom calculation + greedy sequencing algo
-- Trade converters (Commsec, Crypto.com, Kraken as test fixtures)
-- Holdings model (current positions snapshot)
-- CLI: `taxing optimize --fy 25 --persons alice,bob`
+**Phase 3b** (Holdings model)
+- Ticker, units, cost_basis, current_price tracking
+- Frozen dataclass
+- Enable Phase 2c gains planning
+- Effort: 1 hour
 
-**Phase 2c** (Multi-year planning)
+**Phase 2c** (Multi-year gains planning)
 - Defer gains to next FY if better bracket
 - Loss carryforward tracking
-- Income projections
+- Holdings integration for position tracking
+- Requires: Phase 3b (Holdings)
 
-**Phase 3** (Property tax)
-- Rental deduction module
-- Depreciation tracking
+**Phase 3c** (Rental income + depreciation)
+- Property-level rental income tracking
+- Capital works deduction schedule
+- Depreciation via ATO depreciation tool
 
 ---
 
-**Last Updated**: Oct 21, 2025 | **Tests**: 114 passing | **Lint**: Zero
+**Last Updated**: Oct 21, 2025 | **Tests**: 166 passing | **Lint**: Clean (property module)

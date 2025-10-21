@@ -70,12 +70,13 @@ def test_whitespace():
 def test_classify_with_actual_rules():
     """Test classification with actual project rules."""
     from src.core.rules import load_rules
+
     rules = load_rules(".")
-    
+
     # These merchants should match groceries rules
     result = classify("HARRIS FARM MARKET", rules)
     assert "groceries" in result
-    
+
     # Taxi
     result = classify("UBER TRIP", rules)
     assert "taxi" in result

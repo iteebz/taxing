@@ -22,7 +22,7 @@ def process_trades(trades: list[Trade]) -> list[Gain]:
     1. For each sell, prioritize loss positions (buy >= sell price)
     2. Then prioritize 365+ day holdings for CGT discount
     3. Fall back to FIFO (first in, first out)
-    
+
     CRITICAL: Buffer is keyed per code to prevent cross-ticker contamination.
     """
     results = []

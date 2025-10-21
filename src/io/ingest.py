@@ -232,7 +232,7 @@ def ingest_year(
         return []
 
     if persons is None:
-        persons = [p.name for p in fy_dir.iterdir() if p.is_dir() and p.name != 'data']
+        persons = [p.name for p in fy_dir.iterdir() if p.is_dir() and p.name != "data"]
 
     return ingest_dir(fy_dir, persons=sorted(persons))
 
@@ -260,7 +260,7 @@ def ingest_trades_year(
         return []
 
     if persons is None:
-        persons = [p.name for p in fy_dir.iterdir() if p.is_dir() and p.name != 'data']
+        persons = [p.name for p in fy_dir.iterdir() if p.is_dir() and p.name != "data"]
 
     all_trades = []
     for person in sorted(persons):

@@ -5,7 +5,6 @@ from pathlib import Path
 
 from src.core.models import AUD, Money
 
-
 TAX_BRACKETS_FY25 = [
     (0, Money(Decimal("0"), AUD)),
     (45000, Money(Decimal("0.16"), AUD)),

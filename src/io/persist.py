@@ -136,8 +136,6 @@ def dicts_from_csv(path: str | Path) -> list[dict]:
     return df.to_dict("records") if not df.empty else []
 
 
-
-
 def weights_to_csv(weights: dict[str, Decimal], path: str | Path) -> None:
     """Write weights to CSV."""
     dicts_to_csv([{"category": k, "weight": str(v)} for k, v in weights.items()], path)
@@ -147,5 +145,3 @@ def weights_from_csv(path: str | Path) -> dict[str, Decimal]:
     """Read weights from CSV."""
     dicts = dicts_from_csv(path)
     return {d["category"]: Decimal(str(d["weight"])) for d in dicts}
-
-

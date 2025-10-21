@@ -81,6 +81,24 @@ class Summary:
     debit_amount: Decimal
 
 
+@dataclass(frozen=True)
+class PropertyExpense:
+    expense_type: str
+    amount: Money
+
+
+@dataclass(frozen=True)
+class PropertyExpensesSummary:
+    rent: Money
+    water: Money
+    council: Money
+    strata: Money
+
+    @property
+    def total(self) -> Money:
+        return self.rent + self.water + self.council + self.strata
+
+
 class Classifier(Protocol):
     def classify(self, description: str) -> set[str]: ...
 
