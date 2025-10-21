@@ -38,6 +38,7 @@ class Transaction:
     source_person: str
     category: set[str] | None = None
     is_transfer: bool = False
+    claimant: str | None = None
 
 
 @dataclass(frozen=True)
@@ -57,6 +58,19 @@ class Gain:
     raw_profit: Money
     taxable_gain: Money
     action: str
+
+
+@dataclass(frozen=True)
+class Deduction:
+    category: str
+    amount: Decimal
+
+
+@dataclass(frozen=True)
+class Summary:
+    category: str
+    credit_amount: Decimal
+    debit_amount: Decimal
 
 
 class Classifier(Protocol):

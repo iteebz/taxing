@@ -1,9 +1,9 @@
 from datetime import date
 from decimal import Decimal
 
-from src.core.models import AUD, Money, Trade
+from src.core.models import AUD, Gain, Money, Trade
 from src.core.trades import process_trades
-from src.io import gains_from_csv, gains_to_csv
+from src.io import from_csv, to_csv
 
 
 def test_gains_roundtrip(tmp_path):
@@ -32,8 +32,8 @@ def test_gains_roundtrip(tmp_path):
     gains = process_trades(trades)
     csv_path = tmp_path / "gains.csv"
 
-    gains_to_csv(gains, csv_path)
-    loaded_gains = gains_from_csv(csv_path)
+    to_csv(gains, csv_path)
+    loaded_gains = from_csv(csv_path, Gain)
 
     assert len(loaded_gains) == len(gains)
     for orig, loaded in zip(gains, loaded_gains, strict=False):

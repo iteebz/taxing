@@ -19,26 +19,25 @@ def _sanitize_desc(desc: str) -> str:
     return desc.lower().strip().replace('"', "").replace("-", " ").replace("'", "")
 
 
-def anz(row: dict) -> Transaction:
-    """Convert ANZ CSV row to Transaction."""
+def _std_bank(row: dict, bank: str) -> Transaction:
+    """Convert standard bank CSV row (ANZ, CBA) to Transaction."""
     return Transaction(
         date=_parse_date(row["date_raw"], dayfirst=True),
         amount=Money(Decimal(str(row["amount"])), AUD),
         description=_sanitize_desc(row["description_raw"]),
-        source_bank="anz",
+        source_bank=bank,
         source_person=row["source_person"],
     )
+
+
+def anz(row: dict) -> Transaction:
+    """Convert ANZ CSV row to Transaction."""
+    return _std_bank(row, "anz")
 
 
 def cba(row: dict) -> Transaction:
     """Convert CBA CSV row to Transaction."""
-    return Transaction(
-        date=_parse_date(row["date_raw"], dayfirst=True),
-        amount=Money(Decimal(str(row["amount"])), AUD),
-        description=_sanitize_desc(row["description_raw"]),
-        source_bank="cba",
-        source_person=row["source_person"],
-    )
+    return _std_bank(row, "cba")
 
 
 def beem(row: dict, beem_username: str) -> Transaction:

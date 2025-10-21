@@ -3,15 +3,8 @@ from datetime import date
 from decimal import Decimal
 from pathlib import Path
 
-from src.core.models import AUD, Money, Transaction
-from src.io.persist import (
-    summary_from_csv,
-    summary_to_csv,
-    txns_from_csv,
-    txns_to_csv,
-    weights_from_csv,
-    weights_to_csv,
-)
+from src.core.models import AUD, Money, Summary, Transaction
+from src.io import from_csv, to_csv, weights_from_csv, weights_to_csv
 
 
 def test_txns_roundtrip(sample_txn, sample_txn_with_category):
@@ -19,9 +12,9 @@ def test_txns_roundtrip(sample_txn, sample_txn_with_category):
         path = Path(tmpdir) / "txns.csv"
 
         txns = [sample_txn, sample_txn_with_category]
-        txns_to_csv(txns, path)
+        to_csv(txns, path)
 
-        loaded = txns_from_csv(path)
+        loaded = from_csv(path, Transaction)
 
         assert len(loaded) == 2
         assert loaded[0].date == sample_txn.date
@@ -41,7 +34,7 @@ def test_txns_csv_creates_dir():
             source_person="tyson",
         )
 
-        txns_to_csv([txn], path)
+        to_csv([txn], path)
         assert path.exists()
 
 
@@ -63,8 +56,8 @@ def test_weights_roundtrip():
 def test_txns_empty():
     with tempfile.TemporaryDirectory() as tmpdir:
         path = Path(tmpdir) / "txns.csv"
-        txns_to_csv([], path)
-        loaded = txns_from_csv(path)
+        to_csv([], path, Transaction)
+        loaded = from_csv(path, Transaction)
         assert loaded == []
 
 
@@ -81,8 +74,8 @@ def test_txns_no_cat():
             category=None,
         )
 
-        txns_to_csv([txn], path)
-        loaded = txns_from_csv(path)
+        to_csv([txn], path)
+        loaded = from_csv(path, Transaction)
 
         assert loaded[0].category is None
 
@@ -90,20 +83,22 @@ def test_txns_no_cat():
 def test_summary_roundtrip():
     with tempfile.TemporaryDirectory() as tmpdir:
         path = Path(tmpdir) / "summary.csv"
-        summary = {
-            "groceries": Money(Decimal("250.50"), AUD),
-            "transport": Money(Decimal("75.25"), AUD),
-        }
+        summary = [
+            Summary("groceries", Decimal("250.50"), Decimal("0")),
+            Summary("transport", Decimal("75.25"), Decimal("0")),
+        ]
 
-        summary_to_csv(summary, path)
-        loaded = summary_from_csv(path)
+        to_csv(summary, path)
+        loaded = from_csv(path, Summary)
 
-        assert loaded == summary
+        assert len(loaded) == 2
+        assert loaded[0].category == "groceries"
+        assert loaded[0].credit_amount == Decimal("250.50")
 
 
 def test_summary_empty():
     with tempfile.TemporaryDirectory() as tmpdir:
         path = Path(tmpdir) / "summary.csv"
-        summary_to_csv({}, path)
-        loaded = summary_from_csv(path)
-        assert loaded == {}
+        to_csv([], path, Summary)
+        loaded = from_csv(path, Summary)
+        assert loaded == []

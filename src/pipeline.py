@@ -3,14 +3,11 @@ from decimal import Decimal
 from pathlib import Path
 
 from src.core import classify, deduce, load_rules, process_trades
-from src.core.models import AUD, Money
+from src.core.models import AUD, Deduction, Summary
 from src.io import (
-    deductions_to_csv,
-    gains_to_csv,
     ingest_trades_year,
     ingest_year,
-    summary_to_csv,
-    txns_to_csv,
+    to_csv,
     weights_from_csv,
 )
 
@@ -50,25 +47,34 @@ def run(
 
         txns_classified = [replace(t, category=classify(t.description, rules)) for t in txns_person]
 
-        deductions = deduce(txns_classified, weights)
+        deductions_dict = deduce(txns_classified, weights)
+        deductions = [Deduction(cat, amt) for cat, amt in deductions_dict.items()]
 
-        summary = {}
+        summary_dict = {}
         for t in txns_classified:
             if t.category and not t.is_transfer and t.amount.currency == AUD:
                 for cat in t.category:
-                    if cat not in summary:
-                        summary[cat] = Money(Decimal(0), AUD)
-                    summary[cat] = Money(summary[cat].amount + t.amount.amount, AUD)
+                    if cat not in summary_dict:
+                        summary_dict[cat] = (Decimal(0), Decimal(0))
+                    credit, debit = summary_dict[cat]
+                    amt = t.amount.amount
+                    if amt > 0:
+                        summary_dict[cat] = (credit + amt, debit)
+                    else:
+                        summary_dict[cat] = (credit, debit + abs(amt))
+        summary = [
+            Summary(cat, credit, debit) for cat, (credit, debit) in summary_dict.items()
+        ]
 
         gains = process_trades(trades_person)
 
         data_dir = base / "data" / f"fy{year}" / person / "data"
         data_dir.mkdir(parents=True, exist_ok=True)
 
-        txns_to_csv(txns_classified, data_dir / "transactions.csv")
-        deductions_to_csv(deductions, data_dir / "deductions.csv")
-        summary_to_csv(summary, data_dir / "summary.csv")
-        gains_to_csv(gains, data_dir / "gains.csv")
+        to_csv(txns_classified, data_dir / "transactions.csv")
+        to_csv(deductions, data_dir / "deductions.csv")
+        to_csv(summary, data_dir / "summary.csv")
+        to_csv(gains, data_dir / "gains.csv")
 
         results[person] = {
             "txn_count": len(txns_person),

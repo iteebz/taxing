@@ -53,6 +53,13 @@ BANK_FIELD_SPECS = {
 }
 
 
+def _convert_row(row: dict, bank: str, converter, beem_username: str | None) -> Transaction:
+    """Convert row with bank-specific logic."""
+    if bank == "beem":
+        return converter(row, beem_username)
+    return converter(row)
+
+
 def ingest_file(
     path: str | Path, bank: str, person: str, beem_username: str | None = None
 ) -> list[Transaction]:
@@ -88,10 +95,7 @@ def ingest_file(
     txns = []
 
     for _, row in df.iterrows():
-        if bank == "beem":
-            txn = converter(row.to_dict(), beem_username)
-        else:
-            txn = converter(row.to_dict())
+        txn = _convert_row(row.to_dict(), bank, converter, beem_username)
         txns.append(txn)
 
     return txns
@@ -135,10 +139,7 @@ def ingest_dir(
             for _, row in df.iterrows():
                 person = row["source_person"]
                 beem_user = beem_usernames.get(person) if bank == "beem" else None
-                if bank == "beem":
-                    txn = converter(row.to_dict(), beem_user)
-                else:
-                    txn = converter(row.to_dict())
+                txn = _convert_row(row.to_dict(), bank, converter, beem_user)
                 all_txns.append(txn)
     else:
         for person in persons:
@@ -263,9 +264,7 @@ def ingest_trades_year(
 
     all_trades = []
     for person in sorted(persons):
-        person_dir = fy_dir / person
-        trades_file = person_dir / "trades.csv"
-
+        trades_file = fy_dir / person / "trades.csv"
         if trades_file.exists():
             trades = ingest_trades(trades_file, person)
             all_trades.extend(trades)
