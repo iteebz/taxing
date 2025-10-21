@@ -41,14 +41,8 @@ class Transaction:
 
 
 class Classifier(Protocol):
-    def classify(self, description: str) -> set[str]:
-        ...
+    def classify(self, description: str) -> set[str]: ...
 
 
 class Deducer(Protocol):
-    def deduce(
-        self,
-        txns: list[Transaction],
-        weights: dict[str, float]
-    ) -> dict[str, Money]:
-        ...
+    def deduce(self, txns: list[Transaction], weights: dict[str, float]) -> dict[str, Money]: ...
