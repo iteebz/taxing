@@ -79,3 +79,28 @@ def weights_from_csv(path: str | Path) -> dict[str, float]:
     """Read weights from CSV."""
     df = pd.read_csv(path)
     return {row["category"]: row["weight"] for _, row in df.iterrows()}
+
+
+def deductions_to_csv(deductions: dict[str, Money], path: str | Path) -> None:
+    """Write deductions to CSV."""
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+
+    data = [
+        {"category": cat, "amount": str(money.amount), "currency": money.currency}
+        for cat, money in deductions.items()
+    ]
+
+    df = pd.DataFrame(data) if data else pd.DataFrame(columns=["category", "amount", "currency"])
+    df.to_csv(path, index=False)
+
+
+def deductions_from_csv(path: str | Path) -> dict[str, Money]:
+    """Read deductions from CSV."""
+    df = pd.read_csv(path)
+    if df.empty:
+        return {}
+
+    return {
+        row["category"]: Money(Decimal(row["amount"]), row["currency"])
+        for _, row in df.iterrows()
+    }

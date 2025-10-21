@@ -98,17 +98,19 @@ def ingest_file(
 
 def ingest_dir(
     base_dir: str | Path,
-    persons: list[str],
+    persons: list[str] | None = None,
     beem_usernames: dict[str, str] | None = None,
 ) -> list[Transaction]:
     """
     Load all bank CSVs from directory structure.
 
-    Structure: {base_dir}/{person}/raw/*.csv
+    Supports two modes:
+    1. Flat structure (pipeline): {base_dir}/*.csv, auto-detect person from source_person column
+    2. Nested structure (multi-person): {base_dir}/{person}/raw/*.csv
 
     Args:
-        base_dir: Base directory (e.g., 'fy25')
-        persons: List of persons to load
+        base_dir: Base directory
+        persons: List of persons to load (if None, scan flat structure)
         beem_usernames: Map person -> beem username
 
     Returns:
@@ -116,17 +118,38 @@ def ingest_dir(
     """
     beem_usernames = beem_usernames or {}
     all_txns = []
+    base = Path(base_dir)
 
-    for person in persons:
-        person_dir = Path(base_dir) / person / "raw"
-        if not person_dir.exists():
-            continue
-
-        for csv_file in sorted(person_dir.glob("*.csv")):
+    if persons is None:
+        for csv_file in sorted(base.glob("*.csv")):
             bank = csv_file.stem
-            beem_user = beem_usernames.get(person) if bank == "beem" else None
-            txns = ingest_file(csv_file, bank, person, beem_user)
-            all_txns.extend(txns)
+            if bank not in CONVERTERS:
+                continue
+
+            df = pd.read_csv(csv_file)
+            if "source_person" not in df.columns:
+                continue
+
+            converter = CONVERTERS[bank]
+            for _, row in df.iterrows():
+                person = row["source_person"]
+                beem_user = beem_usernames.get(person) if bank == "beem" else None
+                if bank == "beem":
+                    txn = converter(row.to_dict(), beem_user)
+                else:
+                    txn = converter(row.to_dict())
+                all_txns.append(txn)
+    else:
+        for person in persons:
+            person_dir = base / person / "raw"
+            if not person_dir.exists():
+                continue
+
+            for csv_file in sorted(person_dir.glob("*.csv")):
+                bank = csv_file.stem
+                beem_user = beem_usernames.get(person) if bank == "beem" else None
+                txns = ingest_file(csv_file, bank, person, beem_user)
+                all_txns.extend(txns)
 
     all_txns.sort(key=lambda t: (t.date, t.source_person, t.source_bank))
     return all_txns

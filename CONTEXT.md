@@ -32,18 +32,21 @@ Build a reference-grade, AI-agent-friendly tax deduction calculator for Australi
   - Categories: groceries, transport, dining, car, home_office, property, etc.
   - Append-friendly format: `echo "NEW_KEYWORD" >> rules/category.txt`
 
+- **Pipeline orchestration** (src/pipeline.py)
+  - `run(base_dir, fiscal_year) → dict[person → deductions]`
+  - Single ingest pass (all people), shared rules + weights
+  - Per-person classify → deduce → persist to `{fy}/{person}/data/`
+  - **Test coverage**: Full end-to-end with multi-person scenario
+  - 100% coverage, zero lint
+
 - **Project structure**
   - Poetry, pytest, ruff, justfile (boilerplate from tax-og)
   - `.gitignore` (pycache, venv, .pytest_cache, .ruff_cache, .coverage, *.pyc)
   - tests/ mirrors src/ structure + integration tests
+  - Clean __init__ exports (core/, io/)
 
 ### Next Steps (In Order)
-1. **Pipeline orchestration** (src/pipeline.py)
-   - Compose: ingest → classify → deduce → persist
-   - Dependency injection (no globals, no state)
-   - Tests: integration/ full end-to-end
-
-3. **CLI interface** (src/__main__.py or bin/)
+1. **CLI interface** (src/__main__.py or bin/)
    - Optional: `python -m taxing --fy fy25 --person tyson`
    - Leverage config + pipeline
 
@@ -133,9 +136,9 @@ deduce(txns: list[Transaction], weights: dict[str, float]) → dict[str, Money]
 
 ### For Fresh Haiku Session
 1. **Start here**: Read CONTEXT.md (2 min)
-2. **Current state**: Core + I/O + rules complete, 95% coverage (66 tests)
-3. **Next work**: Pipeline orchestration, then CLI
-4. **Command**: `just test` to verify all 66 tests pass
+2. **Current state**: Core + I/O + rules + pipeline complete, 94% coverage (67 tests)
+3. **Next work**: CLI, then maybe enhance pipeline (e.g., report generation)
+4. **Command**: `just test` to verify all 67 tests pass
 
 ### Common Tasks
 ```bash
@@ -178,4 +181,4 @@ raw/fy25/{person}/*.csv
 
 **Last Updated**: Oct 21, 2025
 **Model**: claude-haiku-4-5 (session 2)
-**Status**: Core + I/O + rules complete (95% coverage, 66 tests), pipeline next
+**Status**: Core + I/O + rules + pipeline complete (94% coverage, 67 tests), CLI next
