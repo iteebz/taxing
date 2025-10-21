@@ -41,7 +41,7 @@ def validate_no_duplicates(txns: list[Transaction]) -> None:
     """
     seen = set()
     for txn in txns:
-        key = (txn.date, txn.amount.amount, txn.description)
+        key = (txn.date, txn.amount, txn.description)
         if key in seen:
             raise ValidationError(
                 f"Duplicate transaction found: {txn.date} {txn.amount} {txn.description}"

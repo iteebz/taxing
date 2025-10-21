@@ -2,7 +2,7 @@ from datetime import date
 from decimal import Decimal
 
 from src.core.metrics import coverage, household_metrics
-from src.core.models import AUD, Money, Transaction
+from src.core.models import Transaction
 
 
 def test_coverage_all_labeled():
@@ -10,18 +10,18 @@ def test_coverage_all_labeled():
     txns = [
         Transaction(
             date=date(2025, 1, 1),
-            amount=Money(Decimal("-100"), AUD),
+            amount=Decimal("-100"),
             description="WOOLWORTHS",
-            source_bank="anz",
-            source_person="alice",
+            bank="anz",
+            individual="alice",
             category={"groceries"},
         ),
         Transaction(
             date=date(2025, 1, 2),
-            amount=Money(Decimal("5000"), AUD),
+            amount=Decimal("5000"),
             description="SALARY",
-            source_bank="anz",
-            source_person="alice",
+            bank="anz",
+            individual="alice",
             category={"income"},
         ),
     ]
@@ -39,18 +39,18 @@ def test_coverage_partial():
     txns = [
         Transaction(
             date=date(2025, 1, 1),
-            amount=Money(Decimal("-100"), AUD),
+            amount=Decimal("-100"),
             description="WOOLWORTHS",
-            source_bank="anz",
-            source_person="alice",
+            bank="anz",
+            individual="alice",
             category={"groceries"},
         ),
         Transaction(
             date=date(2025, 1, 2),
-            amount=Money(Decimal("-200"), AUD),
+            amount=Decimal("-200"),
             description="UNKNOWN MERCHANT",
-            source_bank="anz",
-            source_person="alice",
+            bank="anz",
+            individual="alice",
             category=None,
         ),
     ]
@@ -67,18 +67,18 @@ def test_household_metrics_single_person():
     txns = [
         Transaction(
             date=date(2025, 1, 1),
-            amount=Money(Decimal("-100"), AUD),
+            amount=Decimal("-100"),
             description="WOOLWORTHS",
-            source_bank="anz",
-            source_person="alice",
+            bank="anz",
+            individual="alice",
             category={"groceries"},
         ),
         Transaction(
             date=date(2025, 1, 2),
-            amount=Money(Decimal("5000"), AUD),
+            amount=Decimal("5000"),
             description="SALARY",
-            source_bank="anz",
-            source_person="alice",
+            bank="anz",
+            individual="alice",
             category={"income"},
         ),
     ]
@@ -96,19 +96,19 @@ def test_household_metrics_transfers():
     txns = [
         Transaction(
             date=date(2025, 1, 1),
-            amount=Money(Decimal("-1000"), AUD),
+            amount=Decimal("-1000"),
             description="TRANSFER TO BOB",
-            source_bank="anz",
-            source_person="alice",
+            bank="anz",
+            individual="alice",
             category={"transfers"},
             is_transfer=True,
         ),
         Transaction(
             date=date(2025, 1, 1),
-            amount=Money(Decimal("1000"), AUD),
+            amount=Decimal("1000"),
             description="TRANSFER FROM ALICE",
-            source_bank="anz",
-            source_person="bob",
+            bank="anz",
+            individual="bob",
             category=None,
         ),
     ]
@@ -124,34 +124,34 @@ def test_household_metrics_multi_person():
     txns = [
         Transaction(
             date=date(2025, 1, 1),
-            amount=Money(Decimal("-100"), AUD),
+            amount=Decimal("-100"),
             description="GROCERIES",
-            source_bank="anz",
-            source_person="alice",
+            bank="anz",
+            individual="alice",
             category={"groceries"},
         ),
         Transaction(
             date=date(2025, 1, 2),
-            amount=Money(Decimal("5000"), AUD),
+            amount=Decimal("5000"),
             description="SALARY",
-            source_bank="anz",
-            source_person="alice",
+            bank="anz",
+            individual="alice",
             category={"income"},
         ),
         Transaction(
             date=date(2025, 1, 3),
-            amount=Money(Decimal("-50"), AUD),
+            amount=Decimal("-50"),
             description="CAFE",
-            source_bank="cba",
-            source_person="bob",
+            bank="cba",
+            individual="bob",
             category={"dining"},
         ),
         Transaction(
             date=date(2025, 1, 4),
-            amount=Money(Decimal("3000"), AUD),
+            amount=Decimal("3000"),
             description="SALARY",
-            source_bank="cba",
-            source_person="bob",
+            bank="cba",
+            individual="bob",
             category={"income"},
         ),
     ]

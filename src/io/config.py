@@ -3,14 +3,12 @@ from dataclasses import dataclass
 from decimal import Decimal
 from pathlib import Path
 
-from src.core.models import AUD, Money
-
 TAX_BRACKETS_FY25 = [
-    (0, Money(Decimal("0"), AUD)),
-    (45000, Money(Decimal("0.16"), AUD)),
-    (135000, Money(Decimal("0.30"), AUD)),
-    (190000, Money(Decimal("0.37"), AUD)),
-    (float("inf"), Money(Decimal("0.45"), AUD)),
+    (0, Decimal("0")),
+    (45000, Decimal("0.16")),
+    (135000, Decimal("0.30")),
+    (190000, Decimal("0.37")),
+    (float("inf"), Decimal("0.45")),
 ]
 
 MEDICARE_LEVY = Decimal("0.02")

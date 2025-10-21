@@ -1,129 +1,128 @@
 from decimal import Decimal
 
-from src.core.household import _tax_liability, optimize_household
-from src.core.models import AUD, Gain, Individual, Loss, Money
+from src.core.household import _tax_liability, allocate_deductions, optimize_household
+from src.core.models import Gain, Individual, Loss
 
 
-def test_taxable_income_with_deductions():
+def test_taxable_with_deduc():
     ind = Individual(
         name="you",
         fy=25,
-        income=Money(Decimal("50000"), AUD),
-        deductions=[Money(Decimal("5000"), AUD), Money(Decimal("2000"), AUD)],
+        income=Decimal("50000"),
+        deductions=[Decimal("5000"), Decimal("2000")],
     )
-    assert ind.taxable_income == Money(Decimal("43000"), AUD)
+    assert ind.taxable_income == Decimal("43000")
 
 
-def test_taxable_income_with_gains_and_losses():
+def test_taxable_gains_loss():
     gains = [
         Gain(
             fy=25,
-            raw_profit=Money(Decimal("1000"), AUD),
-            taxable_gain=Money(Decimal("500"), AUD),
-            action="SELL",
-        )
+            raw_profit=Decimal("1000"),
+            taxable_gain=Decimal("500"),
+        ),
+        Gain(
+            fy=25,
+            raw_profit=Decimal("-100"),
+            taxable_gain=Decimal("-100"),
+        ),
     ]
-    losses = [Loss(fy=25, amount=Money(Decimal("100"), AUD), source_fy=24)]
     ind = Individual(
         name="you",
         fy=25,
-        income=Money(Decimal("50000"), AUD),
+        income=Decimal("50000"),
         gains=gains,
-        losses=losses,
     )
-    assert ind.taxable_income == Money(Decimal("50400"), AUD)
+    assert ind.taxable_income == Decimal("50400")
 
 
-def test_tax_liability_under_threshold():
-    liability = _tax_liability(Money(Decimal("10000"), AUD), 25)
-    assert liability.income_tax == Money(Decimal("0"), AUD)
-    assert liability.medicare_levy == Money(Decimal("0"), AUD)
-    assert liability.total == Money(Decimal("0"), AUD)
+def test_tax_under_thresh():
+    liability = _tax_liability(Decimal("10000"), 25)
+    assert liability.income_tax == Decimal("0")
+    assert liability.medicare_levy == Decimal("0")
+    assert liability.total == Decimal("0")
 
 
-def test_tax_liability_basic():
-    liability = _tax_liability(Money(Decimal("50000"), AUD), 25)
+def test_tax_basic():
+    liability = _tax_liability(Decimal("50000"), 25)
     b1 = (Decimal("45000") - Decimal("18200")) * Decimal("0.16")
     b2 = (Decimal("50000") - Decimal("45000")) * Decimal("0.30")
-    expected_income_tax = Money(b1 + b2, AUD)
+    expected_income_tax = b1 + b2
     assert liability.income_tax == expected_income_tax
-    assert liability.medicare_levy == Money(Decimal("1000"), AUD)
-    assert liability.total == expected_income_tax + Money(Decimal("1000"), AUD)
+    assert liability.medicare_levy == Decimal("1000")
+    assert liability.total == expected_income_tax + Decimal("1000")
 
 
-def test_tax_liability_low_income_medicare_reduction():
-    liability = _tax_liability(Money(Decimal("26000"), AUD), 25)
+def test_low_inc_medicare():
+    liability = _tax_liability(Decimal("26000"), 25)
     full_levy = Decimal("26000") * Decimal("0.02")
     reduced_levy = (Decimal("26000") - Decimal("24276")) * Decimal("0.10")
-    assert liability.medicare_levy == Money(min(full_levy, reduced_levy), AUD)
+    assert liability.medicare_levy == min(full_levy, reduced_levy)
 
 
-def test_tax_liability_high_income_full_medicare():
-    liability = _tax_liability(Money(Decimal("120000"), AUD), 25)
-    assert liability.medicare_levy == Money(Decimal("2400"), AUD)
-    assert liability.total == liability.income_tax + Money(Decimal("2400"), AUD)
+def test_high_inc_medicare():
+    liability = _tax_liability(Decimal("120000"), 25)
+    assert liability.medicare_levy == Decimal("2400")
+    assert liability.total == liability.income_tax + Decimal("2400")
 
 
-def test_optimize_household_routes_deductions_to_lower_bracket():
+def test_opt_deduc_lower_bracket():
     yours = Individual(
         name="you",
         fy=25,
-        income=Money(Decimal("80000"), AUD),
-        deductions=[Money(Decimal("5000"), AUD)],
+        income=Decimal("80000"),
+        deductions=[Decimal("5000")],
     )
     janice = Individual(
         name="janice",
         fy=25,
-        income=Money(Decimal("40000"), AUD),
-        deductions=[Money(Decimal("2000"), AUD)],
+        income=Decimal("40000"),
+        deductions=[Decimal("2000")],
     )
 
     result = optimize_household(yours, janice)
 
-    assert result.yours.total_deductions == Money(Decimal("0"), AUD)
-    assert result.janice.total_deductions == Money(Decimal("7000"), AUD)
+    assert result.yours.total_deductions == Decimal("7000")
+    assert result.janice.total_deductions == Decimal("0")
 
 
-def test_optimize_household_preserves_gains_and_losses():
+def test_opt_preserve_gains_loss():
     gains = [
         Gain(
             fy=25,
-            raw_profit=Money(Decimal("1000"), AUD),
-            taxable_gain=Money(Decimal("500"), AUD),
-            action="SELL",
+            raw_profit=Decimal("1000"),
+            taxable_gain=Decimal("500"),
         )
     ]
-    losses = [Loss(fy=25, amount=Money(Decimal("100"), AUD), source_fy=24)]
+    [Loss(fy=25, amount=Decimal("100"), source_fy=24)]
 
     yours = Individual(
         name="you",
         fy=25,
-        income=Money(Decimal("50000"), AUD),
+        income=Decimal("50000"),
         gains=gains,
-        losses=losses,
     )
     janice = Individual(
         name="janice",
         fy=25,
-        income=Money(Decimal("40000"), AUD),
+        income=Decimal("40000"),
     )
 
     result = optimize_household(yours, janice)
 
     assert result.yours.gains == gains
-    assert result.yours.losses == losses
 
 
-def test_optimize_household_household_tax():
+def test_opt_household_tax():
     yours = Individual(
         name="you",
         fy=25,
-        income=Money(Decimal("80000"), AUD),
+        income=Decimal("80000"),
     )
     janice = Individual(
         name="janice",
         fy=25,
-        income=Money(Decimal("40000"), AUD),
+        income=Decimal("40000"),
     )
 
     result = optimize_household(yours, janice)
@@ -131,19 +130,79 @@ def test_optimize_household_household_tax():
     assert result.total == result.your_liability.total + result.janice_liability.total
 
 
-def test_optimize_household_applies_family_medicare_threshold():
+def test_opt_family_medicare():
     yours = Individual(
         name="you",
         fy=24,
-        income=Money(Decimal("24500"), AUD),
+        income=Decimal("24500"),
     )
     janice = Individual(
         name="janice",
         fy=24,
-        income=Money(Decimal("16000"), AUD),
+        income=Decimal("16000"),
     )
 
     result = optimize_household(yours, janice)
 
-    assert result.your_liability.medicare_levy == Money(Decimal("0"), AUD)
-    assert result.janice_liability.medicare_levy == Money(Decimal("0"), AUD)
+    assert result.your_liability.medicare_levy == Decimal("0")
+    assert result.janice_liability.medicare_levy == Decimal("0")
+
+
+def test_alloc_you_empty_janice_full():
+    tyson_deduction, janice_deduction = allocate_deductions(
+        Decimal("0"),
+        Decimal("30000"),
+        [Decimal("5000"), Decimal("3000")],
+        fy=25,
+    )
+
+    assert tyson_deduction == Decimal("0")
+    assert janice_deduction == Decimal("8000")
+
+
+def test_alloc_you_buffer_janice_over():
+    tyson_deduction, janice_deduction = allocate_deductions(
+        Decimal("10000"),
+        Decimal("60000"),
+        [Decimal("5000"), Decimal("5000")],
+        fy=25,
+    )
+
+    assert tyson_deduction == Decimal("0")
+    assert janice_deduction == Decimal("10000")
+
+
+def test_alloc_both_under():
+    tyson_deduction, janice_deduction = allocate_deductions(
+        Decimal("15000"),
+        Decimal("16000"),
+        [Decimal("3000")],
+        fy=25,
+    )
+
+    assert tyson_deduction == Decimal("0")
+    assert janice_deduction == Decimal("3000")
+
+
+def test_alloc_insufficient():
+    tyson_deduction, janice_deduction = allocate_deductions(
+        Decimal("10000"),
+        Decimal("20000"),
+        [Decimal("2000")],
+        fy=25,
+    )
+
+    assert tyson_deduction == Decimal("0")
+    assert janice_deduction == Decimal("2000")
+
+
+def test_alloc_excess_lower():
+    tyson_deduction, janice_deduction = allocate_deductions(
+        Decimal("50000"),
+        Decimal("30000"),
+        [Decimal("10000")],
+        fy=25,
+    )
+
+    assert tyson_deduction == Decimal("10000")
+    assert janice_deduction == Decimal("0")

@@ -1,7 +1,7 @@
 from datetime import date
 from decimal import Decimal
 
-from src.core.models import AUD, Asset, Money
+from src.core.models import Asset
 
 
 def calc_days_held(asset: Asset, fy: int) -> int:
@@ -46,7 +46,7 @@ def _calc_dv(
     return opening_value * rate
 
 
-def calc_depreciation(asset: Asset, current_fy: int) -> Money:
+def calc_depreciation(asset: Asset, current_fy: int) -> Decimal:
     """Calculate annual depreciation for asset (ATO-compliant).
 
     Formula (ATO):
@@ -57,29 +57,29 @@ def calc_depreciation(asset: Asset, current_fy: int) -> Money:
     Only depreciates from purchase year onwards.
     """
     if current_fy < asset.fy:
-        return Money(Decimal("0"), AUD)
+        return Decimal("0")
 
     days = calc_days_held(asset, current_fy)
     if days == 0:
-        return Money(Decimal("0"), AUD)
+        return Decimal("0")
 
     days_ratio = Decimal(days) / Decimal("365")
 
     if asset.depreciation_method == "DV":
         years_since = current_fy - asset.fy
         if years_since == 0:
-            base_value = asset.cost.amount
+            base_value = asset.cost
         else:
-            cum = _calc_cumulative_dv(asset.cost.amount, asset.life_years, years_since)
-            base_value = asset.cost.amount - cum
+            cum = _calc_cumulative_dv(asset.cost, asset.life_years, years_since)
+            base_value = asset.cost - cum
 
         rate = Decimal("200") / Decimal(asset.life_years) / Decimal("100")
         annual = base_value * days_ratio * rate
     else:
         rate = Decimal("100") / Decimal(asset.life_years) / Decimal("100")
-        annual = asset.cost.amount * days_ratio * rate
+        annual = asset.cost * days_ratio * rate
 
-    return Money(annual, AUD)
+    return annual
 
 
 def _calc_cumulative_dv(cost: Decimal, life_years: int, years: int) -> Decimal:
@@ -94,30 +94,30 @@ def _calc_cumulative_dv(cost: Decimal, life_years: int, years: int) -> Decimal:
     return total
 
 
-def calc_cumulative_depreciation(asset: Asset, from_fy: int, to_fy: int) -> Money:
+def calc_cumulative_depreciation(asset: Asset, from_fy: int, to_fy: int) -> Decimal:
     """Calculate total depreciation from from_fy to to_fy (inclusive)."""
     if to_fy < asset.fy or from_fy > to_fy:
-        return Money(Decimal("0"), AUD)
+        return Decimal("0")
 
     start = max(from_fy, asset.fy)
     years = to_fy - start + 1
 
     if asset.depreciation_method == "DV":
-        total = _calc_cumulative_dv(asset.cost.amount, asset.life_years, years)
+        total = _calc_cumulative_dv(asset.cost, asset.life_years, years)
     else:
-        annual = _calc_pc(asset.cost.amount, asset.life_years)
+        annual = _calc_pc(asset.cost, asset.life_years)
         total = annual * Decimal(years)
 
-    return Money(total, AUD)
+    return total
 
 
-def calc_book_value(asset: Asset, current_fy: int) -> Money:
+def calc_book_value(asset: Asset, current_fy: int) -> Decimal:
     """Calculate remaining book value after depreciation."""
     depreciated = calc_cumulative_depreciation(asset, asset.fy, current_fy)
     return asset.cost - depreciated
 
 
-def depreciation_schedule(asset: Asset, to_fy: int) -> dict[int, Money]:
+def depreciation_schedule(asset: Asset, to_fy: int) -> dict[int, Decimal]:
     """Generate year-by-year depreciation schedule."""
     schedule = {}
     for fy in range(asset.fy, to_fy + 1):

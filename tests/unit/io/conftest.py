@@ -3,7 +3,7 @@ from decimal import Decimal
 
 import pytest
 
-from src.core.models import AUD, Money, Transaction
+from src.core.models import Transaction
 
 
 @pytest.fixture
@@ -12,7 +12,7 @@ def sample_anz_row():
         "date_raw": "01/10/2024",
         "amount": "100.50",
         "description_raw": "WOOLWORTHS SUPERMARKET",
-        "source_person": "tyson",
+        "individual": "tyson",
     }
 
 
@@ -23,7 +23,7 @@ def sample_cba_row():
         "amount": "-50.25",
         "description_raw": "AMAZON PURCHASE",
         "balance": "5000.00",
-        "source_person": "jaynice",
+        "individual": "janice",
     }
 
 
@@ -37,7 +37,7 @@ def sample_beem_row():
         "payer": "tyson",
         "recipient": "tysonchan",
         "message": "dinner split",
-        "source_person": "tyson",
+        "individual": "tyson",
     }
 
 
@@ -62,7 +62,7 @@ def sample_wise_row():
         "exchange_rate": "0.65",
         "reference": "ref456",
         "batch": "batch1",
-        "source_person": "tyson",
+        "individual": "tyson",
     }
 
 
@@ -70,10 +70,10 @@ def sample_wise_row():
 def sample_txn():
     return Transaction(
         date=date(2024, 10, 1),
-        amount=Money(Decimal("100.00"), AUD),
+        amount=Decimal("100.00"),
         description="woolworths supermarket",
-        source_bank="anz",
-        source_person="tyson",
+        bank="anz",
+        individual="tyson",
     )
 
 
@@ -81,9 +81,9 @@ def sample_txn():
 def sample_txn_with_category():
     return Transaction(
         date=date(2024, 10, 1),
-        amount=Money(Decimal("50.00"), AUD),
+        amount=Decimal("50.00"),
         description="groceries",
-        source_bank="anz",
-        source_person="tyson",
+        bank="anz",
+        individual="tyson",
         category={"supermarkets", "groceries"},
     )

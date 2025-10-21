@@ -59,7 +59,7 @@ def _parse_surcharge(
 
     def parse_tiers(key: Literal["single", "family"]) -> list[MedicareSurchargeTier]:
         tiers_raw = surcharge_data.get(key, []) or []
-        tiers = sorted(
+        return sorted(
             (
                 MedicareSurchargeTier(
                     threshold=int(tier["threshold"]),
@@ -69,7 +69,6 @@ def _parse_surcharge(
             ),
             key=lambda t: t.threshold,
         )
-        return tiers
 
     return MedicareSurchargeConfig(
         dependent_increment=dep_increment,

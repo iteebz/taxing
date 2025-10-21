@@ -3,15 +3,15 @@
 from dataclasses import dataclass
 from decimal import Decimal
 
-from src.core.models import AUD, Gain, Loss, Money
+from src.core.models import Gain, Loss
 
 
 @dataclass(frozen=True)
 class Plan:
     fy: int
     realized_gains: list[Gain]
-    carryforward_used: Money
-    taxable_gain: Money
+    carryforward_used: Decimal
+    taxable_gain: Decimal
 
 
 def plan_gains(
@@ -45,10 +45,10 @@ def plan_gains(
 
     for fy in years:
         available_cf = carryforwards_by_fy.get(fy, [])
-        cf_total = sum(cf.amount.amount for cf in available_cf)
+        cf_total = sum(cf.amount for cf in available_cf)
 
         gains_for_fy = [g for g in remaining_gains if g.fy == fy]
-        total_gain = sum(g.taxable_gain.amount for g in gains_for_fy)
+        total_gain = sum(g.taxable_gain for g in gains_for_fy)
 
         cf_used = min(Decimal(str(cf_total)), total_gain)
         taxable = total_gain - cf_used
@@ -56,8 +56,8 @@ def plan_gains(
         result[fy] = Plan(
             fy=fy,
             realized_gains=gains_for_fy,
-            carryforward_used=Money(cf_used, AUD),
-            taxable_gain=Money(taxable, AUD),
+            carryforward_used=cf_used,
+            taxable_gain=taxable,
         )
 
     return result
@@ -81,8 +81,8 @@ def harvest_losses(gains: list[Gain], losses: list[Loss]) -> tuple[list[Gain], l
     if not gains and not losses:
         return [], []
 
-    total_gain = sum(g.taxable_gain.amount for g in gains)
-    total_loss = sum(loss.amount.amount for loss in losses)
+    total_gain = sum(g.taxable_gain for g in gains)
+    total_loss = sum(loss.amount for loss in losses)
 
     if not gains:
         return [], []
@@ -92,7 +92,7 @@ def harvest_losses(gains: list[Gain], losses: list[Loss]) -> tuple[list[Gain], l
         if cf_amount > 0:
             cf_loss = Loss(
                 fy=gains[0].fy + 1,
-                amount=Money(cf_amount, AUD),
+                amount=cf_amount,
                 source_fy=losses[0].source_fy,
             )
             return [], [cf_loss]
@@ -101,8 +101,7 @@ def harvest_losses(gains: list[Gain], losses: list[Loss]) -> tuple[list[Gain], l
     remaining_gain_amount = total_gain - total_loss
     remaining_gain = Gain(
         fy=gains[0].fy,
-        raw_profit=Money(remaining_gain_amount, AUD),
-        taxable_gain=Money(remaining_gain_amount, AUD),
-        action="harvested",
+        raw_profit=remaining_gain_amount,
+        taxable_gain=remaining_gain_amount,
     )
     return [remaining_gain], []

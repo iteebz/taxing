@@ -34,12 +34,12 @@ def fingerprint(txn: Transaction) -> str:
     if _is_transfer_desc(txn.description):
         recipient = extract_recipient(txn.description)
         if recipient:
-            key = tuple(sorted([txn.source_person, recipient]))
-            raw = f"{txn.date}|{txn.amount.amount}|{key[0]}|{key[1]}"
+            key = tuple(sorted([txn.individual, recipient]))
+            raw = f"{txn.date}|{txn.amount}|{key[0]}|{key[1]}"
         else:
-            raw = f"{txn.date}|{txn.amount.amount}|{txn.source_person}"
+            raw = f"{txn.date}|{txn.amount}|{txn.individual}"
     else:
-        raw = f"{txn.date}|{norm_desc}|{txn.amount.amount}|{txn.source_person}"
+        raw = f"{txn.date}|{norm_desc}|{txn.amount}|{txn.individual}"
 
     return hashlib.sha256(raw.encode()).hexdigest()
 

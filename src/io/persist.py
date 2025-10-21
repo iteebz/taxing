@@ -6,8 +6,6 @@ from typing import TypeVar, get_args, get_origin
 
 import pandas as pd
 
-from src.core.models import Money
-
 T = TypeVar("T")
 
 
@@ -20,8 +18,6 @@ def _serialize(value: object) -> str:
             return value.isoformat()
         case Decimal():
             return str(value)
-        case Money():
-            return f"{value.amount}|{value.currency}"
         case set():
             return ",".join(sorted(value)) if value else ""
         case bool():
@@ -49,11 +45,6 @@ def _deserialize(value: str, field_type: type) -> object:
         return pd.to_datetime(value).date()
     if field_type is Decimal:
         return Decimal(value)
-    if field_type is Money:
-        parts = value.split("|")
-        if len(parts) != 2:
-            raise ValueError(f"Invalid Money format: {value}")
-        return Money(Decimal(parts[0]), parts[1])
     if (
         field_type is set
         or origin is set
@@ -63,7 +54,7 @@ def _deserialize(value: str, field_type: type) -> object:
     if field_type is bool:
         return value.lower() in ("true", "1", "yes")
     if field_type is int:
-        return int(value)
+        return int(float(value))
     if field_type is float:
         return float(value)
     if field_type is str:

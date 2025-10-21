@@ -1,7 +1,7 @@
 from datetime import date
 from decimal import Decimal
 
-from src.core.models import AUD, Gain, Money, Trade
+from src.core.models import Gain, Trade
 from src.core.trades import process_trades
 from src.io import from_csv, to_csv
 
@@ -14,18 +14,18 @@ def test_gains_roundtrip(tmp_path):
             code="ASX:BHP",
             action="buy",
             units=Decimal(100),
-            price=Money(Decimal(10), AUD),
-            fee=Money(Decimal(10), AUD),
-            source_person="tyson",
+            price=Decimal(10),
+            fee=Decimal(10),
+            individual="tyson",
         ),
         Trade(
             date=date(2024, 8, 1),
             code="ASX:BHP",
             action="sell",
             units=Decimal(100),
-            price=Money(Decimal(20), AUD),
-            fee=Money(Decimal(10), AUD),
-            source_person="tyson",
+            price=Decimal(20),
+            fee=Decimal(10),
+            individual="tyson",
         ),
     ]
 
@@ -38,9 +38,8 @@ def test_gains_roundtrip(tmp_path):
     assert len(loaded_gains) == len(gains)
     for orig, loaded in zip(gains, loaded_gains, strict=False):
         assert orig.fy == loaded.fy
-        assert orig.raw_profit.amount == loaded.raw_profit.amount
-        assert orig.taxable_gain.amount == loaded.taxable_gain.amount
-        assert orig.action == loaded.action
+        assert orig.raw_profit == loaded.raw_profit
+        assert orig.taxable_gain == loaded.taxable_gain
 
 
 def test_gains_multi_ticker():
@@ -51,36 +50,36 @@ def test_gains_multi_ticker():
             code="ASX:SYI",
             action="buy",
             units=Decimal(100),
-            price=Money(Decimal(10), AUD),
-            fee=Money(Decimal(5), AUD),
-            source_person="tyson",
+            price=Decimal(10),
+            fee=Decimal(5),
+            individual="tyson",
         ),
         Trade(
             date=date(2023, 1, 1),
             code="ASX:NDQ",
             action="buy",
             units=Decimal(50),
-            price=Money(Decimal(20), AUD),
-            fee=Money(Decimal(5), AUD),
-            source_person="tyson",
+            price=Decimal(20),
+            fee=Decimal(5),
+            individual="tyson",
         ),
         Trade(
             date=date(2024, 1, 1),
             code="ASX:SYI",
             action="sell",
             units=Decimal(100),
-            price=Money(Decimal(12), AUD),
-            fee=Money(Decimal(5), AUD),
-            source_person="tyson",
+            price=Decimal(12),
+            fee=Decimal(5),
+            individual="tyson",
         ),
         Trade(
             date=date(2024, 1, 1),
             code="ASX:NDQ",
             action="sell",
             units=Decimal(50),
-            price=Money(Decimal(18), AUD),
-            fee=Money(Decimal(5), AUD),
-            source_person="tyson",
+            price=Decimal(18),
+            fee=Decimal(5),
+            individual="tyson",
         ),
     ]
 
@@ -88,7 +87,6 @@ def test_gains_multi_ticker():
 
     assert len(gains) == 2
     assert all(g.fy == 2024 for g in gains)
-    assert all(g.action in ["discount", "loss"] for g in gains)
 
-    profit_amts = sorted([g.raw_profit.amount for g in gains])
+    profit_amts = sorted([g.raw_profit for g in gains])
     assert profit_amts == [Decimal(-110), Decimal(190)]

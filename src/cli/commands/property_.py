@@ -19,12 +19,12 @@ def handle(args):
 
     print(f"\nProperty Expenses - {person} FY{fy}")
     print("-" * 50)
-    print(f"{'Rent':<20} ${summary.rent.amount:>15,.2f}")
-    print(f"{'Water':<20} ${summary.water.amount:>15,.2f}")
-    print(f"{'Council Rates':<20} ${summary.council.amount:>15,.2f}")
-    print(f"{'Strata/Body Corp':<20} ${summary.strata.amount:>15,.2f}")
+    print(f"{'Rent':<20} ${summary.rent:>15,.2f}")
+    print(f"{'Water':<20} ${summary.water:>15,.2f}")
+    print(f"{'Council Rates':<20} ${summary.council:>15,.2f}")
+    print(f"{'Strata/Body Corp':<20} ${summary.strata:>15,.2f}")
     print("-" * 50)
-    print(f"{'TOTAL':<20} ${summary.total.amount:>15,.2f}")
+    print(f"{'TOTAL':<20} ${summary.total:>15,.2f}")
 
 
 def register(subparsers):

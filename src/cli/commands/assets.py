@@ -1,7 +1,7 @@
 from decimal import Decimal
 
 from src.core.depreciation import depreciation_schedule
-from src.core.models import AUD, Asset, Money
+from src.core.models import Asset
 
 
 def handle(args):
@@ -9,7 +9,7 @@ def handle(args):
     asset = Asset(
         fy=args.fy_purchased,
         description=args.description,
-        cost=Money(Decimal(str(args.cost)), AUD),
+        cost=Decimal(str(args.cost)),
         life_years=args.life_years,
     )
 
@@ -17,14 +17,14 @@ def handle(args):
     schedule = depreciation_schedule(asset, to_fy)
 
     print(f"\nAsset Depreciation Schedule - {asset.description}")
-    print(f"Cost: ${asset.cost.amount:,.2f} | Life: {asset.life_years} years | Method: Prime Cost")
+    print(f"Cost: ${asset.cost:,.2f} | Life: {asset.life_years} years | Method: Prime Cost")
     print("-" * 60)
     print(f"{'Year':<10} {'Annual Deduction':<20} {'Cumulative':<20}")
     print("-" * 60)
 
     cumulative = Decimal("0")
     for fy in sorted(schedule.keys()):
-        annual = schedule[fy].amount
+        annual = schedule[fy]
         cumulative += annual
         print(f"FY{fy:<8} ${annual:<19,.2f} ${cumulative:<19,.2f}")
 

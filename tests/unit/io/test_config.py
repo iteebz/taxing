@@ -8,13 +8,13 @@ from src.io.config import Config
 
 def test_from_env(monkeypatch):
     monkeypatch.setenv("FY", "fy25")
-    monkeypatch.setenv("PERSONS", "tyson,jaynice")
+    monkeypatch.setenv("PERSONS", "tyson,janice")
     monkeypatch.setenv("BEEM_USERNAMES", '{"tyson": "tysonchan"}')
 
     cfg = Config.from_env()
 
     assert cfg.fy == "fy25"
-    assert cfg.persons == ["tyson", "jaynice"]
+    assert cfg.persons == ["tyson", "janice"]
     assert cfg.beem_usernames == {"tyson": "tysonchan"}
 
 

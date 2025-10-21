@@ -3,7 +3,7 @@ from datetime import date
 from decimal import Decimal
 from pathlib import Path
 
-from src.core.models import AUD, Money, Summary, Transaction
+from src.core.models import Summary, Transaction
 from src.io import from_csv, to_csv, weights_from_csv, weights_to_csv
 
 
@@ -18,7 +18,7 @@ def test_txns_roundtrip(sample_txn, sample_txn_with_category):
 
         assert len(loaded) == 2
         assert loaded[0].date == sample_txn.date
-        assert loaded[0].amount.amount == sample_txn.amount.amount
+        assert loaded[0].amount == sample_txn.amount
         assert loaded[1].category == {"groceries", "supermarkets"}
 
 
@@ -28,10 +28,10 @@ def test_txns_csv_creates_dir():
 
         txn = Transaction(
             date=date(2024, 10, 1),
-            amount=Money(Decimal("100.00"), AUD),
+            amount=Decimal("100.00"),
             description="test",
-            source_bank="anz",
-            source_person="tyson",
+            bank="anz",
+            individual="tyson",
         )
 
         to_csv([txn], path)
@@ -67,10 +67,10 @@ def test_txns_no_cat():
 
         txn = Transaction(
             date=date(2024, 10, 1),
-            amount=Money(Decimal("50.00"), AUD),
+            amount=Decimal("50.00"),
             description="uncategorized",
-            source_bank="wise",
-            source_person="tyson",
+            bank="wise",
+            individual="tyson",
             category=None,
         )
 

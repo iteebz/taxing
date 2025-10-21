@@ -3,7 +3,7 @@ from decimal import Decimal
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from src.core.models import AUD, Council, Money, Rent, Water
+from src.core.models import Council, Rent, Water
 from src.io.csv_loader import load_csv
 
 
@@ -16,7 +16,7 @@ def test_load_csv_water():
 
         assert len(items) == 2
         assert items[0].date == date(2025, 7, 1)
-        assert items[0].amount == Money(Decimal("100"), AUD)
+        assert items[0].amount == Decimal("100")
         assert items[0].fy == 25
 
 
@@ -29,7 +29,7 @@ def test_load_csv_rent_with_tenant():
 
         assert len(items) == 2
         assert items[0].tenant == "janice"
-        assert items[0].amount == Money(Decimal("1000"), AUD)
+        assert items[0].amount == Decimal("1000")
 
 
 def test_load_csv_skip_comments():
@@ -66,7 +66,7 @@ def test_load_csv_invalid_amount_skipped():
 
         assert len(items) == 1
         assert items[0].date == date(2025, 7, 1)
-        assert items[0].amount == Money(Decimal("100"), AUD)
+        assert items[0].amount == Decimal("100")
 
 
 def test_load_csv_injects_fy():

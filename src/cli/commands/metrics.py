@@ -36,15 +36,15 @@ def handle(args):
 
     print("\nHousehold Metrics")
     print("-" * 70)
-    print(f"{'Person':<20} {'Spending':<18} {'Income':<18} {'Transfers':<18}")
+    print(f"{'Individual':<20} {'Spending':<18} {'Income':<18} {'Transfers':<18}")
     print("-" * 70)
 
-    for person in household["persons"]:
+    for individual in household["persons"]:
         print(
-            f"{person:<20} "
-            f"${household['spending_by_person'].get(person, 0):<17,.0f} "
-            f"${household['income_by_person'].get(person, 0):<17,.0f} "
-            f"${household['transfers_by_person'].get(person, 0):<17,.0f}"
+            f"{individual:<20} "
+            f"${household['spending_by_person'].get(individual, 0):<17,.0f} "
+            f"${household['income_by_person'].get(individual, 0):<17,.0f} "
+            f"${household['transfers_by_person'].get(individual, 0):<17,.0f}"
         )
 
     print("-" * 70)

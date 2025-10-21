@@ -1,26 +1,23 @@
 from __future__ import annotations
 
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, replace
 from decimal import ROUND_HALF_UP, Decimal
 from functools import lru_cache
-from typing import Iterable, Literal, Sequence
+from typing import Literal
 
 from src.core.config import Bracket, FYConfig, MedicareConfig, load_config
-from src.core.models import AUD, Individual, Money
-
-
-def _zero() -> Money:
-    return Money(Decimal("0"), AUD)
+from src.core.models import Individual
 
 
 @dataclass(frozen=True)
 class Liability:
-    income_tax: Money
-    medicare_levy: Money
-    medicare_surcharge: Money = _zero()
+    income_tax: Decimal
+    medicare_levy: Decimal
+    medicare_surcharge: Decimal = Decimal("0")
 
     @property
-    def total(self) -> Money:
+    def total(self) -> Decimal:
         return self.income_tax + self.medicare_levy + self.medicare_surcharge
 
 
@@ -32,7 +29,7 @@ class Allocation:
     janice_liability: Liability
 
     @property
-    def total(self) -> Money:
+    def total(self) -> Decimal:
         return self.your_liability.total + self.janice_liability.total
 
 
@@ -157,7 +154,7 @@ def _load_config(fy: int) -> FYConfig:
 
 
 def _tax_liability(
-    taxable_income: Money,
+    taxable_income: Decimal,
     fy: int,
     *,
     medicare_status: Literal["single", "family"] = "single",
@@ -168,7 +165,7 @@ def _tax_liability(
 ) -> Liability:
     config = _load_config(fy)
 
-    taxable_amount = _effective_income(taxable_income.amount)
+    taxable_amount = _effective_income(taxable_income)
     income_tax = _income_tax(taxable_amount, config.brackets)
 
     medicare = config.medicare
@@ -195,17 +192,17 @@ def _tax_liability(
     )
 
     return Liability(
-        income_tax=Money(_quantize(income_tax), AUD),
-        medicare_levy=Money(_quantize(levy), AUD),
-        medicare_surcharge=Money(_quantize(surcharge), AUD),
+        income_tax=_quantize(income_tax),
+        medicare_levy=_quantize(levy),
+        medicare_surcharge=_quantize(surcharge),
     )
 
 
 def _evaluate_allocation(
     yours: Individual,
     janice: Individual,
-    yours_deductions: Sequence[Money],
-    janice_deductions: Sequence[Money],
+    yours_deductions: Sequence[Decimal],
+    janice_deductions: Sequence[Decimal],
 ) -> Allocation:
     updated_yours = replace(yours, deductions=list(yours_deductions), medicare_status="family")
     updated_janice = replace(janice, deductions=list(janice_deductions), medicare_status="family")
@@ -213,7 +210,7 @@ def _evaluate_allocation(
     your_taxable = updated_yours.taxable_income
     janice_taxable = updated_janice.taxable_income
 
-    family_income = your_taxable.amount + janice_taxable.amount
+    family_income = your_taxable + janice_taxable
     family_dependents = updated_yours.medicare_dependents + updated_janice.medicare_dependents
 
     your_liability = _tax_liability(
@@ -243,26 +240,47 @@ def _evaluate_allocation(
     )
 
 
-def _combine_deductions(yours: Individual, janice: Individual) -> Sequence[Money]:
+def _combine_deductions(yours: Individual, janice: Individual) -> Sequence[Decimal]:
     return tuple(yours.deductions + janice.deductions)
 
 
 def _iter_allocations(
-    deductions: Sequence[Money],
-) -> Iterable[tuple[Sequence[Money], Sequence[Money]]]:
-    if not deductions:
-        yield (), ()
-        return
+    deductions: Sequence[Decimal],
+) -> Iterable[tuple[Sequence[Decimal], Sequence[Decimal]]]:
+    n = len(deductions)
+    for i in range(1 << n):
+        yours_alloc = []
+        janice_alloc = []
+        for j in range(n):
+            if (i >> j) & 1:
+                yours_alloc.append(deductions[j])
+            else:
+                janice_alloc.append(deductions[j])
+        yield tuple(yours_alloc), tuple(janice_alloc)
 
-    def backtrack(idx: int, left: tuple[Money, ...], right: tuple[Money, ...]):
-        if idx == len(deductions):
-            yield left, right
-            return
-        current = deductions[idx]
-        yield from backtrack(idx + 1, left + (current,), right)
-        yield from backtrack(idx + 1, left, right + (current,))
 
-    yield from backtrack(0, tuple(), tuple())
+def allocate_deductions(
+    yours_income: Decimal,
+    janice_income: Decimal,
+    shared_deductions: list[Decimal],
+    fy: int,
+) -> tuple[Decimal, Decimal]:
+    yours = Individual(
+        name="yours",
+        fy=fy,
+        income=yours_income,
+        deductions=shared_deductions,
+    )
+    janice = Individual(
+        name="janice",
+        fy=fy,
+        income=janice_income,
+    )
+    allocation = optimize_household(yours, janice)
+    return (
+        allocation.yours.total_deductions,
+        allocation.janice.total_deductions,
+    )
 
 
 def optimize_household(yours: Individual, janice: Individual) -> Allocation:
@@ -272,7 +290,7 @@ def optimize_household(yours: Individual, janice: Individual) -> Allocation:
 
     for yours_alloc, janice_alloc in _iter_allocations(deductions):
         allocation = _evaluate_allocation(yours, janice, yours_alloc, janice_alloc)
-        total = allocation.total.amount
+        total = allocation.total
         if best_total is None or total < best_total:
             best_total = total
             best_allocation = allocation

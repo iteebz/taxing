@@ -5,7 +5,7 @@ from unittest.mock import patch
 import pytest
 
 from src.core.deduce import deduce
-from src.core.models import AUD, Money, Transaction
+from src.core.models import Transaction
 
 
 @pytest.fixture
@@ -14,6 +14,14 @@ def mock_config_fy25():
     return {
         "fy_2025": {
             "brackets": [],
+            "medicare": {
+                "base_rate": 0.02,
+                "low_income_threshold_single": 24276,
+                "phase_in_rate_single": 0.10,
+                "low_income_threshold_family": 40939,
+                "phase_in_rate_family": 0.10,
+                "dependent_increment": 3760,
+            },
             "actual_cost_categories": {
                 "home_office": ["electricity", "internet"],
                 "vehicle": ["fuel", "maintenance"],
@@ -31,55 +39,55 @@ def sample_txns():
     return [
         Transaction(
             date=date(2024, 10, 1),
-            amount=Money(Decimal("100.00"), AUD),
+            amount=Decimal("100.00"),
             description="Electricity Bill",
-            source_bank="anz",
-            source_person="tyson",
+            bank="anz",
+            individual="tyson",
             category={"electricity"},
             personal_pct=Decimal("0"),
         ),
         Transaction(
             date=date(2024, 10, 2),
-            amount=Money(Decimal("50.00"), AUD),
+            amount=Decimal("50.00"),
             description="Internet Bill",
-            source_bank="anz",
-            source_person="tyson",
+            bank="anz",
+            individual="tyson",
             category={"internet"},
             personal_pct=Decimal("0"),
         ),
         Transaction(
             date=date(2024, 10, 3),
-            amount=Money(Decimal("200.00"), AUD),
+            amount=Decimal("200.00"),
             description="Fuel for Car",
-            source_bank="anz",
-            source_person="tyson",
+            bank="anz",
+            individual="tyson",
             category={"fuel"},
             personal_pct=Decimal("0"),
         ),
         Transaction(
             date=date(2024, 10, 4),
-            amount=Money(Decimal("75.00"), AUD),
+            amount=Decimal("75.00"),
             description="Donation to Charity",
-            source_bank="anz",
-            source_person="tyson",
+            bank="anz",
+            individual="tyson",
             category={"donations"},
             personal_pct=Decimal("0"),
         ),
         Transaction(
             date=date(2024, 10, 5),
-            amount=Money(Decimal("40.00"), AUD),
+            amount=Decimal("40.00"),
             description="Work Lunch",
-            source_bank="anz",
-            source_person="tyson",
+            bank="anz",
+            individual="tyson",
             category={"meals"},
             personal_pct=Decimal("0"),
         ),
         Transaction(
             date=date(2024, 10, 6),
-            amount=Money(Decimal("100.00"), AUD),
+            amount=Decimal("100.00"),
             description="Personal Shopping",
-            source_bank="anz",
-            source_person="tyson",
+            bank="anz",
+            individual="tyson",
             category={"clothing"},
             personal_pct=Decimal("1"),
         ),
@@ -95,7 +103,7 @@ def test_actual_cost_deduction_home_office(mock_safe_load, mock_config_fy25, sam
     assert len(ded_list) == 1
     deduction = ded_list[0]
     assert deduction.category == "home_office"
-    assert deduction.amount.amount == Decimal("120.00")  # (100 + 50) * 0.8
+    assert deduction.amount == Decimal("120.00")  # (100 + 50) * 0.8
     assert deduction.rate == Decimal("0.8")
     assert deduction.rate_basis == "ATO_DIVISION_63_ACTUAL_COST"
 
@@ -109,7 +117,7 @@ def test_actual_cost_deduction_vehicle(mock_safe_load, mock_config_fy25, sample_
     assert len(ded_list) == 1
     deduction = ded_list[0]
     assert deduction.category == "vehicle"
-    assert deduction.amount.amount == Decimal("150.00")  # 200 * 0.75
+    assert deduction.amount == Decimal("150.00")  # 200 * 0.75
     assert deduction.rate == Decimal("0.75")
     assert deduction.rate_basis == "ATO_ITAA97_S8_1_ACTUAL_COST"
 
@@ -123,7 +131,7 @@ def test_fixed_rate_deduction_donations(mock_safe_load, mock_config_fy25, sample
     assert len(ded_list) == 1
     deduction = ded_list[0]
     assert deduction.category == "donations"
-    assert deduction.amount.amount == Decimal("75.00")  # 75 * 1.0
+    assert deduction.amount == Decimal("75.00")  # 75 * 1.0
     assert deduction.rate == Decimal("1.0")
     assert deduction.rate_basis == "ATO_DIVISION_30"
 
@@ -137,7 +145,7 @@ def test_fixed_rate_deduction_meals(mock_safe_load, mock_config_fy25, sample_txn
     assert len(ded_list) == 1
     deduction = ded_list[0]
     assert deduction.category == "meals"
-    assert deduction.amount.amount == Decimal("20.00")  # 40 * 0.5
+    assert deduction.amount == Decimal("20.00")  # 40 * 0.5
     assert deduction.rate == Decimal("0.5")
     assert deduction.rate_basis == "ATO_50PCT_RULE"
 
@@ -151,10 +159,10 @@ def test_multiple_deductions_combined(mock_safe_load, mock_config_fy25, sample_t
     assert len(ded_list) == 4
     deductions_map = {d.category: d for d in ded_list}
 
-    assert deductions_map["home_office"].amount.amount == Decimal("120.00")
-    assert deductions_map["vehicle"].amount.amount == Decimal("150.00")
-    assert deductions_map["donations"].amount.amount == Decimal("75.00")
-    assert deductions_map["meals"].amount.amount == Decimal("20.00")
+    assert deductions_map["home_office"].amount == Decimal("120.00")
+    assert deductions_map["vehicle"].amount == Decimal("150.00")
+    assert deductions_map["donations"].amount == Decimal("75.00")
+    assert deductions_map["meals"].amount == Decimal("20.00")
 
 
 @patch("src.core.config.yaml.safe_load")
@@ -169,10 +177,10 @@ def test_txn_no_category(mock_safe_load, mock_config_fy25):
     mock_safe_load.return_value = mock_config_fy25
     txn = Transaction(
         date=date(2024, 10, 1),
-        amount=Money(Decimal("100.00"), AUD),
+        amount=Decimal("100.00"),
         description="RANDOM",
-        source_bank="anz",
-        source_person="tyson",
+        bank="anz",
+        individual="tyson",
         category=None,
     )
     ded_list = deduce([txn], fy=25, business_percentages={})
@@ -180,21 +188,21 @@ def test_txn_no_category(mock_safe_load, mock_config_fy25):
 
 
 @patch("src.core.config.yaml.safe_load")
-def test_personal_pct_reduces_fixed_rate_deduction(mock_safe_load, mock_config_fy25):
+def test_personal_pct_fixed_rate(mock_safe_load, mock_config_fy25):
     mock_safe_load.return_value = mock_config_fy25
     txn = Transaction(
         date=date(2024, 10, 5),
-        amount=Money(Decimal("40.00"), AUD),
+        amount=Decimal("40.00"),
         description="Work Lunch",
-        source_bank="anz",
-        source_person="tyson",
+        bank="anz",
+        individual="tyson",
         category={"meals"},
         personal_pct=Decimal("0.5"),
     )
     ded_list = deduce([txn], fy=25, business_percentages={})
     assert len(ded_list) == 1
     # (40 * 0.5 rate) * (1 - 0.5 personal_pct) = 10.00
-    assert ded_list[0].amount.amount == Decimal("10.00")
+    assert ded_list[0].amount == Decimal("10.00")
 
 
 @patch("src.core.config.yaml.safe_load")
@@ -206,48 +214,23 @@ def test_prohibited_category_skipped(mock_safe_load, mock_config_fy25, sample_tx
 
 
 @patch("src.core.config.yaml.safe_load")
-def test_ignores_foreign_currency(mock_safe_load, mock_config_fy25):
-    mock_safe_load.return_value = mock_config_fy25
-    eur = "EUR"
-    aud_txn = Transaction(
-        date=date(2024, 10, 1),
-        amount=Money(Decimal("100.00"), AUD),
-        description="Electricity Bill",
-        source_bank="anz",
-        source_person="tyson",
-        category={"electricity"},
-    )
-    eur_txn = Transaction(
-        date=date(2024, 10, 2),
-        amount=Money(Decimal("100.00"), eur),
-        description="FOREIGN",
-        source_bank="wise",
-        source_person="tyson",
-        category={"electricity"},
-    )
-    ded_list = deduce([aud_txn, eur_txn], fy=25, business_percentages={"home_office": 1.0})
-    assert len(ded_list) == 1
-    assert ded_list[0].amount.amount == Decimal("100.00")
-
-
-@patch("src.core.config.yaml.safe_load")
 def test_confidence_filtering(mock_safe_load, mock_config_fy25):
     mock_safe_load.return_value = mock_config_fy25
     high_conf = Transaction(
         date=date(2024, 10, 1),
-        amount=Money(Decimal("100.00"), AUD),
+        amount=Decimal("100.00"),
         description="Electricity Bill",
-        source_bank="anz",
-        source_person="tyson",
+        bank="anz",
+        individual="tyson",
         category={"electricity"},
         confidence=0.9,
     )
     low_conf = Transaction(
         date=date(2024, 10, 2),
-        amount=Money(Decimal("50.00"), AUD),
+        amount=Decimal("50.00"),
         description="Electricity Bill",
-        source_bank="anz",
-        source_person="tyson",
+        bank="anz",
+        individual="tyson",
         category={"electricity"},
         confidence=0.3,
     )
@@ -255,7 +238,7 @@ def test_confidence_filtering(mock_safe_load, mock_config_fy25):
         [high_conf, low_conf], fy=25, business_percentages={"home_office": 1.0}, min_confidence=0.5
     )
     assert len(ded_list) == 1
-    assert ded_list[0].amount.amount == Decimal("100.00")
+    assert ded_list[0].amount == Decimal("100.00")
 
 
 @patch("src.core.config.yaml.safe_load")
@@ -263,10 +246,10 @@ def test_category_not_in_config_skipped(mock_safe_load, mock_config_fy25):
     mock_safe_load.return_value = mock_config_fy25
     txn = Transaction(
         date=date(2024, 10, 1),
-        amount=Money(Decimal("100.00"), AUD),
+        amount=Decimal("100.00"),
         description="Unknown Category",
-        source_bank="anz",
-        source_person="tyson",
+        bank="anz",
+        individual="tyson",
         category={"unknown_category"},
     )
     ded_list = deduce([txn], fy=25, business_percentages={})
@@ -274,14 +257,14 @@ def test_category_not_in_config_skipped(mock_safe_load, mock_config_fy25):
 
 
 @patch("src.core.config.yaml.safe_load")
-def test_actual_cost_with_personal_pct_in_txn(mock_safe_load, mock_config_fy25):
+def test_actual_cost_personal_pct(mock_safe_load, mock_config_fy25):
     mock_safe_load.return_value = mock_config_fy25
     txn = Transaction(
         date=date(2024, 10, 1),
-        amount=Money(Decimal("100.00"), AUD),
+        amount=Decimal("100.00"),
         description="Electricity Bill",
-        source_bank="anz",
-        source_person="tyson",
+        bank="anz",
+        individual="tyson",
         category={"electricity"},
         personal_pct=Decimal("0.2"),  # This personal_pct should be ignored for actual cost
     )
@@ -291,18 +274,18 @@ def test_actual_cost_with_personal_pct_in_txn(mock_safe_load, mock_config_fy25):
     assert len(ded_list) == 1
     deduction = ded_list[0]
     # The personal_pct on the transaction is ignored for actual cost, only the overall business_percentage is used
-    assert deduction.amount.amount == Decimal("80.00")  # 100 * 0.8
+    assert deduction.amount == Decimal("80.00")  # 100 * 0.8
 
 
 @patch("src.core.config.yaml.safe_load")
-def test_fixed_rate_with_no_business_percentage_provided(mock_safe_load, mock_config_fy25):
+def test_fixed_rate_no_pct(mock_safe_load, mock_config_fy25):
     mock_safe_load.return_value = mock_config_fy25
     txn = Transaction(
         date=date(2024, 10, 4),
-        amount=Money(Decimal("75.00"), AUD),
+        amount=Decimal("75.00"),
         description="Donation to Charity",
-        source_bank="anz",
-        source_person="tyson",
+        bank="anz",
+        individual="tyson",
         category={"donations"},
         personal_pct=Decimal("0"),
     )
@@ -311,20 +294,18 @@ def test_fixed_rate_with_no_business_percentage_provided(mock_safe_load, mock_co
     assert len(ded_list) == 1
     deduction = ded_list[0]
     assert deduction.category == "donations"
-    assert deduction.amount.amount == Decimal(
-        "75.00"
-    )  # 75 * 1.0 (fixed rate) * (1 - 0 personal_pct)
+    assert deduction.amount == Decimal("75.00")  # 75 * 1.0 (fixed rate) * (1 - 0 personal_pct)
 
 
 @patch("src.core.config.yaml.safe_load")
-def test_actual_cost_with_no_business_percentage_provided(mock_safe_load, mock_config_fy25):
+def test_actual_cost_no_pct(mock_safe_load, mock_config_fy25):
     mock_safe_load.return_value = mock_config_fy25
     txn = Transaction(
         date=date(2024, 10, 1),
-        amount=Money(Decimal("100.00"), AUD),
+        amount=Decimal("100.00"),
         description="Electricity Bill",
-        source_bank="anz",
-        source_person="tyson",
+        bank="anz",
+        individual="tyson",
         category={"electricity"},
     )
     ded_list = deduce([txn], fy=25, business_percentages={})

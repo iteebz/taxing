@@ -7,7 +7,7 @@ from src.core.mining import (
     mine_suggestions,
     score_suggestions,
 )
-from src.core.models import AUD, Money, Transaction
+from src.core.models import Transaction
 
 
 def test_extract_keywords():
@@ -31,18 +31,18 @@ def test_find_similar_labeled_basic():
     txns = [
         Transaction(
             date=date(2025, 1, 1),
-            amount=Money(Decimal("-100"), AUD),
+            amount=Decimal("-100"),
             description="WOOLWORTHS NORTH SYDNEY",
-            source_bank="anz",
-            source_person="alice",
+            bank="anz",
+            individual="alice",
             category={"groceries"},
         ),
         Transaction(
             date=date(2025, 1, 2),
-            amount=Money(Decimal("-50"), AUD),
+            amount=Decimal("-50"),
             description="COLES BONDI",
-            source_bank="anz",
-            source_person="alice",
+            bank="anz",
+            individual="alice",
             category={"groceries"},
         ),
     ]
@@ -63,10 +63,10 @@ def test_mine_suggestions_no_unlabeled():
     txns = [
         Transaction(
             date=date(2025, 1, 1),
-            amount=Money(Decimal("-100"), AUD),
+            amount=Decimal("-100"),
             description="WOOLWORTHS",
-            source_bank="anz",
-            source_person="alice",
+            bank="anz",
+            individual="alice",
             category={"groceries"},
         )
     ]
@@ -79,18 +79,18 @@ def test_mine_suggestions_basic():
     txns = [
         Transaction(
             date=date(2025, 1, 1),
-            amount=Money(Decimal("-100"), AUD),
+            amount=Decimal("-100"),
             description="WOOLWORTHS NORTH SYDNEY",
-            source_bank="anz",
-            source_person="alice",
+            bank="anz",
+            individual="alice",
             category={"groceries"},
         ),
         Transaction(
             date=date(2025, 1, 2),
-            amount=Money(Decimal("-50"), AUD),
+            amount=Decimal("-50"),
             description="UNKNOWN WOOLWORTHS STORE",
-            source_bank="anz",
-            source_person="alice",
+            bank="anz",
+            individual="alice",
             category=None,
         ),
     ]

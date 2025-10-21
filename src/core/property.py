@@ -2,7 +2,7 @@
 
 from decimal import Decimal
 
-from src.core.models import AUD, Money, PropertyExpense, PropertyExpensesSummary
+from src.core.models import PropertyExpense, PropertyExpensesSummary
 
 
 def aggregate_expenses(expenses: list[PropertyExpense]) -> PropertyExpensesSummary:
@@ -23,11 +23,11 @@ def aggregate_expenses(expenses: list[PropertyExpense]) -> PropertyExpensesSumma
 
     for exp in expenses:
         if exp.expense_type in totals:
-            totals[exp.expense_type] += exp.amount.amount
+            totals[exp.expense_type] += exp.amount
 
     return PropertyExpensesSummary(
-        rent=Money(totals["rent"], AUD),
-        water=Money(totals["water"], AUD),
-        council=Money(totals["council"], AUD),
-        strata=Money(totals["strata"], AUD),
+        rent=totals["rent"],
+        water=totals["water"],
+        council=totals["council"],
+        strata=totals["strata"],
     )

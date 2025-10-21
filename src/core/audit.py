@@ -1,7 +1,6 @@
 from decimal import Decimal
 
-from src.core.models import Deduction, Loss
-from src.core.optimizer import Individual
+from src.core.models import Deduction, Individual, Loss
 
 
 def validate_loss_reconciliation(losses: list[Loss], current_fy: int) -> list[str]:
@@ -37,17 +36,17 @@ def detect_suspicious_patterns(
         if name not in persons:
             continue
 
-        person = persons[name]
-        total_deductions = sum((d.amount.amount for d in ded_list), Decimal("0"))
+        individual = persons[name]
+        total_deductions = sum((d.amount for d in ded_list), Decimal("0"))
 
-        if person.employment_income.amount == 0:
+        if individual.income == 0:
             if total_deductions > 0:
                 alerts.append(
                     f"{name}: $0 employment income but ${total_deductions} deductions claimed "
                     f"(high Division 19AA risk—no nexus to income)"
                 )
         else:
-            deduction_rate = total_deductions / person.employment_income.amount
+            deduction_rate = total_deductions / individual.income
             if deduction_rate > Decimal("0.50"):
                 alerts.append(
                     f"{name}: Deductions {deduction_rate:.1%} of income "
@@ -85,7 +84,7 @@ def generate_audit_statement(
 
     for category in sorted(by_category.keys()):
         ded_list = by_category[category]
-        total = sum((d.amount.amount for d in ded_list), Decimal("0"))
+        total = sum((d.amount for d in ded_list), Decimal("0"))
         count = len(ded_list)
 
         rate = ded_list[0].rate if ded_list else Decimal("0")

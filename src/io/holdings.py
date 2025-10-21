@@ -1,51 +1,46 @@
-"""Load holdings from CSV files."""
+"""Load positions from CSV files."""
 
 from decimal import Decimal
 from pathlib import Path
 
-from src.core.models import AUD, Holding, Money
+from src.core.models import Position
 from src.io.persist import dicts_from_csv
 
 
-def load_holdings(base_dir: Path, person: str) -> list[Holding]:
-    """Load holdings for a person from CSV file.
+def load_positions(base_dir: Path, person: str) -> list[Position]:
+    """Load positions for a person from CSV file.
 
-    Expected file: holdings.csv with columns:
+    Expected file: positions.csv with columns:
     - ticker (str): e.g., "ASX:VAS"
     - units (Decimal): quantity held
-    - cost_basis (Decimal): total purchase price
-    - current_price (Decimal): current per-unit price
+    - total_cost_basis (Decimal): total purchase price
 
     Example:
-        ticker,units,cost_basis,current_price
-        ASX:SYI,100,5000,60
-        ASX:VAS,50,2500,100
+        ticker,units,total_cost_basis
+        ASX:SYI,100,5000
+        ASX:VAS,50,2500
     """
-    holdings_file = base_dir / "holdings.csv"
-    if not holdings_file.exists():
+    positions_file = base_dir / "positions.csv"
+    if not positions_file.exists():
         return []
 
-    holdings = []
-    for row in dicts_from_csv(holdings_file):
+    positions = []
+    for row in dicts_from_csv(positions_file):
         try:
             ticker = row.get("ticker")
             units = row.get("units")
-            cost_basis = row.get("cost_basis")
-            current_price = row.get("current_price")
+            total_cost_basis = row.get("total_cost_basis")
 
-            if not all(
-                [ticker, units is not None, cost_basis is not None, current_price is not None]
-            ):
+            if not all([ticker, units is not None, total_cost_basis is not None]):
                 continue
 
-            holding = Holding(
+            position = Position(
                 ticker=str(ticker),
                 units=Decimal(str(units)),
-                cost_basis=Money(Decimal(str(cost_basis)), AUD),
-                current_price=Money(Decimal(str(current_price)), AUD),
+                total_cost_basis=Decimal(str(total_cost_basis)),
             )
-            holdings.append(holding)
+            positions.append(position)
         except Exception:
             pass
 
-    return holdings
+    return positions

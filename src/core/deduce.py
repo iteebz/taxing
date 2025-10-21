@@ -1,7 +1,7 @@
 from decimal import Decimal
 
 from src.core.config import load_config
-from src.core.models import AUD, Deduction, Money, Transaction
+from src.core.models import Deduction, Transaction
 from src.core.rates import get_rate_basis, validate_category
 
 
@@ -34,14 +34,14 @@ def deduce(
         for sub_cat in sub_cats
     }
 
-    actual_cost_totals: dict[str, Money] = {
-        main_cat: Money(Decimal("0"), AUD) for main_cat in config.actual_cost_categories
+    actual_cost_totals: dict[str, Decimal] = {
+        main_cat: Decimal("0") for main_cat in config.actual_cost_categories
     }
 
     for txn in txns:
         if txn.category is None or not txn.category:
             continue
-        if txn.amount.currency != AUD or txn.confidence < min_confidence:
+        if txn.confidence < min_confidence:
             continue
 
         for cat in txn.category:
@@ -50,53 +50,52 @@ def deduce(
                 actual_cost_totals[main_cat] += txn.amount
 
     for main_cat, total_amount in actual_cost_totals.items():
-                    if total_amount.amount > 0:
-                        business_pct = Decimal(str(business_percentages.get(main_cat, 0.0)))
-                        deductible_amount = total_amount * float(business_pct)
-                        if deductible_amount.amount > 0: # Only create deduction if amount is greater than zero
-                            deductions[main_cat] = Deduction(
-                                category=main_cat,
-                                amount=deductible_amount,
-                                rate=business_pct,  # The 'rate' is now the business use percentage
-                                rate_basis=get_rate_basis(main_cat),
-                                fy=fy,
-                            )
-        
-            # 2. Handle Fixed Rate Deductions
-            for txn in txns:
-                if txn.category is None or not txn.category:
+        if total_amount > 0:
+            business_pct = Decimal(str(business_percentages.get(main_cat, 0.0)))
+            deductible_amount = total_amount * business_pct
+            if deductible_amount > 0:
+                deductions[main_cat] = Deduction(
+                    category=main_cat,
+                    amount=deductible_amount,
+                    rate=business_pct,
+                    rate_basis=get_rate_basis(main_cat),
+                    fy=fy,
+                )
+
+    for txn in txns:
+        if txn.category is None or not txn.category:
+            continue
+        if txn.confidence < min_confidence:
+            continue
+
+        for cat in txn.category:
+            if cat in config.fixed_rates:
+                try:
+                    validate_category(cat)
+                except ValueError:
                     continue
-                if txn.amount.currency != AUD or txn.confidence < min_confidence:
-                    continue
-        
-                for cat in txn.category:
-                    if cat in config.fixed_rates:
-                        try:
-                            validate_category(cat)
-                        except ValueError:
-                            continue
-        
-                        rate = config.fixed_rates[cat]
-                        business_pct = 1 - txn.personal_pct
-                        deductible_amount = txn.amount * float(rate) * float(business_pct)
-        
-                        if deductible_amount.amount > 0: # Only create deduction if amount is greater than zero
-                            if cat in deductions:
-                                existing = deductions[cat]
-                                deductions[cat] = Deduction(
-                                    category=cat,
-                                    amount=existing.amount + deductible_amount,
-                                    rate=rate,
-                                    rate_basis=get_rate_basis(cat),
-                                    fy=fy,
-                                )
-                            else:
-                                deductions[cat] = Deduction(
-                                    category=cat,
-                                    amount=deductible_amount,
-                                    rate=rate,
-                                    rate_basis=get_rate_basis(cat),
-                                    fy=fy,
-                                )
-        
-            return list(deductions.values())
+
+                rate = config.fixed_rates[cat]
+                business_pct = 1 - txn.personal_pct
+                deductible_amount = txn.amount * rate * business_pct
+
+                if deductible_amount > 0:
+                    if cat in deductions:
+                        existing = deductions[cat]
+                        deductions[cat] = Deduction(
+                            category=cat,
+                            amount=existing.amount + deductible_amount,
+                            rate=rate,
+                            rate_basis=get_rate_basis(cat),
+                            fy=fy,
+                        )
+                    else:
+                        deductions[cat] = Deduction(
+                            category=cat,
+                            amount=deductible_amount,
+                            rate=rate,
+                            rate_basis=get_rate_basis(cat),
+                            fy=fy,
+                        )
+
+    return list(deductions.values())

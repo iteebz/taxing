@@ -31,10 +31,10 @@ def handle(args):
         bracket_rate = bracket_projection.get(fy, 0)
         print(
             f"FY{fy:<6} "
-            f"${sum(g.taxable_gain.amount for g in p.realized_gains):<14,.0f} "
+            f"${sum(g.taxable_gain for g in p.realized_gains):<14,.0f} "
             f"{bracket_rate:<9}% "
-            f"${p.carryforward_used.amount:<14,.0f} "
-            f"${p.taxable_gain.amount:<14,.0f}"
+            f"${p.carryforward_used:<14,.0f} "
+            f"${p.taxable_gain:<14,.0f}"
         )
 
     print("-" * 80)

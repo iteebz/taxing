@@ -1,41 +1,16 @@
 from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
-from typing import Literal, NewType, Protocol
-
-Currency = NewType("Currency", str)
-AUD = Currency("AUD")
-
-
-@dataclass(frozen=True)
-class Money:
-    amount: Decimal
-    currency: Currency
-
-    def __add__(self, other: "Money") -> "Money":
-        if self.currency != other.currency:
-            raise ValueError(f"Cannot add {self.currency} and {other.currency}")
-        return Money(self.amount + other.amount, self.currency)
-
-    def __sub__(self, other: "Money") -> "Money":
-        if self.currency != other.currency:
-            raise ValueError(f"Cannot subtract {self.currency} and {other.currency}")
-        return Money(self.amount - other.amount, self.currency)
-
-    def __mul__(self, scalar: float) -> "Money":
-        return Money(self.amount * Decimal(str(scalar)), self.currency)
-
-    def __rmul__(self, scalar: float) -> "Money":
-        return self.__mul__(scalar)
+from typing import Literal, Protocol
 
 
 @dataclass(frozen=True)
 class Transaction:
     date: date
-    amount: Money
+    amount: Decimal
     description: str
-    source_bank: str
-    source_person: str
+    bank: str
+    individual: str
     category: set[str] | None = None
     is_transfer: bool = False
     claimant: str | None = None
@@ -43,10 +18,11 @@ class Transaction:
     source_txn_ids: tuple[str, ...] = field(default_factory=tuple)
     personal_pct: Decimal = Decimal("0")
     confidence: float = 1.0
+    account: str | None = None
 
     def __post_init__(self):
         if self.sources is None:
-            object.__setattr__(self, "sources", frozenset({self.source_bank}))
+            object.__setattr__(self, "sources", frozenset({self.bank}))
         if not isinstance(self.personal_pct, Decimal):
             object.__setattr__(self, "personal_pct", Decimal(str(self.personal_pct)))
         if self.personal_pct < 0 or self.personal_pct > 1:
@@ -61,23 +37,22 @@ class Trade:
     code: str
     action: str
     units: Decimal
-    price: Money
-    fee: Money
-    source_person: str
+    price: Decimal
+    fee: Decimal
+    individual: str
 
 
 @dataclass(frozen=True)
 class Gain:
     fy: int
-    raw_profit: Money
-    taxable_gain: Money
-    action: str
+    raw_profit: Decimal
+    taxable_gain: Decimal
 
 
 @dataclass(frozen=True)
 class Deduction:
     category: str
-    amount: Money
+    amount: Decimal
     rate: Decimal
     rate_basis: str
     fy: int
@@ -85,7 +60,7 @@ class Deduction:
 
 @dataclass(frozen=True)
 class Car:
-    total_spend: Money
+    total_spend: Decimal
     deductible_pct: Decimal
 
     def __post_init__(self):
@@ -96,11 +71,11 @@ class Car:
 
     @property
     def implied_km(self) -> Decimal:
-        return (self.total_spend.amount * self.deductible_pct) / Decimal("0.67")
+        return (self.total_spend * self.deductible_pct) / Decimal("0.67")
 
     @property
-    def deductible_amount(self) -> Money:
-        return Money(self.implied_km * Decimal("0.67"), self.total_spend.currency)
+    def deductible_amount(self) -> Decimal:
+        return self.implied_km * Decimal("0.67")
 
 
 @dataclass(frozen=True)
@@ -113,44 +88,32 @@ class Summary:
 @dataclass(frozen=True)
 class PropertyExpense:
     expense_type: str
-    amount: Money
+    amount: Decimal
 
 
 @dataclass(frozen=True)
 class PropertyExpensesSummary:
-    rent: Money
-    water: Money
-    council: Money
-    strata: Money
+    rent: Decimal
+    water: Decimal
+    council: Decimal
+    strata: Decimal
 
     @property
-    def total(self) -> Money:
+    def total(self) -> Decimal:
         return self.rent + self.water + self.council + self.strata
 
 
 @dataclass(frozen=True)
-class Holding:
+class Position:
     ticker: str
     units: Decimal
-    cost_basis: Money
-    current_price: Money
-
-    @property
-    def current_value(self) -> Money:
-        return Money(
-            self.units * self.current_price.amount,
-            self.current_price.currency,
-        )
-
-    @property
-    def unrealized_gain(self) -> Money:
-        return self.current_value - self.cost_basis
+    total_cost_basis: Decimal
 
 
 @dataclass(frozen=True)
 class Loss:
     fy: int
-    amount: Money
+    amount: Decimal
     source_fy: int
 
 
@@ -158,7 +121,7 @@ class Loss:
 class Asset:
     fy: int
     description: str
-    cost: Money
+    cost: Decimal
     life_years: int
     depreciation_method: str = "PC"
     purchase_date: date | None = None
@@ -167,7 +130,7 @@ class Asset:
 @dataclass(frozen=True)
 class Rent:
     date: date
-    amount: Money
+    amount: Decimal
     tenant: str
     fy: int
 
@@ -175,28 +138,28 @@ class Rent:
 @dataclass(frozen=True)
 class Water:
     date: date
-    amount: Money
+    amount: Decimal
     fy: int
 
 
 @dataclass(frozen=True)
 class Council:
     date: date
-    amount: Money
+    amount: Decimal
     fy: int
 
 
 @dataclass(frozen=True)
 class Strata:
     date: date
-    amount: Money
+    amount: Decimal
     fy: int
 
 
 @dataclass(frozen=True)
 class CapitalWorks:
     date: date
-    amount: Money
+    amount: Decimal
     description: str
     life_years: int
     asset_id: str
@@ -206,7 +169,7 @@ class CapitalWorks:
 @dataclass(frozen=True)
 class Interest:
     date: date
-    amount: Money
+    amount: Decimal
     loan_id: str
     fy: int
 
@@ -231,24 +194,24 @@ class Property:
             raise ValueError(f"occupancy_pct must be 0.0-1.0, got {self.occupancy_pct}")
 
     @property
-    def total_rental_income(self) -> Money:
+    def total_rental_income(self) -> Decimal:
         if not self.rents:
-            return Money(Decimal("0"), AUD)
-        return sum((r.amount for r in self.rents), Money(Decimal("0"), AUD))
+            return Decimal("0")
+        return sum((r.amount for r in self.rents), Decimal("0"))
 
     @property
-    def total_expenses(self) -> Money:
+    def total_expenses(self) -> Decimal:
         items = self.waters + self.councils + self.stratas
         if not items:
-            return Money(Decimal("0"), AUD)
-        return sum((i.amount for i in items), Money(Decimal("0"), AUD))
+            return Decimal("0")
+        return sum((i.amount for i in items), Decimal("0"))
 
     @property
-    def deductible_expenses(self) -> Money:
+    def deductible_expenses(self) -> Decimal:
         return self.total_expenses * self.occupancy_pct
 
     @property
-    def net_rental_income(self) -> Money:
+    def net_rental_income(self) -> Decimal:
         return self.total_rental_income - self.deductible_expenses
 
 
@@ -256,35 +219,28 @@ class Property:
 class Individual:
     name: str
     fy: int
-    income: Money
-    deductions: list[Money] = field(default_factory=list)
+    income: Decimal
+    deductions: list[Decimal] = field(default_factory=list)
     gains: list[Gain] = field(default_factory=list)
-    losses: list[Loss] = field(default_factory=list)
     medicare_status: Literal["single", "family"] = "single"
     medicare_dependents: int = 0
     has_private_health_cover: bool = True
 
     @property
-    def total_deductions(self) -> Money:
+    def total_deductions(self) -> Decimal:
         if not self.deductions:
-            return Money(Decimal("0"), AUD)
-        return sum(self.deductions, Money(Decimal("0"), AUD))
+            return Decimal("0")
+        return sum(self.deductions, Decimal("0"))
 
     @property
-    def total_gains(self) -> Money:
+    def total_gains(self) -> Decimal:
         if not self.gains:
-            return Money(Decimal("0"), AUD)
-        return sum((g.taxable_gain for g in self.gains), Money(Decimal("0"), AUD))
+            return Decimal("0")
+        return sum((g.taxable_gain for g in self.gains), Decimal("0"))
 
     @property
-    def total_losses(self) -> Money:
-        if not self.losses:
-            return Money(Decimal("0"), AUD)
-        return sum((loss.amount for loss in self.losses), Money(Decimal("0"), AUD))
-
-    @property
-    def taxable_income(self) -> Money:
-        return self.income + self.total_gains - self.total_deductions - self.total_losses
+    def taxable_income(self) -> Decimal:
+        return self.income + self.total_gains - self.total_deductions
 
 
 class Classifier(Protocol):

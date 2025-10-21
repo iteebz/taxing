@@ -1,7 +1,7 @@
 from datetime import date
 from decimal import Decimal
 
-from src.core.models import AUD, Money, Transaction
+from src.core.models import Transaction
 from src.core.transfers import (
     extract_recipient,
     is_transfer,
@@ -19,10 +19,10 @@ def _txn(
     """Helper to create test transactions."""
     return Transaction(
         date=date(2024, 1, 1),
-        amount=Money(amount, AUD),
+        amount=amount,
         description=desc,
-        source_bank="anz",
-        source_person=person,
+        bank="anz",
+        individual=person,
         category=category,
     )
 
@@ -71,30 +71,30 @@ def test_reconcile_single_transfer():
     assert len(result) == 1
     key = ("janice", "tyson")
     assert key in result
-    assert result[key].amount.amount == Decimal("100.00")
+    assert result[key].amount == Decimal("100.00")
     assert result[key].txn_count == 1
 
 
 def test_reconcile_multiple_transfers_same_person():
     txn1 = Transaction(
         date=date(2024, 1, 1),
-        amount=Money(Decimal("50.00"), AUD),
+        amount=Decimal("50.00"),
         description="TRANSFER TO TYSON",
-        source_bank="anz",
-        source_person="janice",
+        bank="anz",
+        individual="janice",
         category={"transfers"},
     )
     txn2 = Transaction(
         date=date(2024, 1, 5),
-        amount=Money(Decimal("75.00"), AUD),
+        amount=Decimal("75.00"),
         description="TRANSFER TO TYSON",
-        source_bank="cba",
-        source_person="janice",
+        bank="cba",
+        individual="janice",
         category={"transfers"},
     )
     result = reconcile_transfers([txn1, txn2])
     key = ("janice", "tyson")
-    assert result[key].amount.amount == Decimal("125.00")
+    assert result[key].amount == Decimal("125.00")
     assert result[key].txn_count == 2
     assert result[key].date_first == "2024-01-01"
     assert result[key].date_last == "2024-01-05"
@@ -105,7 +105,7 @@ def test_net_position_owes():
         [_txn("TRANSFER TO ALICE", person="janice", category={"transfers"})]
     )
     net = net_position(transfers, "janice")
-    assert net.amount == Decimal("100.00")
+    assert net == Decimal("100.00")
 
 
 def test_net_position_owed():
@@ -113,21 +113,21 @@ def test_net_position_owed():
         [_txn("TRANSFER TO TYSON", person="janice", category={"transfers"})]
     )
     net = net_position(transfers, "tyson")
-    assert net.amount == Decimal("-100.00")
+    assert net == Decimal("-100.00")
 
 
 def test_net_position_balanced():
     janice_to_tyson = _txn("TRANSFER TO TYSON", person="janice", category={"transfers"})
     tyson_to_janice = Transaction(
         date=date(2024, 1, 2),
-        amount=Money(Decimal("100.00"), AUD),
+        amount=Decimal("100.00"),
         description="TRANSFER TO JANICE",
-        source_bank="anz",
-        source_person="tyson",
+        bank="anz",
+        individual="tyson",
         category={"transfers"},
     )
     transfers = reconcile_transfers([janice_to_tyson, tyson_to_janice])
     janice_net = net_position(transfers, "janice")
     tyson_net = net_position(transfers, "tyson")
-    assert janice_net.amount == Decimal("0.00")
-    assert tyson_net.amount == Decimal("0.00")
+    assert janice_net == Decimal("0.00")
+    assert tyson_net == Decimal("0.00")

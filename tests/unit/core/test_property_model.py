@@ -1,13 +1,13 @@
 from datetime import date
 from decimal import Decimal
 
-from src.core.models import AUD, Council, Money, Property, Rent, Strata, Water
+from src.core.models import Council, Property, Rent, Strata, Water
 
 
 def test_total_rental_income():
     rents = [
-        Rent(date=date(2025, 7, 1), amount=Money(Decimal("1000"), AUD), tenant="janice", fy=25),
-        Rent(date=date(2025, 8, 1), amount=Money(Decimal("1000"), AUD), tenant="janice", fy=25),
+        Rent(date=date(2025, 7, 1), amount=Decimal("1000"), tenant="janice", fy=25),
+        Rent(date=date(2025, 8, 1), amount=Decimal("1000"), tenant="janice", fy=25),
     ]
     prop = Property(
         address="123 Main St",
@@ -16,13 +16,13 @@ def test_total_rental_income():
         occupancy_pct=Decimal("0.30"),
         rents=rents,
     )
-    assert prop.total_rental_income == Money(Decimal("2000"), AUD)
+    assert prop.total_rental_income == Decimal("2000")
 
 
 def test_deductible_expenses_with_occupancy():
-    waters = [Water(date=date(2025, 7, 1), amount=Money(Decimal("100"), AUD), fy=25)]
-    councils = [Council(date=date(2025, 7, 1), amount=Money(Decimal("200"), AUD), fy=25)]
-    stratas = [Strata(date=date(2025, 7, 1), amount=Money(Decimal("150"), AUD), fy=25)]
+    waters = [Water(date=date(2025, 7, 1), amount=Decimal("100"), fy=25)]
+    councils = [Council(date=date(2025, 7, 1), amount=Decimal("200"), fy=25)]
+    stratas = [Strata(date=date(2025, 7, 1), amount=Decimal("150"), fy=25)]
     prop = Property(
         address="123 Main St",
         owner="you",
@@ -32,16 +32,14 @@ def test_deductible_expenses_with_occupancy():
         councils=councils,
         stratas=stratas,
     )
-    assert prop.deductible_expenses == Money(Decimal("135"), AUD)
+    assert prop.deductible_expenses == Decimal("135")
 
 
 def test_net_rental_income():
-    rents = [
-        Rent(date=date(2025, 7, 1), amount=Money(Decimal("2000"), AUD), tenant="janice", fy=25)
-    ]
-    waters = [Water(date=date(2025, 7, 1), amount=Money(Decimal("100"), AUD), fy=25)]
-    councils = [Council(date=date(2025, 7, 1), amount=Money(Decimal("200"), AUD), fy=25)]
-    stratas = [Strata(date=date(2025, 7, 1), amount=Money(Decimal("150"), AUD), fy=25)]
+    rents = [Rent(date=date(2025, 7, 1), amount=Decimal("2000"), tenant="janice", fy=25)]
+    waters = [Water(date=date(2025, 7, 1), amount=Decimal("100"), fy=25)]
+    councils = [Council(date=date(2025, 7, 1), amount=Decimal("200"), fy=25)]
+    stratas = [Strata(date=date(2025, 7, 1), amount=Decimal("150"), fy=25)]
     prop = Property(
         address="123 Main St",
         owner="you",
@@ -52,7 +50,7 @@ def test_net_rental_income():
         councils=councils,
         stratas=stratas,
     )
-    assert prop.net_rental_income == Money(Decimal("1865"), AUD)
+    assert prop.net_rental_income == Decimal("1865")
 
 
 def test_invalid_occupancy_pct():

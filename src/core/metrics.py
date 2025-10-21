@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from src.core.models import AUD, Transaction
+from src.core.models import Transaction
 
 
 def coverage(txns: list[Transaction]) -> dict[str, float]:
@@ -37,21 +37,21 @@ def coverage(txns: list[Transaction]) -> dict[str, float]:
     count_total = len(txns)
     pct_txns = 100 * count_labeled / count_total if count_total > 0 else 0.0
 
-    debits = [t for t in txns if t.amount.amount < 0]
-    credits = [t for t in txns if t.amount.amount > 0]
+    debits = [t for t in txns if t.amount < 0]
+    credits = [t for t in txns if t.amount > 0]
 
     debit_labeled = sum(
-        (abs(t.amount.amount) for t in labeled if t.amount.amount < 0),
+        (abs(t.amount) for t in labeled if t.amount < 0),
         Decimal("0"),
     )
-    debit_total = sum((abs(t.amount.amount) for t in debits), Decimal("0"))
+    debit_total = sum((abs(t.amount) for t in debits), Decimal("0"))
     pct_debit = 100 * debit_labeled / debit_total if debit_total > 0 else 0.0
 
     credit_labeled = sum(
-        (t.amount.amount for t in labeled if t.amount.amount > 0),
+        (t.amount for t in labeled if t.amount > 0),
         Decimal("0"),
     )
-    credit_total = sum((t.amount.amount for t in credits), Decimal("0"))
+    credit_total = sum((t.amount for t in credits), Decimal("0"))
     pct_credit = 100 * credit_labeled / credit_total if credit_total > 0 else 0.0
 
     return {
@@ -86,24 +86,21 @@ def household_metrics(txns: list[Transaction]) -> dict[str, any]:
     transfers_by_person = {}
 
     for txn in txns:
-        person = txn.source_person
+        individual = txn.individual
         is_transfer = txn.is_transfer or (txn.category is not None and "transfers" in txn.category)
 
-        if txn.amount.currency != AUD:
-            continue
-
         if is_transfer:
-            if person not in transfers_by_person:
-                transfers_by_person[person] = Decimal("0")
-            transfers_by_person[person] += abs(txn.amount.amount)
-        elif txn.amount.amount > 0:
-            if person not in income_by_person:
-                income_by_person[person] = Decimal("0")
-            income_by_person[person] += txn.amount.amount
+            if individual not in transfers_by_person:
+                transfers_by_person[individual] = Decimal("0")
+            transfers_by_person[individual] += abs(txn.amount)
+        elif txn.amount > 0:
+            if individual not in income_by_person:
+                income_by_person[individual] = Decimal("0")
+            income_by_person[individual] += txn.amount
         else:
-            if person not in spending_by_person:
-                spending_by_person[person] = Decimal("0")
-            spending_by_person[person] += abs(txn.amount.amount)
+            if individual not in spending_by_person:
+                spending_by_person[individual] = Decimal("0")
+            spending_by_person[individual] += abs(txn.amount)
 
     total_spending = sum(spending_by_person.values(), Decimal("0"))
     total_income = sum(income_by_person.values(), Decimal("0"))

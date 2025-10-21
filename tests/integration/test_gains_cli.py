@@ -3,7 +3,7 @@
 from decimal import Decimal
 
 from src.cli.commands.gains import handle as cmd_gains_plan
-from src.core.models import AUD, Gain, Loss, Money
+from src.core.models import Gain, Loss
 
 
 class Args:
@@ -20,9 +20,8 @@ def test_gains_plan_single_year(capsys):
     gains = [
         Gain(
             fy=25,
-            raw_profit=Money(Decimal("10000"), AUD),
-            taxable_gain=Money(Decimal("5000"), AUD),
-            action="discount",
+            raw_profit=Decimal("10000"),
+            taxable_gain=Decimal("5000"),
         ),
     ]
     losses = []
@@ -41,15 +40,13 @@ def test_gains_plan_multi_year(capsys):
     gains = [
         Gain(
             fy=25,
-            raw_profit=Money(Decimal("10000"), AUD),
-            taxable_gain=Money(Decimal("5000"), AUD),
-            action="discount",
+            raw_profit=Decimal("10000"),
+            taxable_gain=Decimal("5000"),
         ),
         Gain(
             fy=26,
-            raw_profit=Money(Decimal("10000"), AUD),
-            taxable_gain=Money(Decimal("5000"), AUD),
-            action="discount",
+            raw_profit=Decimal("10000"),
+            taxable_gain=Decimal("5000"),
         ),
     ]
     losses = []
@@ -69,13 +66,12 @@ def test_gains_plan_with_loss_carryforward(capsys):
     gains = [
         Gain(
             fy=26,
-            raw_profit=Money(Decimal("8000"), AUD),
-            taxable_gain=Money(Decimal("8000"), AUD),
-            action="discount",
+            raw_profit=Decimal("8000"),
+            taxable_gain=Decimal("8000"),
         ),
     ]
     losses = [
-        Loss(fy=26, amount=Money(Decimal("3000"), AUD), source_fy=25),
+        Loss(fy=26, amount=Decimal("3000"), source_fy=25),
     ]
 
     args = Args(projection="26:30%", gains=gains, losses=losses)
@@ -101,26 +97,21 @@ def test_gains_plan_realistic_scenario(capsys):
     gains = [
         Gain(
             fy=25,
-            raw_profit=Money(Decimal("8000"), AUD),
-            taxable_gain=Money(Decimal("4000"), AUD),
-            action="discount",
+            raw_profit=Decimal("8000"),
+            taxable_gain=Decimal("4000"),
         ),
         Gain(
             fy=26,
-            raw_profit=Money(Decimal("10000"), AUD),
-            taxable_gain=Money(Decimal("5000"), AUD),
-            action="discount",
+            raw_profit=Decimal("10000"),
+            taxable_gain=Decimal("5000"),
         ),
         Gain(
             fy=27,
-            raw_profit=Money(Decimal("12000"), AUD),
-            taxable_gain=Money(Decimal("6000"), AUD),
-            action="discount",
+            raw_profit=Decimal("12000"),
+            taxable_gain=Decimal("6000"),
         ),
     ]
-    losses = [
-        Loss(fy=26, amount=Money(Decimal("2000"), AUD), source_fy=25),
-    ]
+    losses = []
 
     args = Args(projection="25:30%,26:45%,27:30%", gains=gains, losses=losses)
     cmd_gains_plan(args)

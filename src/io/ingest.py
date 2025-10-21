@@ -1,9 +1,10 @@
+from dataclasses import replace
 from decimal import Decimal
 from pathlib import Path
 
 import pandas as pd
 
-from src.core.models import AUD, Money, Trade, Transaction
+from src.core.models import Trade, Transaction
 from src.io.converters import CONVERTERS
 
 BANK_FIELD_SPECS = {
@@ -53,15 +54,33 @@ BANK_FIELD_SPECS = {
 }
 
 
-def _convert_row(row: dict, bank: str, converter, beem_username: str | None) -> Transaction:
+def _convert_row(
+    row: dict, bank: str, converter, beem_username: str | None, account: str | None = None
+) -> Transaction:
     """Convert row with bank-specific logic."""
     if bank == "beem":
-        return converter(row, beem_username)
-    return converter(row)
+        return converter(row, beem_username, account=account)
+    return converter(row, account=account)
+
+
+def _parse_bank_and_account(filename: str) -> tuple[str, str | None]:
+    """Parse bank code and account from filename.
+
+    Examples:
+        "anz.csv" → ("anz", None)
+        "anz_hl.csv" → ("anz", "hl")
+        "anz_cc.csv" → ("anz", "cc")
+        "cba.csv" → ("cba", None)
+    """
+    stem = Path(filename).stem
+    parts = stem.split("_", 1)
+    bank = parts[0]
+    account = parts[1] if len(parts) > 1 else None
+    return bank, account
 
 
 def ingest_file(
-    path: str | Path, bank: str, person: str, beem_username: str | None = None
+    path: str | Path, bank: str, individual: str, beem_username: str | None = None
 ) -> list[Transaction]:
     """
     Load bank CSV file and convert to Transaction list.
@@ -69,7 +88,7 @@ def ingest_file(
     Args:
         path: CSV file path
         bank: Bank code (anz, cba, beem, wise)
-        person: Person identifier (for source_person field)
+        individual: Individual identifier (for individual field)
         beem_username: Beem username (required if bank='beem')
 
     Returns:
@@ -89,13 +108,13 @@ def ingest_file(
         skiprows=spec["skiprows"],
     )
 
-    df["source_person"] = person
+    df["individual"] = individual
 
     converter = CONVERTERS[bank]
     txns = []
 
     for _, row in df.iterrows():
-        txn = _convert_row(row.to_dict(), bank, converter, beem_username)
+        txn = _convert_row(row.to_dict(), bank, converter, beem_username, account=None)
         txns.append(txn)
 
     return txns
@@ -110,7 +129,7 @@ def ingest_dir(
     Load all bank CSVs from directory structure.
 
     Supports two modes:
-    1. Flat structure (pipeline): {base_dir}/*.csv, auto-detect person from source_person column
+    1. Flat structure (pipeline): {base_dir}/*.csv, auto-detect person from individual column
     2. Nested structure (multi-person): {base_dir}/{person}/raw/*.csv
 
     Args:
@@ -132,36 +151,40 @@ def ingest_dir(
                 continue
 
             df = pd.read_csv(csv_file)
-            if "source_person" not in df.columns:
+            if "individual" not in df.columns:
                 continue
 
             converter = CONVERTERS[bank]
             for _, row in df.iterrows():
-                person = row["source_person"]
-                beem_user = beem_usernames.get(person) if bank == "beem" else None
+                individual = row["individual"]
+                beem_user = beem_usernames.get(individual) if bank == "beem" else None
                 txn = _convert_row(row.to_dict(), bank, converter, beem_user)
                 all_txns.append(txn)
     else:
-        for person in persons:
-            person_dir = base / person / "raw"
-            if not person_dir.exists():
+        for individual in persons:
+            individual_dir = base / individual / "raw"
+            if not individual_dir.exists():
                 continue
 
-            for csv_file in sorted(person_dir.glob("*.csv")):
-                bank = csv_file.stem
-                beem_user = beem_usernames.get(person) if bank == "beem" else None
-                txns = ingest_file(csv_file, bank, person, beem_user)
+            for csv_file in sorted(individual_dir.glob("*.csv")):
+                bank, account = _parse_bank_and_account(csv_file.name)
+                if bank not in BANK_FIELD_SPECS:
+                    continue
+                beem_user = beem_usernames.get(individual) if bank == "beem" else None
+                txns = ingest_file(csv_file, bank, individual, beem_user)
+                if account:
+                    txns = [replace(t, account=account) for t in txns]
                 all_txns.extend(txns)
 
-    all_txns.sort(key=lambda t: (t.date, t.source_person, t.source_bank))
+    all_txns.sort(key=lambda t: (t.date, t.individual, t.bank))
     return all_txns
 
 
-def ingest_trades(path: str | Path, person: str) -> list[Trade]:
+def ingest_trades(path: str | Path, individual: str) -> list[Trade]:
     """
     Load equity trades from CSV.
 
-    Format: date, code, action, units, price, fee, source_person
+    Format: date, code, action, units, price, fee, individual
     """
     df = pd.read_csv(path)
     if df.empty:
@@ -174,9 +197,9 @@ def ingest_trades(path: str | Path, person: str) -> list[Trade]:
             code=row["code"],
             action=row["action"],
             units=Decimal(row["units"]),
-            price=Money(Decimal(row["price"]), AUD),
-            fee=Money(Decimal(row["fee"]), AUD),
-            source_person=person,
+            price=Decimal(row["price"]),
+            fee=Decimal(row["fee"]),
+            individual=individual,
         )
         trades.append(trade)
 
@@ -195,14 +218,14 @@ def ingest_trades_dir(base_dir: str | Path, persons: list[str] | None = None) ->
     if persons is None:
         persons = [p.name for p in base.iterdir() if p.is_dir()]
 
-    for person in sorted(persons):
-        person_dir = base / person / "raw"
-        if not person_dir.exists():
+    for individual in sorted(persons):
+        individual_dir = base / individual / "raw"
+        if not individual_dir.exists():
             continue
 
-        equity_file = person_dir / "equity.csv"
+        equity_file = individual_dir / "equity.csv"
         if equity_file.exists():
-            trades = ingest_trades(equity_file, person)
+            trades = ingest_trades(equity_file, individual)
             all_trades.extend(trades)
 
     all_trades.sort(key=lambda t: (t.code, t.date))
@@ -263,10 +286,10 @@ def ingest_trades_year(
         persons = [p.name for p in fy_dir.iterdir() if p.is_dir() and p.name != "data"]
 
     all_trades = []
-    for person in sorted(persons):
-        trades_file = fy_dir / person / "trades.csv"
+    for individual in sorted(persons):
+        trades_file = fy_dir / individual / "trades.csv"
         if trades_file.exists():
-            trades = ingest_trades(trades_file, person)
+            trades = ingest_trades(trades_file, individual)
             all_trades.extend(trades)
 
     all_trades.sort(key=lambda t: (t.code, t.date))

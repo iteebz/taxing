@@ -3,7 +3,7 @@
 from decimal import Decimal
 from pathlib import Path
 
-from src.core.models import AUD, Money, PropertyExpense
+from src.core.models import PropertyExpense
 
 
 def load_property_expenses(base_dir: Path, fy: int, person: str) -> list[PropertyExpense]:
@@ -34,7 +34,7 @@ def load_property_expenses(base_dir: Path, fy: int, person: str) -> list[Propert
                     continue
                 try:
                     amount = Decimal(line)
-                    expenses.append(PropertyExpense(exp_type, Money(amount, AUD)))
+                    expenses.append(PropertyExpense(exp_type, amount))
                 except Exception:
                     pass
 

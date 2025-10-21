@@ -2,8 +2,8 @@ import json
 from decimal import Decimal
 from pathlib import Path
 
-from src.core.models import AUD, Money
-from src.core.optimizer import Individual, Year, greedy_allocation
+from src.core.household import _tax_liability, optimize_household
+from src.core.models import Individual
 from src.io.persist import dicts_from_csv
 
 
@@ -22,19 +22,7 @@ def load_employment_income(base_dir: Path, fy: int) -> dict[str, Decimal]:
     return {k: Decimal(str(v)) for k, v in data.items()}
 
 
-def get_tax_brackets(fy: int) -> list[tuple[Decimal, Decimal]]:
-    """Get tax brackets for fiscal year."""
-    if fy == 25:
-        return [
-            (Decimal("0"), Decimal("0.16")),
-            (Decimal("45000"), Decimal("0.30")),
-            (Decimal("135000"), Decimal("0.37")),
-            (Decimal("190000"), Decimal("0.45")),
-        ]
-    raise ValueError(f"Tax brackets not configured for FY{fy}")
-
-
-def load_deductions(base_dir: Path, fy: int, person: str) -> list[Money]:
+def load_deductions(base_dir: Path, fy: int, person: str) -> list[Decimal]:
     """Load deductions for a person from Phase 1 output."""
     deductions_file = base_dir / "data" / f"fy{fy}" / person / "data" / "deductions.csv"
     if not deductions_file.exists():
@@ -46,7 +34,7 @@ def load_deductions(base_dir: Path, fy: int, person: str) -> list[Money]:
         if "amount" in row:
             total += Decimal(str(row["amount"]))
 
-    return [Money(total, AUD)] if total > 0 else []
+    return [total] if total > 0 else []
 
 
 def handle(args):
@@ -59,7 +47,6 @@ def handle(args):
         raise ValueError("--persons required (comma-separated list)")
 
     employment_income = load_employment_income(base_dir, fy)
-    tax_brackets = get_tax_brackets(fy)
 
     missing = set(persons) - set(employment_income.keys())
     if missing:
@@ -75,43 +62,90 @@ def handle(args):
 
         individuals[person] = Individual(
             name=person,
-            employment_income=Money(emp_income, AUD),
-            tax_brackets=tax_brackets,
-            available_losses=Money(Decimal("0"), AUD),
+            fy=fy,
+            income=emp_income,
+            deductions=deductions,
         )
 
-    year = Year(fy=fy, persons=individuals)
-    allocation = greedy_allocation(year, all_deductions)
+    person_list = sorted(individuals.keys())
 
-    print(f"\n{'Person':<15} {'Employment':<15} {'Deductions':<15} {'Bracket':<8} {'Savings':<12}")
-    print("-" * 75)
+    if len(individuals) == 1:
+        ind = individuals[person_list[0]]
+        print(f"\n{'Person':<15} {'Income':<15} {'Deductions':<15} {'Tax':<12}")
+        print("-" * 60)
+        total_deductions = sum(all_deductions)
+        taxable = ind.income - total_deductions
+        liability = _tax_liability(
+            taxable,
+            ind.fy,
+            medicare_status="single",
+            has_private_health_cover=ind.has_private_health_cover,
+        )
+        print(
+            f"{person_list[0]:<15} "
+            f"${ind.income:<14,.0f} "
+            f"${total_deductions:<14,.0f} "
+            f"${liability.total:<11,.0f} "
+        )
+        print("-" * 60)
+        print(f"{'TOTAL':<15} {'':<15} ${total_deductions:<14,.0f} ${liability.total:<11,.0f}")
+    elif len(individuals) == 2:
+        result = optimize_household(individuals[person_list[0]], individuals[person_list[1]])
 
-    total_deductions = sum(d.amount for d in all_deductions)
-    total_savings = Decimal("0")
+        yours_income = individuals[person_list[0]].income
+        janice_income = individuals[person_list[1]].income
+        yours_deductions = result.yours.total_deductions
+        janice_deductions = result.janice.total_deductions
+        yours_tax = result.your_liability.total
+        janice_tax = result.janice_liability.total
 
-    for person in sorted(persons):
-        ind = individuals[person]
-        alloc = allocation[person]
-        bracket = ind.tax_brackets[-1][1]
-
-        for threshold, rate in reversed(ind.tax_brackets):
-            if ind.employment_income.amount >= threshold:
-                bracket = rate
-                break
-
-        savings = alloc.amount * bracket
-        total_savings += savings
+        print(f"\n{'Person':<15} {'Income':<15} {'Deductions':<15} {'Tax':<12} {'Savings':<12}")
+        print("-" * 75)
 
         print(
-            f"{person:<15} "
-            f"${ind.employment_income.amount:<14,.0f} "
-            f"${alloc.amount:<14,.0f} "
-            f"{bracket * 100:<7.0f}% "
-            f"${savings:<11,.0f}"
+            f"{person_list[0]:<15} "
+            f"${yours_income:<14,.0f} "
+            f"${yours_deductions:<14,.0f} "
+            f"${yours_tax:<11,.0f} "
         )
+        print(
+            f"{person_list[1]:<15} "
+            f"${janice_income:<14,.0f} "
+            f"${janice_deductions:<14,.0f} "
+            f"${janice_tax:<11,.0f} "
+        )
+        print("-" * 75)
+        total_deductions = sum(all_deductions)
+        total_tax = yours_tax + janice_tax
+        print(f"{'TOTAL':<15} {'':<15} ${total_deductions:<14,.0f} ${total_tax:<11,.0f}")
+    else:
+        print(f"\n{'Person':<15} {'Income':<15} {'Deductions':<15} {'Tax':<12}")
+        print("-" * 60)
 
-    print("-" * 75)
-    print(f"{'TOTAL':<15} {'':<15} ${total_deductions:<14,.0f} {'':<8} ${total_savings:<11,.0f}")
+        total_deductions = sum(all_deductions)
+        total_tax = Decimal("0")
+
+        for person in person_list:
+            ind = individuals[person]
+            taxable = ind.income - (sum(ind.deductions) if ind.deductions else Decimal("0"))
+            liability = _tax_liability(
+                taxable,
+                ind.fy,
+                medicare_status="single",
+                has_private_health_cover=ind.has_private_health_cover,
+            )
+            total_tax += liability.total
+
+            deductions_sum = sum(ind.deductions) if ind.deductions else Decimal("0")
+            print(
+                f"{person:<15} "
+                f"${ind.income:<14,.0f} "
+                f"${deductions_sum:<14,.0f} "
+                f"${liability.total:<11,.0f} "
+            )
+
+        print("-" * 60)
+        print(f"{'TOTAL':<15} {'':<15} ${total_deductions:<14,.0f} ${total_tax:<11,.0f}")
 
 
 def register(subparsers):

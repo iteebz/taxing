@@ -1,8 +1,6 @@
 import pytest
 
 from src.core.rates import (
-    DeductionDivision,
-    DEDUCTIBLE_DIVISIONS,
     get_rate_basis,
     validate_category,
 )
@@ -14,7 +12,7 @@ def test_validate_category_valid():
     assert validate_category("software") is None
 
 
-def test_validate_category_not_in_deductible_divisions():
+def test_validate_category_not_deductible():
     # Test a category that is not in DEDUCTIBLE_DIVISIONS (e.g., a sub-category for actual cost)
     # It should not raise an error, as the calling function will handle it.
     assert validate_category("electricity") is None

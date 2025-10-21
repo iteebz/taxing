@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from decimal import Decimal
 
-from src.core.models import Money, Transaction
+from src.core.models import Transaction
 
 
 @dataclass(frozen=True)
@@ -10,7 +10,7 @@ class Transfer:
 
     from_person: str
     to_person: str
-    amount: Money
+    amount: Decimal
     date_first: str
     date_last: str
     txn_count: int
@@ -64,14 +64,14 @@ def reconcile_transfers(
     pairs: dict[tuple[str, str], list[Transaction]] = {}
 
     for txn in transfers:
-        if txn.amount.amount < 0:
+        if txn.amount < 0:
             continue
 
         recipient = extract_recipient(txn.description)
         if not recipient:
             continue
 
-        key = (txn.source_person, recipient)
+        key = (txn.individual, recipient)
         if key not in pairs:
             pairs[key] = []
         pairs[key].append(txn)
@@ -80,12 +80,12 @@ def reconcile_transfers(
     for key, group in pairs.items():
         if len(group) > 0:
             dates = sorted([t.date.isoformat() for t in group])
-            total = sum(t.amount.amount for t in group)
+            total = sum(t.amount for t in group)
             from_person, to_person = key
             result[key] = Transfer(
                 from_person=from_person,
                 to_person=to_person,
-                amount=Money(total, group[0].amount.currency),
+                amount=total,
                 date_first=dates[0],
                 date_last=dates[-1],
                 txn_count=len(group),
@@ -94,18 +94,14 @@ def reconcile_transfers(
     return result
 
 
-def net_position(transfers: dict[tuple[str, str], Transfer], person: str) -> Money:
-    """Calculate net amount person has transferred (positive = owes out, negative = owed in)."""
+def net_position(transfers: dict[tuple[str, str], Transfer], individual: str) -> Decimal:
+    """Calculate net amount individual has transferred (positive = owes out, negative = owed in)."""
     balance = Decimal(0)
-    currency = None
 
     for t in transfers.values():
-        if person == t.from_person:
-            balance += t.amount.amount
-        elif person == t.to_person:
-            balance -= t.amount.amount
+        if individual == t.from_person:
+            balance += t.amount
+        elif individual == t.to_person:
+            balance -= t.amount
 
-        if currency is None:
-            currency = t.amount.currency
-
-    return Money(balance, currency or "AUD")
+    return balance

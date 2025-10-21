@@ -4,8 +4,6 @@ from decimal import Decimal
 from pathlib import Path
 from typing import TypeVar
 
-from src.core.models import AUD, Money
-
 T = TypeVar("T")
 
 
@@ -15,7 +13,7 @@ def load_csv(path: Path, model_class: type[T], fy: int) -> list[T]:
     CSV columns must match dataclass field names.
     Special handling for:
     - date: parsed from YYYY-MM-DD format
-    - Money: created from Decimal amount
+    - Decimal: created from a numeric string
     - fy: injected if not in CSV
     """
     if not path.exists():
@@ -74,12 +72,10 @@ def _parse_row(row: dict, model_class: type[T], fy: int) -> T:
 
         if field.type is date:
             kwargs[field.name] = date.fromisoformat(value)
-        elif field.type is Money:
-            kwargs[field.name] = Money(Decimal(value), AUD)
-        elif field.type is int:
-            kwargs[field.name] = int(value)
         elif field.type is Decimal:
             kwargs[field.name] = Decimal(value)
+        elif field.type is int:
+            kwargs[field.name] = int(value)
         else:
             kwargs[field.name] = value
 

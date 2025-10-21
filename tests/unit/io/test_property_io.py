@@ -60,8 +60,8 @@ def test_load_property_expenses_decimal_values(tmp_path):
     expenses = load_property_expenses(tmp_path, fy, person)
 
     assert len(expenses) == 2
-    assert str(expenses[0].amount.amount) == "1234.56"
-    assert str(expenses[1].amount.amount) == "5678.90"
+    assert str(expenses[0].amount) == "1234.56"
+    assert str(expenses[1].amount) == "5678.90"
 
 
 def test_load_property_expenses_skip_comments(tmp_path):
@@ -77,7 +77,7 @@ def test_load_property_expenses_skip_comments(tmp_path):
     expenses = load_property_expenses(tmp_path, fy, person)
 
     assert len(expenses) == 1
-    assert str(expenses[0].amount.amount) == "2000"
+    assert str(expenses[0].amount) == "2000"
 
 
 def test_load_property_expenses_skip_invalid(tmp_path):
@@ -93,8 +93,8 @@ def test_load_property_expenses_skip_invalid(tmp_path):
     expenses = load_property_expenses(tmp_path, fy, person)
 
     assert len(expenses) == 2
-    assert str(expenses[0].amount.amount) == "2000"
-    assert str(expenses[1].amount.amount) == "3000"
+    assert str(expenses[0].amount) == "2000"
+    assert str(expenses[1].amount) == "3000"
 
 
 def test_load_property_expenses_empty_file(tmp_path):

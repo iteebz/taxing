@@ -2,7 +2,7 @@ from datetime import date
 from decimal import Decimal
 
 from src.core.dedupe import dedupe, fingerprint
-from src.core.models import AUD, Money, Transaction
+from src.core.models import Transaction
 
 
 def _txn(
@@ -16,10 +16,10 @@ def _txn(
     """Helper to create test transactions."""
     return Transaction(
         date=date_val,
-        amount=Money(amount, AUD),
+        amount=amount,
         description=desc,
-        source_bank=bank,
-        source_person=person,
+        bank=bank,
+        individual=person,
         category=category,
     )
 
@@ -51,18 +51,18 @@ def test_transfer_same_person_same_fingerprint():
 def test_p2p_transfer_both_sides_same_fingerprint():
     janice_sends = Transaction(
         date=date(2024, 1, 1),
-        amount=Money(Decimal("100.00"), AUD),
+        amount=Decimal("100.00"),
         description="TRANSFER TO TYSON",
-        source_bank="beemit",
-        source_person="janice",
+        bank="beemit",
+        individual="janice",
         category={"transfers"},
     )
     tyson_receives = Transaction(
         date=date(2024, 1, 1),
-        amount=Money(Decimal("100.00"), AUD),
+        amount=Decimal("100.00"),
         description="DIRECT CREDIT FROM JANICE",
-        source_bank="beemit",
-        source_person="tyson",
+        bank="beemit",
+        individual="tyson",
         category={"transfers"},
     )
     assert fingerprint(janice_sends) == fingerprint(tyson_receives)
@@ -109,18 +109,18 @@ def test_merge_cross_bank_transfer():
 def test_merge_p2p_transfer():
     janice_debit = Transaction(
         date=date(2024, 1, 1),
-        amount=Money(Decimal("100.00"), AUD),
+        amount=Decimal("100.00"),
         description="TRANSFER TO TYSON",
-        source_bank="beemit",
-        source_person="janice",
+        bank="beemit",
+        individual="janice",
         category={"transfers"},
     )
     tyson_credit = Transaction(
         date=date(2024, 1, 1),
-        amount=Money(Decimal("100.00"), AUD),
+        amount=Decimal("100.00"),
         description="DIRECT CREDIT FROM JANICE",
-        source_bank="beemit",
-        source_person="tyson",
+        bank="beemit",
+        individual="tyson",
         category={"transfers"},
     )
     result = dedupe([janice_debit, tyson_credit])
@@ -139,18 +139,18 @@ def test_preserves_non_duplicate_txns():
 def test_merge_uses_first_txn_as_base():
     txn1 = Transaction(
         date=date(2024, 1, 1),
-        amount=Money(Decimal("100.00"), AUD),
+        amount=Decimal("100.00"),
         description="WOOLWORTHS CHECKOUT",
-        source_bank="cba",
-        source_person="janice",
+        bank="cba",
+        individual="janice",
         category={"groceries"},
     )
     txn2 = Transaction(
         date=date(2024, 1, 1),
-        amount=Money(Decimal("100.00"), AUD),
+        amount=Decimal("100.00"),
         description="WOOLWORTHS CHECKOUT",
-        source_bank="anz",
-        source_person="janice",
+        bank="anz",
+        individual="janice",
         category=None,
     )
     result = dedupe([txn1, txn2])
@@ -172,18 +172,18 @@ def test_multiple_duplicate_groups():
 def test_source_txn_ids_tracked():
     txn1 = Transaction(
         date=date(2024, 1, 1),
-        amount=Money(Decimal("100.00"), AUD),
+        amount=Decimal("100.00"),
         description="WOOLWORTHS",
-        source_bank="cba",
-        source_person="janice",
+        bank="cba",
+        individual="janice",
         source_txn_ids=("cba_001",),
     )
     txn2 = Transaction(
         date=date(2024, 1, 1),
-        amount=Money(Decimal("100.00"), AUD),
+        amount=Decimal("100.00"),
         description="WOOLWORTHS",
-        source_bank="cba",
-        source_person="janice",
+        bank="cba",
+        individual="janice",
         source_txn_ids=("cba_002",),
     )
     result = dedupe([txn1, txn2])
