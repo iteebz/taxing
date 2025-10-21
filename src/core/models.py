@@ -133,6 +133,22 @@ class Loss:
     source_fy: int
 
 
+@dataclass(frozen=True)
+class Asset:
+    fy: int
+    description: str
+    cost: Money
+    life_years: int
+    depreciation_method: str = "PC"
+
+
+@dataclass(frozen=True)
+class Rent:
+    fy: int
+    amount: Money
+    source_person: str
+
+
 class Classifier(Protocol):
     def classify(self, description: str) -> set[str]: ...
 

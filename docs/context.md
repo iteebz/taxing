@@ -98,15 +98,28 @@ just ci                # Full CI
 
 ## shopping list
 
-**Phase 3c** (Rental income + depreciation)
-- Property-level rental income tracking
-- Capital works deduction schedule
-- Depreciation via ATO depreciation tool
+**Phase 3c** (Rental income + home office depreciation)
+- Rental income tracking (e.g., Janice renting FY25 only)
+- Shared expense allocation (rates, insurance, maintenance split by occupancy %)
+- Home office depreciation (appliances, fixtures, building improvements)
+- Audit trail for rental expenses vs. rental income
+- MVP: CSV loader, depreciation calculator, CLI command, ~8-10 tests
+- Status: Scoped for your PPOR + Janice rental arrangement (FY25 only)
+- *Note*: Does NOT include optimization logic (deduction routing); that's Phase 4
+
+**Phase 4** (Multi-person household optimization) — FUTURE
+- Model both your and Janice's tax positions separately (income, marginal rates, losses)
+- Route deductions to lowest-bracket person (Janice pre-marriage)
+- Route gains to highest-bracket person or person with carryforwards (you)
+- Optimize for minimum household tax
+- *Depends on*: Phase 3c modeling Janice as separate taxpayer
+- *Estimate*: 8-10 hours
 
 **Phase 2d** (Advanced constraints)
 - Medicare Levy optimization
 - HELP repayment tracking
 - ILP (Income-linked Participation) optimization
+- *Note*: Unblocked by Phase 3c (needs total income = employment + rental)
 
 **Phase 3d** (Portfolio rebalancing)
 - Rebalance recommendations based on gains/losses

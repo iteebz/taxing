@@ -3,7 +3,8 @@ import json
 from decimal import Decimal
 from pathlib import Path
 
-from src.core.models import AUD, Money
+from src.core.depreciation import calc_depreciation, depreciation_schedule
+from src.core.models import AUD, Asset, Money
 from src.core.optimizer import Individual, Year, greedy_allocation
 from src.core.planning import plan_gains
 from src.core.property import aggregate_expenses
@@ -183,6 +184,35 @@ def cmd_gains_plan(args):
     print("-" * 80)
 
 
+def cmd_asset_depreciation(args):
+    """Calculate prime cost depreciation for asset."""
+    asset = Asset(
+        fy=args.fy_purchased,
+        description=args.description,
+        cost=Money(Decimal(str(args.cost)), AUD),
+        life_years=args.life_years,
+    )
+    
+    to_fy = args.to_fy or args.fy_purchased + 5
+    schedule = depreciation_schedule(asset, to_fy)
+    
+    print(f"\nAsset Depreciation Schedule - {asset.description}")
+    print(f"Cost: ${asset.cost.amount:,.2f} | Life: {asset.life_years} years | Method: Prime Cost")
+    print("-" * 60)
+    print(f"{'Year':<10} {'Annual Deduction':<20} {'Cumulative':<20}")
+    print("-" * 60)
+    
+    cumulative = Decimal("0")
+    for fy in sorted(schedule.keys()):
+        annual = schedule[fy].amount
+        cumulative += annual
+        print(
+            f"FY{fy:<8} "
+            f"${annual:<19,.2f} "
+            f"${cumulative:<19,.2f}"
+        )
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Tax optimization and management tool",
@@ -211,6 +241,24 @@ def main():
     plan_parser.add_argument("--gains", type=json.loads, default="[]", help="Gains JSON array")
     plan_parser.add_argument("--losses", type=json.loads, default="[]", help="Losses JSON array")
     plan_parser.set_defaults(func=cmd_gains_plan)
+
+    asset_parser = subparsers.add_parser("asset-depreciation", help="Calculate asset depreciation")
+    asset_parser.add_argument(
+        "--description", required=True, help="Asset description"
+    )
+    asset_parser.add_argument(
+        "--cost", type=float, required=True, help="Asset cost in AUD"
+    )
+    asset_parser.add_argument(
+        "--fy-purchased", type=int, required=True, help="FY purchased (e.g., 25)"
+    )
+    asset_parser.add_argument(
+        "--life-years", type=int, required=True, help="Useful life in years"
+    )
+    asset_parser.add_argument(
+        "--to-fy", type=int, help="Generate schedule to FY (default: fy_purchased + 5)"
+    )
+    asset_parser.set_defaults(func=cmd_asset_depreciation)
 
     args = parser.parse_args()
     if hasattr(args, "func"):
