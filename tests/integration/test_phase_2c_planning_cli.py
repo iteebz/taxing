@@ -1,6 +1,5 @@
 """Phase 2c multi-year gains planning CLI integration tests."""
 
-import json
 from decimal import Decimal
 
 from src.cli import cmd_gains_plan
@@ -19,7 +18,12 @@ class Args:
 def test_gains_plan_single_year(capsys):
     """Plan gains in single year with no carryforwards."""
     gains = [
-        Gain(fy=25, raw_profit=Money(Decimal("10000"), AUD), taxable_gain=Money(Decimal("5000"), AUD), action="discount"),
+        Gain(
+            fy=25,
+            raw_profit=Money(Decimal("10000"), AUD),
+            taxable_gain=Money(Decimal("5000"), AUD),
+            action="discount",
+        ),
     ]
     losses = []
 
@@ -35,8 +39,18 @@ def test_gains_plan_single_year(capsys):
 def test_gains_plan_multi_year(capsys):
     """Plan gains across multiple years."""
     gains = [
-        Gain(fy=25, raw_profit=Money(Decimal("10000"), AUD), taxable_gain=Money(Decimal("5000"), AUD), action="discount"),
-        Gain(fy=26, raw_profit=Money(Decimal("10000"), AUD), taxable_gain=Money(Decimal("5000"), AUD), action="discount"),
+        Gain(
+            fy=25,
+            raw_profit=Money(Decimal("10000"), AUD),
+            taxable_gain=Money(Decimal("5000"), AUD),
+            action="discount",
+        ),
+        Gain(
+            fy=26,
+            raw_profit=Money(Decimal("10000"), AUD),
+            taxable_gain=Money(Decimal("5000"), AUD),
+            action="discount",
+        ),
     ]
     losses = []
 
@@ -53,7 +67,12 @@ def test_gains_plan_multi_year(capsys):
 def test_gains_plan_with_loss_carryforward(capsys):
     """Plan gains with loss carryforward offset."""
     gains = [
-        Gain(fy=26, raw_profit=Money(Decimal("8000"), AUD), taxable_gain=Money(Decimal("8000"), AUD), action="discount"),
+        Gain(
+            fy=26,
+            raw_profit=Money(Decimal("8000"), AUD),
+            taxable_gain=Money(Decimal("8000"), AUD),
+            action="discount",
+        ),
     ]
     losses = [
         Loss(fy=26, amount=Money(Decimal("3000"), AUD), source_fy=25),
@@ -80,9 +99,24 @@ def test_gains_plan_no_gains(capsys):
 def test_gains_plan_realistic_scenario(capsys):
     """Realistic multi-year scenario: low bracket FY25, high FY26, low FY27."""
     gains = [
-        Gain(fy=25, raw_profit=Money(Decimal("8000"), AUD), taxable_gain=Money(Decimal("4000"), AUD), action="discount"),
-        Gain(fy=26, raw_profit=Money(Decimal("10000"), AUD), taxable_gain=Money(Decimal("5000"), AUD), action="discount"),
-        Gain(fy=27, raw_profit=Money(Decimal("12000"), AUD), taxable_gain=Money(Decimal("6000"), AUD), action="discount"),
+        Gain(
+            fy=25,
+            raw_profit=Money(Decimal("8000"), AUD),
+            taxable_gain=Money(Decimal("4000"), AUD),
+            action="discount",
+        ),
+        Gain(
+            fy=26,
+            raw_profit=Money(Decimal("10000"), AUD),
+            taxable_gain=Money(Decimal("5000"), AUD),
+            action="discount",
+        ),
+        Gain(
+            fy=27,
+            raw_profit=Money(Decimal("12000"), AUD),
+            taxable_gain=Money(Decimal("6000"), AUD),
+            action="discount",
+        ),
     ]
     losses = [
         Loss(fy=26, amount=Money(Decimal("2000"), AUD), source_fy=25),

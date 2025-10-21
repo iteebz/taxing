@@ -9,7 +9,12 @@ from src.core.planning import harvest_losses, plan_gains
 def test_plan_single_year_no_losses():
     """Plan gains in single year with no carryforwards."""
     gains = [
-        Gain(fy=25, raw_profit=Money(Decimal("10000"), AUD), taxable_gain=Money(Decimal("5000"), AUD), action="discount"),
+        Gain(
+            fy=25,
+            raw_profit=Money(Decimal("10000"), AUD),
+            taxable_gain=Money(Decimal("5000"), AUD),
+            action="discount",
+        ),
     ]
     losses = []
     bracket = {25: 30}
@@ -24,8 +29,18 @@ def test_plan_single_year_no_losses():
 def test_plan_multi_year_lowest_bracket_first():
     """Gains realized in lowest-bracket years first."""
     gains = [
-        Gain(fy=25, raw_profit=Money(Decimal("10000"), AUD), taxable_gain=Money(Decimal("5000"), AUD), action="discount"),
-        Gain(fy=26, raw_profit=Money(Decimal("10000"), AUD), taxable_gain=Money(Decimal("5000"), AUD), action="discount"),
+        Gain(
+            fy=25,
+            raw_profit=Money(Decimal("10000"), AUD),
+            taxable_gain=Money(Decimal("5000"), AUD),
+            action="discount",
+        ),
+        Gain(
+            fy=26,
+            raw_profit=Money(Decimal("10000"), AUD),
+            taxable_gain=Money(Decimal("5000"), AUD),
+            action="discount",
+        ),
     ]
     losses = []
     bracket = {25: 30, 26: 45}
@@ -41,7 +56,12 @@ def test_plan_multi_year_lowest_bracket_first():
 def test_plan_with_carryforward_full_offset():
     """Carryforward fully offsets current-year gain."""
     gains = [
-        Gain(fy=26, raw_profit=Money(Decimal("10000"), AUD), taxable_gain=Money(Decimal("5000"), AUD), action="discount"),
+        Gain(
+            fy=26,
+            raw_profit=Money(Decimal("10000"), AUD),
+            taxable_gain=Money(Decimal("5000"), AUD),
+            action="discount",
+        ),
     ]
     losses = [
         Loss(fy=26, amount=Money(Decimal("5000"), AUD), source_fy=25),
@@ -57,7 +77,12 @@ def test_plan_with_carryforward_full_offset():
 def test_plan_with_carryforward_partial_offset():
     """Carryforward partially offsets current-year gain."""
     gains = [
-        Gain(fy=26, raw_profit=Money(Decimal("10000"), AUD), taxable_gain=Money(Decimal("8000"), AUD), action="discount"),
+        Gain(
+            fy=26,
+            raw_profit=Money(Decimal("10000"), AUD),
+            taxable_gain=Money(Decimal("8000"), AUD),
+            action="discount",
+        ),
     ]
     losses = [
         Loss(fy=26, amount=Money(Decimal("3000"), AUD), source_fy=25),
@@ -73,7 +98,12 @@ def test_plan_with_carryforward_partial_offset():
 def test_plan_with_carryforward_excess():
     """Carryforward exceeds current-year gain, rest carried forward."""
     gains = [
-        Gain(fy=26, raw_profit=Money(Decimal("5000"), AUD), taxable_gain=Money(Decimal("5000"), AUD), action="discount"),
+        Gain(
+            fy=26,
+            raw_profit=Money(Decimal("5000"), AUD),
+            taxable_gain=Money(Decimal("5000"), AUD),
+            action="discount",
+        ),
     ]
     losses = [
         Loss(fy=26, amount=Money(Decimal("10000"), AUD), source_fy=25),
@@ -89,7 +119,12 @@ def test_plan_with_carryforward_excess():
 def test_plan_multiple_carryforwards_stacked():
     """Multiple carryforwards applied sequentially."""
     gains = [
-        Gain(fy=27, raw_profit=Money(Decimal("15000"), AUD), taxable_gain=Money(Decimal("15000"), AUD), action="discount"),
+        Gain(
+            fy=27,
+            raw_profit=Money(Decimal("15000"), AUD),
+            taxable_gain=Money(Decimal("15000"), AUD),
+            action="discount",
+        ),
     ]
     losses = [
         Loss(fy=27, amount=Money(Decimal("5000"), AUD), source_fy=25),
@@ -112,7 +147,12 @@ def test_plan_no_gains():
 def test_harvest_losses_full_offset():
     """Loss harvest fully offsets gain."""
     gains = [
-        Gain(fy=25, raw_profit=Money(Decimal("5000"), AUD), taxable_gain=Money(Decimal("5000"), AUD), action="discount"),
+        Gain(
+            fy=25,
+            raw_profit=Money(Decimal("5000"), AUD),
+            taxable_gain=Money(Decimal("5000"), AUD),
+            action="discount",
+        ),
     ]
     losses = [
         Loss(fy=25, amount=Money(Decimal("5000"), AUD), source_fy=24),
@@ -127,7 +167,12 @@ def test_harvest_losses_full_offset():
 def test_harvest_losses_partial_offset():
     """Loss harvest partially offsets gain."""
     gains = [
-        Gain(fy=25, raw_profit=Money(Decimal("8000"), AUD), taxable_gain=Money(Decimal("8000"), AUD), action="discount"),
+        Gain(
+            fy=25,
+            raw_profit=Money(Decimal("8000"), AUD),
+            taxable_gain=Money(Decimal("8000"), AUD),
+            action="discount",
+        ),
     ]
     losses = [
         Loss(fy=25, amount=Money(Decimal("3000"), AUD), source_fy=24),
@@ -143,7 +188,12 @@ def test_harvest_losses_partial_offset():
 def test_harvest_losses_excess_carryforward():
     """Excess loss carried forward to next year."""
     gains = [
-        Gain(fy=25, raw_profit=Money(Decimal("3000"), AUD), taxable_gain=Money(Decimal("3000"), AUD), action="discount"),
+        Gain(
+            fy=25,
+            raw_profit=Money(Decimal("3000"), AUD),
+            taxable_gain=Money(Decimal("3000"), AUD),
+            action="discount",
+        ),
     ]
     losses = [
         Loss(fy=25, amount=Money(Decimal("8000"), AUD), source_fy=24),
@@ -160,7 +210,12 @@ def test_harvest_losses_excess_carryforward():
 def test_harvest_losses_no_losses():
     """No losses to harvest returns gains unchanged."""
     gains = [
-        Gain(fy=25, raw_profit=Money(Decimal("5000"), AUD), taxable_gain=Money(Decimal("5000"), AUD), action="discount"),
+        Gain(
+            fy=25,
+            raw_profit=Money(Decimal("5000"), AUD),
+            taxable_gain=Money(Decimal("5000"), AUD),
+            action="discount",
+        ),
     ]
     losses = []
 
@@ -187,9 +242,24 @@ def test_harvest_losses_no_gains():
 def test_plan_realistic_scenario():
     """Realistic multi-year scenario: defer gain, harvest loss, then realize."""
     gains = [
-        Gain(fy=25, raw_profit=Money(Decimal("8000"), AUD), taxable_gain=Money(Decimal("4000"), AUD), action="discount"),
-        Gain(fy=26, raw_profit=Money(Decimal("10000"), AUD), taxable_gain=Money(Decimal("5000"), AUD), action="discount"),
-        Gain(fy=27, raw_profit=Money(Decimal("12000"), AUD), taxable_gain=Money(Decimal("6000"), AUD), action="discount"),
+        Gain(
+            fy=25,
+            raw_profit=Money(Decimal("8000"), AUD),
+            taxable_gain=Money(Decimal("4000"), AUD),
+            action="discount",
+        ),
+        Gain(
+            fy=26,
+            raw_profit=Money(Decimal("10000"), AUD),
+            taxable_gain=Money(Decimal("5000"), AUD),
+            action="discount",
+        ),
+        Gain(
+            fy=27,
+            raw_profit=Money(Decimal("12000"), AUD),
+            taxable_gain=Money(Decimal("6000"), AUD),
+            action="discount",
+        ),
     ]
     losses = [
         Loss(fy=26, amount=Money(Decimal("2000"), AUD), source_fy=25),

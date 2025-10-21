@@ -73,9 +73,7 @@ def _organize_carryforwards(losses: list[Loss]) -> dict[int, list[Loss]]:
     return by_fy
 
 
-def harvest_losses(
-    gains: list[Gain], losses: list[Loss]
-) -> tuple[list[Gain], list[Loss]]:
+def harvest_losses(gains: list[Gain], losses: list[Loss]) -> tuple[list[Gain], list[Loss]]:
     """Harvest losses to offset current-year gains.
 
     Returns: (remaining_gains, unused_losses_carried_forward)

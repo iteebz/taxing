@@ -41,12 +41,17 @@ class Transaction:
     claimant: str | None = None
     sources: frozenset[str] = None
     source_txn_ids: tuple[str, ...] = None
+    personal_pct: Decimal = Decimal("0")
 
     def __post_init__(self):
         if self.sources is None:
             object.__setattr__(self, "sources", frozenset({self.source_bank}))
         if self.source_txn_ids is None:
             object.__setattr__(self, "source_txn_ids", ())
+        if not isinstance(self.personal_pct, Decimal):
+            object.__setattr__(self, "personal_pct", Decimal(str(self.personal_pct)))
+        if self.personal_pct < 0 or self.personal_pct > 1:
+            raise ValueError(f"personal_pct must be 0.0-1.0, got {self.personal_pct}")
 
 
 @dataclass(frozen=True)
@@ -71,7 +76,10 @@ class Gain:
 @dataclass(frozen=True)
 class Deduction:
     category: str
-    amount: Decimal
+    amount: Money
+    rate: Decimal
+    rate_basis: str
+    fy: int
 
 
 @dataclass(frozen=True)

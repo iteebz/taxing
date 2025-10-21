@@ -13,66 +13,62 @@ def sample_txns():
         Transaction(
             date=date(2024, 10, 1),
             amount=Money(Decimal("100.00"), AUD),
-            description="WOOLWORTHS",
+            description="OFFICE SUPPLIES",
             source_bank="anz",
             source_person="tyson",
-            category={"groceries"},
+            category={"software"},
+            personal_pct=Decimal("0"),
         ),
         Transaction(
             date=date(2024, 10, 2),
             amount=Money(Decimal("50.00"), AUD),
-            description="COLES",
+            description="OFFICE SUPPLIES",
             source_bank="anz",
             source_person="tyson",
-            category={"groceries"},
+            category={"software"},
+            personal_pct=Decimal("0"),
         ),
         Transaction(
             date=date(2024, 10, 3),
             amount=Money(Decimal("200.00"), AUD),
-            description="HOME OFFICE DEPOT",
+            description="HOME OFFICE SETUP",
             source_bank="anz",
             source_person="tyson",
             category={"home_office"},
+            personal_pct=Decimal("0"),
         ),
     ]
 
 
-@pytest.fixture
-def sample_weights():
-    return {
-        "home_office": 0.8,
-        "groceries": 0.05,
-    }
+def test_single_category(sample_txns):
+    ded_list = deduce(sample_txns[:1], {}, fy=25)
+    assert len(ded_list) == 1
+    assert ded_list[0].category == "software"
+    assert ded_list[0].amount.amount == Decimal("100.00")
+    assert ded_list[0].rate == Decimal("1.0")
 
 
-def test_single_category(sample_txns, sample_weights):
-    deductions = deduce(sample_txns[:1], sample_weights)
-    assert deductions["groceries"] == Money(Decimal("5.00"), AUD)
+def test_multiple_txns_same_category(sample_txns):
+    ded_list = deduce(sample_txns[:2], {}, fy=25)
+    assert len(ded_list) == 1
+    assert ded_list[0].category == "software"
+    assert ded_list[0].amount.amount == Decimal("150.00")
 
 
-def test_multiple_txns_same_category(sample_txns, sample_weights):
-    deductions = deduce(sample_txns[:2], sample_weights)
-    assert deductions["groceries"] == Money(Decimal("7.50"), AUD)
-
-
-def test_multiple_categories(sample_txns, sample_weights):
-    deductions = deduce(sample_txns, sample_weights)
-    assert deductions["groceries"] == Money(Decimal("7.50"), AUD)
-    assert deductions["home_office"] == Money(Decimal("160.00"), AUD)
-
-
-def test_missing_weight_defaults_to_zero(sample_txns):
-    weights = {}
-    deductions = deduce(sample_txns, weights)
-    assert deductions["groceries"] == Money(Decimal("0.00"), AUD)
+def test_multiple_categories(sample_txns):
+    ded_list = deduce(sample_txns, {}, fy=25)
+    assert len(ded_list) == 2
+    by_cat = {d.category: d for d in ded_list}
+    assert by_cat["software"].amount.amount == Decimal("150.00")
+    assert by_cat["home_office"].amount.amount == Decimal("90.00")
 
 
 def test_empty_transactions():
-    deductions = deduce([], {})
-    assert deductions == {}
+    ded_list = deduce([], {}, fy=25)
+    assert ded_list == []
 
 
-def test_txn_no_category(sample_weights):
+def test_txn_no_category():
     txn = Transaction(
         date=date(2024, 10, 1),
         amount=Money(Decimal("100.00"), AUD),
@@ -81,55 +77,84 @@ def test_txn_no_category(sample_weights):
         source_person="tyson",
         category=None,
     )
-    deductions = deduce([txn], sample_weights)
-    assert deductions == {}
+    ded_list = deduce([txn], {}, fy=25)
+    assert ded_list == []
 
 
-def test_multiple_categories_per_txn(sample_weights):
+def test_personal_pct_reduces_deduction():
     txn = Transaction(
         date=date(2024, 10, 1),
         amount=Money(Decimal("100.00"), AUD),
-        description="OFFICE GROCERIES",
+        description="OFFICE SUPPLIES",
         source_bank="anz",
         source_person="tyson",
-        category={"groceries", "home_office"},
+        category={"software"},
+        personal_pct=Decimal("0.3"),
     )
-    deductions = deduce([txn], sample_weights)
-    assert deductions["groceries"] == Money(Decimal("5.00"), AUD)
-    assert deductions["home_office"] == Money(Decimal("80.00"), AUD)
+    ded_list = deduce([txn], {}, fy=25)
+    assert len(ded_list) == 1
+    assert ded_list[0].amount.amount == Decimal("70.00")
 
 
-def test_preserves_currency():
+def test_prohibited_category_skipped():
     txn = Transaction(
         date=date(2024, 10, 1),
         amount=Money(Decimal("100.00"), AUD),
-        description="TEST",
+        description="CLOTHING",
         source_bank="anz",
         source_person="tyson",
-        category={"groceries"},
+        category={"clothing"},
     )
-    deductions = deduce([txn], {"groceries": 0.5})
-    assert deductions["groceries"].currency == AUD
+    ded_list = deduce([txn], {}, fy=25)
+    assert len(ded_list) == 0
+
+
+def test_rate_basis_tracked():
+    txn = Transaction(
+        date=date(2024, 10, 1),
+        amount=Money(Decimal("100.00"), AUD),
+        description="OFFICE",
+        source_bank="anz",
+        source_person="tyson",
+        category={"home_office"},
+    )
+    ded_list = deduce([txn], {}, fy=25)
+    assert ded_list[0].rate_basis == "ATO_DIVISION_63_SIMPLIFIED"
+    assert ded_list[0].fy == 25
+
+
+def test_conservative_mode():
+    txn = Transaction(
+        date=date(2024, 10, 1),
+        amount=Money(Decimal("100.00"), AUD),
+        description="HOME OFFICE",
+        source_bank="anz",
+        source_person="tyson",
+        category={"home_office"},
+    )
+    standard = deduce([txn], {}, fy=25, conservative=False)
+    conservative = deduce([txn], {}, fy=25, conservative=True)
+    assert conservative[0].amount.amount < standard[0].amount.amount
 
 
 def test_ignores_foreign_currency():
-    """Test that non-AUD transactions are skipped in deduction calculation."""
-    EUR = "EUR"
+    eur = "EUR"
     aud_txn = Transaction(
         date=date(2024, 10, 1),
         amount=Money(Decimal("100.00"), AUD),
-        description="WOOLWORTHS",
+        description="OFFICE",
         source_bank="anz",
         source_person="tyson",
-        category={"groceries"},
+        category={"software"},
     )
     eur_txn = Transaction(
         date=date(2024, 10, 2),
-        amount=Money(Decimal("100.00"), EUR),
-        description="FOREIGN SHOP",
+        amount=Money(Decimal("100.00"), eur),
+        description="FOREIGN",
         source_bank="wise",
         source_person="tyson",
-        category={"groceries"},
+        category={"software"},
     )
-    deductions = deduce([aud_txn, eur_txn], {"groceries": 0.5})
-    assert deductions["groceries"] == Money(Decimal("50.00"), AUD)
+    ded_list = deduce([aud_txn, eur_txn], {}, fy=25)
+    assert len(ded_list) == 1
+    assert ded_list[0].amount.amount == Decimal("100.00")
