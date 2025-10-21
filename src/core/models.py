@@ -42,6 +42,7 @@ class Transaction:
     sources: frozenset[str] = None
     source_txn_ids: tuple[str, ...] = field(default_factory=tuple)
     personal_pct: Decimal = Decimal("0")
+    confidence: float = 1.0
 
     def __post_init__(self):
         if self.sources is None:
@@ -50,6 +51,8 @@ class Transaction:
             object.__setattr__(self, "personal_pct", Decimal(str(self.personal_pct)))
         if self.personal_pct < 0 or self.personal_pct > 1:
             raise ValueError(f"personal_pct must be 0.0-1.0, got {self.personal_pct}")
+        if not isinstance(self.confidence, float) or self.confidence < 0 or self.confidence > 1:
+            raise ValueError(f"confidence must be 0.0-1.0, got {self.confidence}")
 
 
 @dataclass(frozen=True)
@@ -265,4 +268,4 @@ class Classifier(Protocol):
 
 
 class Deducer(Protocol):
-    def deduce(self, txns: list[Transaction], weights: dict[str, float]) -> dict[str, Money]: ...
+    def deduce(self, txns: list[Transaction], fy: int, conservative: bool = False, weights: dict[str, float] | None = None) -> list[Deduction]: ...

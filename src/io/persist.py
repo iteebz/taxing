@@ -64,6 +64,8 @@ def _deserialize(value: str, field_type: type) -> object:
         return value.lower() in ("true", "1", "yes")
     if field_type is int:
         return int(value)
+    if field_type is float:
+        return float(value)
     if field_type is str:
         return str(value)
     return value

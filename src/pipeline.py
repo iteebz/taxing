@@ -38,8 +38,8 @@ def run(
     txns_all = dedupe(txns_all)
 
     rules = load_rules(base)
-
-    weights_path = base / "weights.csv"
+    
+    weights_path = base / "data" / f"fy{year}" / "weights.csv"
     weights = weights_from_csv(weights_path) if weights_path.exists() else {}
 
     if not txns_all:
@@ -61,7 +61,7 @@ def run(
 
         validate_transactions(txns_classified, year)
 
-        deductions = deduce(txns_classified, weights, fy=year)
+        deductions = deduce(txns_classified, fy=year, weights=weights)
 
         summary_dict = {}
         for t in txns_classified:

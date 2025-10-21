@@ -1,25 +1,31 @@
+from decimal import Decimal
+
 from src.core.models import AUD, Deduction, Transaction
 from src.core.rates import get_rate, get_rate_basis, validate_category
 
 
 def deduce(
     txns: list[Transaction],
-    weights: dict[str, float],
     fy: int,
     conservative: bool = False,
+    min_confidence: float = 0.5,
+    weights: dict[str, float] | None = None,
 ) -> list[Deduction]:
     """
     Calculate deductions by applying ATO-aligned rates to categorized transactions.
 
     Args:
-        txns: List of categorized transactions
-        weights: Dict mapping category -> deduction percentage (0.0-1.0), legacy support
+        txns: List of categorized transactions (must have classification confidence ≥ min_confidence)
         fy: Fiscal year for audit trail
         conservative: Use conservative (lower) rates if True
+        min_confidence: Minimum classification confidence to process (0.0-1.0, default 0.5)
+        weights: Override rates by category (e.g., {"electronics": 1.0}). Takes precedence over conservative flag.
 
     Returns:
         List of Deduction records with audit trail (category, amount, rate, rate_basis)
     """
+    if weights is None:
+        weights = {}
     deductions_by_category: dict[str, Deduction] = {}
 
     for txn in txns:
@@ -29,13 +35,19 @@ def deduce(
         if txn.amount.currency != AUD:
             continue
 
+        if txn.confidence < min_confidence:
+            continue
+
         for cat in txn.category:
             try:
                 validate_category(cat)
             except ValueError:
                 continue
 
-            rate = get_rate(cat, conservative)
+            if cat in weights:
+                rate = Decimal(str(weights[cat]))
+            else:
+                rate = get_rate(cat, conservative)
             if rate == 0:
                 continue
 
