@@ -34,7 +34,22 @@ def extract_recipient(description: str) -> str | None:
     - "transfer to xx7568 commbank app" -> "xx7568"
     """
     desc_lower = description.lower()
-    noise_words = {"other", "bank", "savings", "cash", "app", "netbank", "value", "date", "commbank", "transfer", "payid", "phone", "from", "to"}
+    noise_words = {
+        "other",
+        "bank",
+        "savings",
+        "cash",
+        "app",
+        "netbank",
+        "value",
+        "date",
+        "commbank",
+        "transfer",
+        "payid",
+        "phone",
+        "from",
+        "to",
+    }
 
     if "transfer to" in desc_lower:
         after = desc_lower.split("transfer to", 1)[-1].strip()
@@ -59,7 +74,7 @@ def _extract_name_from_phrase(phrase: str, noise_words: set[str]) -> str | None:
     """Extract name from a phrase, filtering out noise words."""
     words = phrase.split()
     name_words = []
-    
+
     for word in words:
         cleaned = word.replace(":", "").replace(",", "")
         if not cleaned:
@@ -69,21 +84,21 @@ def _extract_name_from_phrase(phrase: str, noise_words: set[str]) -> str | None:
                 break
             continue
         name_words.append(cleaned)
-    
+
     return " ".join(name_words).strip() if name_words else None
 
 
 def _extract_name_from_parts(parts: list[str], noise_words: set[str]) -> str | None:
     """Extract name from parts list (e.g., from direct credit)."""
     name_words = []
-    
+
     for part in parts:
         cleaned = part.replace(":", "").replace(",", "")
         if cleaned and cleaned not in noise_words and not cleaned.isdigit():
             name_words.append(cleaned)
         elif name_words:
             break
-    
+
     return " ".join(name_words).strip() if name_words else None
 
 
@@ -116,7 +131,7 @@ def reconcile_transfers(
             continue
 
         recipient_canonical = _normalize_person_name(recipient, canonical_names)
-        
+
         if txn.amount < 0:
             key = (txn.individual, recipient_canonical)
         else:

@@ -40,10 +40,11 @@ def handle_suggest(args):
     base_dir = Path(args.base_dir or ".")
     fy = args.fy
     json_output = args.json
+    use_search = args.use_search
 
     config = MiningConfig(
-        consensus_threshold=args.consensus or 0.6,
-        min_evidence=args.min_evidence or 10,
+        dominance=args.dominance or 0.6,
+        threshold=args.threshold or 10,
     )
 
     all_txns = _load_classified_txns(base_dir, fy)
@@ -52,7 +53,11 @@ def handle_suggest(args):
         print(f"No classified transactions found in {fy_str}")
         return
 
-    suggestions = mine_suggestions(all_txns)
+    cache_path = base_dir / "data" / f"fy{fy}" / "search_cache.json" if fy and use_search else None
+    if use_search and not fy:
+        cache_path = base_dir / "data" / "search_cache.json"
+
+    suggestions = mine_suggestions(all_txns, use_search=use_search, cache_path=cache_path)
     if not suggestions:
         print("No suggestions found.")
         return
@@ -60,12 +65,13 @@ def handle_suggest(args):
     scored = score_suggestions(suggestions, config)
     if not scored:
         print(
-            f"No suggestions met threshold (min_evidence={config.min_evidence}, "
-            f"consensus={config.consensus_threshold:.0%})."
+            f"No suggestions met threshold (threshold={config.threshold}, "
+            f"dominance={config.dominance:.0%})."
         )
         return
 
     fy_label = f"FY{fy}" if fy else "All FYs"
+    search_label = " (with search)" if use_search else ""
 
     if json_output:
         data = [
@@ -73,20 +79,21 @@ def handle_suggest(args):
                 "keyword": s.keyword,
                 "category": s.category,
                 "evidence": s.evidence,
+                "source": s.source,
             }
             for s in scored
         ]
         print(json.dumps(data, indent=2))
     else:
-        print(f"\nRule Suggestions - {fy_label}")
-        print("-" * 70)
-        print(f"{'Keyword':<30} {'Category':<20} {'Evidence':<10}")
-        print("-" * 70)
+        print(f"\nRule Suggestions - {fy_label}{search_label}")
+        print("-" * 80)
+        print(f"{'Keyword':<30} {'Category':<20} {'Evidence':<10} {'Source':<10}")
+        print("-" * 80)
         for s in scored:
-            print(f"{s.keyword:<30} {s.category:<20} {s.evidence:<10}")
+            print(f"{s.keyword:<30} {s.category:<20} {s.evidence:<10} {s.source:<10}")
         print()
         print(
-            f"Total: {len(scored)} suggestions (min_evidence={config.min_evidence}, consensus={config.consensus_threshold:.0%})"
+            f"Total: {len(scored)} suggestions (threshold={config.threshold}, dominance={config.dominance:.0%})"
         )
         print("\nUsage: tax rules add --category CATEGORY --keyword KEYWORD")
 
@@ -134,16 +141,21 @@ def register(subparsers):
     suggest_parser.add_argument("--base-dir", default=".", help="Base directory (default: .)")
     suggest_parser.add_argument("--json", action="store_true", help="Output JSON")
     suggest_parser.add_argument(
-        "--consensus",
+        "--dominance",
         type=float,
         default=0.6,
-        help="Consensus threshold 0.0-1.0 (default: 0.6)",
+        help="Category dominance threshold 0.0-1.0 (default: 0.6)",
     )
     suggest_parser.add_argument(
-        "--min-evidence",
+        "--threshold",
         type=int,
         default=10,
-        help="Minimum evidence count (default: 10)",
+        help="Minimum occurrence count (default: 10)",
+    )
+    suggest_parser.add_argument(
+        "--use-search",
+        action="store_true",
+        help="Enable DDGS merchant search for unclassified txns (caches results)",
     )
     suggest_parser.set_defaults(func=handle_suggest)
 

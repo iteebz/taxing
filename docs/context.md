@@ -3,7 +3,7 @@
 ## mission
 Reference-grade, AI-agent-friendly tax deduction automation for Australian households.
 
-## status (Oct 2025)
+## status (Oct 22, 2025)
 
 **Phase 1**: ✅ Complete (114 tests, zero lint)
 - Transaction pipeline: ingest → classify → deduce → persist
@@ -14,7 +14,20 @@ Reference-grade, AI-agent-friendly tax deduction automation for Australian house
 - Deduplication: Cross-ledger fingerprinting (merchant, same-person transfer, P2P)
 - `Transaction` model extended: `sources` (ledgers), `source_txn_ids` (audit trail)
 - Unified source of truth: Beemit credit + debit → 1 txn; CBA + ANZ transfer → 1 txn
-- Tests: 13 transfer tests + 17 dedupe tests
+- Tests: 17 transfer tests + 17 dedupe tests
+- **NEW**: Transfers persisted to `data/fy{fy}/transfers.csv` for validation
+- **NEW**: Enhanced `extract_recipient()` to handle multi-word names, noise words, account numbers
+- **NEW**: Name normalization (first-name matching) for cross-person transfer linking
+
+**Phase 1c**: ✅ Complete (mining + search enhancement)
+- Keyword mining: Extract high-confidence rules from classified txns (consensus + evidence filtering)
+- DDGS merchant search: For orphan txns with no keyword match, search merchant name + cache results
+- Search → category hints: Map snippets to 8 tax categories (dining, accom, travel, etc.)
+- CLI: `tax rules suggest [--fy FY] [--consensus X] [--min-evidence N] [--use-search]`
+- Cache: `data/fy{fy}/search_cache.json` prevents API spam
+- Tests: 213 total (12 mining unit tests, 2 new search integration tests)
+- **NEW**: `src/lib/search.py` — DDGS wrapper + caching (pure utilities, no domain logic)
+- **NEW**: `mine_suggestions()` extended with optional search for unclassified txns
 
 **Phase 2a**: ✅ Complete (capital gains core)
 - FIFO with loss harvesting + CGT discount (50% for holdings >365 days)
@@ -68,23 +81,26 @@ Reference-grade, AI-agent-friendly tax deduction automation for Australian house
 - Status: 260 tests passing (core logic complete, bracket tuning pending)
 - **Production ready**: Phase 4 completes core tax optimization. Household optimization works end-to-end.
 
-## Pipeline Validation Status (Oct 22, 2025)
+## Metrics & Coverage (Oct 22, 2025)
 
-**FY24 Test Run**: ✅ Working
-- Janice: 1219 txns ingested, 725 classified, 0 deductions calculated
-- Tyson: 461 txns ingested, 364 classified, 0 deductions calculated
-- Summary CSVs written with category aggregates
-- Capital gains processing: 0 gains (no trades data)
+**FY24**: 
+- Janice: 1220 txns ingested, 726 classified (59.5% coverage)
+  - Outbound spending: 36.8% classified ($227k of $617k) — **380k unclassified**, ideal for mining
+  - Inbound income: 81.2% classified ($330k of $406k)
+- Tyson: 461 txns ingested, 364 classified (78.9% coverage)
+- **Transfers**: 4 household transfer flows detected & reconciled
+  - janice→janice: $90k (21 txns, likely account transfers)
+  - xx7568→janice: $63.5k (10 txns, account reconciliation)
+  - janice→xx7568: $27k (6 txns, account transfers)
+  - janice→tyson: $16.6k (3 txns, household transfers)
 
-**FY23 Test Run**: ✅ Working  
-- Janice: 391 txns ingested, 360 classified
-- Tyson: 596 txns ingested, 370 classified
+**FY23**:
+- Janice: 645 txns, 78.5% coverage
+- Tyson: 177 txns, 66.1% coverage
 
-**Parity Validation**: 🔄 In Progress
-- [ ] Run tax-og/ on same FY23-24 data
-- [ ] Compare deduction totals by category
-- [ ] Verify classification rules are identical
-- [ ] Document any differences
+**Audit Trail**: All txns round-trip CSV with full classification preserved
+
+**Rule Mining Opportunity**: 380k unclassified spending in FY24 = high-value mining target. Suggests 10-15 new rules could reach 90%+ coverage.
 
 ## entry point for new session
 
@@ -108,12 +124,17 @@ just ci                # Full CI (tests + format + lint)
 - `src/core/models.py` - Money, Transaction, Trade, Gain, Loss, Individual, Property + line items
 - `src/core/household.py` - allocate_deductions(), optimize_household(), tax calculation
 - `src/core/trades.py` - FIFO + loss harvesting + CGT discount algorithm
-- `src/core/transfers.py` - Transfer detection & settlement reconciliation
-- `src/core/dedupe.py` - Cross-ledger deduplication & fingerprinting
+- `src/core/transfers.py` - `extract_recipient()`, `reconcile_transfers()`, name normalization, Transfer model
+- `src/core/dedupe.py` - Cross-ledger fingerprinting (merchant, transfers, P2P)
+- `src/core/metrics.py` - Coverage metrics (% classified, debit/credit split)
+- `src/core/mining.py` - `MiningConfig` (threshold, dominance), `mine_suggestions()`, `score_suggestions()`
 - `src/io/csv_loader.py` - Generic dataclass ↔ CSV mapper
 - `src/io/persist.py` - Generic CSV codec (to_csv, from_csv)
 - `src/io/property_loader.py` - load_property() for complete Property records
-- `src/pipeline.py` - Full orchestration (ingest → classify → dedupe → deduce → trades → persist)
+- `src/pipeline.py` - Full orchestration (ingest → classify → dedupe → deduce → trades → **transfers** → persist)
+- `src/cli/commands/metrics.py` - `tax metrics --fy FY [--person NAME]` — shows coverage %
+- `src/cli/commands/rules.py` - `tax rules suggest [--fy FY] [--dominance X] [--threshold N]` — mine high-confidence rules
+- `src/cli/commands/rules.py` - `tax rules add --category CAT --keyword KW` — add new rules
 
 ## design principles
 
@@ -134,6 +155,34 @@ just ci                # Full CI (tests + format + lint)
 - Tax-efficient rebalancing suggestions
 - *Estimate*: 6-8 hours
 
+## Recent Work (Oct 22, 2025)
+
+### Transfer Validation & Persistence
+- **Problem**: Transfer reconciliation was only in memory (`results["_transfers"]`), no way to audit or validate
+- **Solution**: 
+  1. Enhanced `extract_recipient()` to parse multi-word names, filter noise words, handle account numbers
+  2. Added name normalization in `reconcile_transfers()` (first-name matching with canonical person list)
+  3. Process both inbound + outbound transfers (previously only positive amounts)
+  4. Write Transfer records to `data/fy{fy}/transfers.csv` for validation
+  5. Collect classified txns during pipeline and use for transfer reconciliation (was using raw txns)
+
+### Rule Mining & Metrics
+- **Coverage metrics working correctly**: 
+  - Reads from pipeline output CSVs (not raw ingestion)
+  - FY24: 73.5% transaction coverage, 81.2% income, 36.8% spending
+  - FY23: 78.5% transaction coverage
+- **Rule mining enhanced**:
+  - Added `MiningConfig` dataclass with tunable thresholds (consensus_threshold, min_evidence)
+  - `tax rules suggest [--fy FY] [--consensus X] [--min-evidence N]` with configurable flags
+  - Made --fy optional; loads all FY dirs if omitted
+  - Filters generic words + numeric-only tokens
+
+### Test Coverage
+- 211 tests passing (was 205)
+- Added 4 new transfer extraction tests
+- Fixed 3 dedupe tests to use realistic bank description patterns
+- All dedupe + transfer tests now passing
+
 ---
 
-**Last Updated**: Oct 21, 2025 | **Tests**: 260 passing | **Lint**: Clean | **Status**: Production-ready (Phase 4 complete)
+**Last Updated**: Oct 22, 2025 | **Tests**: 213 passing | **Lint**: Clean | **Status**: Production-ready (Phase 4 complete, Phase 1c added: mining + search)

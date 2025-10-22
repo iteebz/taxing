@@ -1,6 +1,8 @@
 from dataclasses import dataclass
+from pathlib import Path
 
 from src.core.models import Transaction
+from src.lib.search import extract_search_categories, load_cache, search_merchant
 
 
 @dataclass(frozen=True)
@@ -19,8 +21,8 @@ class RuleSuggestion:
 class MiningConfig:
     """Configuration for rule mining and scoring."""
 
-    consensus_threshold: float = 0.6
-    min_evidence: int = 10
+    dominance: float = 0.6
+    threshold: int = 10
     min_unlabeled_coverage: int = 1
     min_keyword_len: int = 3
     keyword_length_bonus: int = 5
@@ -87,11 +89,20 @@ def find_similar_labeled(txns: list[Transaction], unlabeled_desc: str) -> list[T
     return similar
 
 
-def mine_suggestions(txns: list[Transaction]) -> list[RuleSuggestion]:
+def mine_suggestions(
+    txns: list[Transaction],
+    use_search: bool = False,
+    cache_path: Path | None = None,
+) -> list[RuleSuggestion]:
     """Mine keyword-category suggestions from similar labeled transactions.
 
     For each unlabeled txn, find similar labeled txns and extract keywords
-    that map to categories.
+    that map to categories. Optionally enhance with merchant search via DDGS.
+
+    Args:
+        txns: All transactions (labeled + unlabeled)
+        use_search: Enable DDGS merchant search for orphan txns
+        cache_path: Path to search cache file
     """
     unlabeled = [t for t in txns if t.category is None or not t.category]
     labeled = [t for t in txns if t.category is not None and t.category]
@@ -100,29 +111,43 @@ def mine_suggestions(txns: list[Transaction]) -> list[RuleSuggestion]:
         return []
 
     suggestions = []
+    cache = load_cache(cache_path) if use_search and cache_path else {}
 
     for unlabeled_txn in unlabeled:
         desc = unlabeled_txn.description
         similar = find_similar_labeled(labeled, desc)
 
-        if not similar:
-            continue
-
-        keywords = extract_keywords(desc)
-        for kw in keywords:
-            for labeled_txn in similar:
-                desc_upper = labeled_txn.description.upper()
-                if kw.upper() in desc_upper:
-                    for cat in labeled_txn.category:
-                        suggestions.append(
-                            RuleSuggestion(
-                                keyword=kw,
-                                category=cat,
-                                evidence=1,
-                                source="keyword",
-                                unlabeled_desc=desc[:60],
+        if similar:
+            keywords = extract_keywords(desc)
+            for kw in keywords:
+                for labeled_txn in similar:
+                    desc_upper = labeled_txn.description.upper()
+                    if kw.upper() in desc_upper:
+                        for cat in labeled_txn.category:
+                            suggestions.append(
+                                RuleSuggestion(
+                                    keyword=kw,
+                                    category=cat,
+                                    evidence=1,
+                                    source="keyword",
+                                    unlabeled_desc=desc[:60],
+                                )
                             )
+        elif use_search and cache_path:
+            merchant = desc.split()[0] if desc else ""
+            if merchant:
+                snippets = search_merchant(merchant, cache, cache_path)
+                hints = extract_search_categories(snippets)
+                for hint in hints:
+                    suggestions.append(
+                        RuleSuggestion(
+                            keyword=merchant,
+                            category=hint,
+                            evidence=1,
+                            source="search",
+                            unlabeled_desc=desc[:60],
                         )
+                    )
 
     return suggestions
 
@@ -131,7 +156,7 @@ def score_suggestions(
     suggestions: list[RuleSuggestion],
     config: MiningConfig | None = None,
 ) -> list[RuleSuggestion]:
-    """Score and filter suggestions by consensus and evidence thresholds.
+    """Score and filter suggestions by dominance and threshold.
 
     Args:
         suggestions: Raw suggestions from mine_suggestions()
@@ -176,10 +201,7 @@ def score_suggestions(
 
         dominant = max(kw_rules, key=lambda s: s.evidence)
 
-        if (
-            dominant.evidence >= cfg.min_evidence
-            and dominant.evidence / total_ev >= cfg.consensus_threshold
-        ):
+        if dominant.evidence >= cfg.threshold and dominant.evidence / total_ev >= cfg.dominance:
             filtered.append(dominant)
 
     return sorted(filtered, key=lambda s: s.evidence, reverse=True)

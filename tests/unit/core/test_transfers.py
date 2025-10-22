@@ -120,7 +120,14 @@ def test_reconcile_multiple_transfers_same_person():
 
 def test_net_position_owes():
     transfers = reconcile_transfers(
-        [_txn("TRANSFER TO ALICE", person="janice", amount=Decimal("-100.00"), category={"transfers"})]
+        [
+            _txn(
+                "TRANSFER TO ALICE",
+                person="janice",
+                amount=Decimal("-100.00"),
+                category={"transfers"},
+            )
+        ]
     )
     net = net_position(transfers, "janice")
     assert net == Decimal("100.00")
@@ -128,14 +135,23 @@ def test_net_position_owes():
 
 def test_net_position_owed():
     transfers = reconcile_transfers(
-        [_txn("TRANSFER TO TYSON", person="janice", amount=Decimal("-100.00"), category={"transfers"})]
+        [
+            _txn(
+                "TRANSFER TO TYSON",
+                person="janice",
+                amount=Decimal("-100.00"),
+                category={"transfers"},
+            )
+        ]
     )
     net = net_position(transfers, "tyson")
     assert net == Decimal("-100.00")
 
 
 def test_net_position_balanced():
-    janice_to_tyson = _txn("TRANSFER TO TYSON", person="janice", amount=Decimal("-100.00"), category={"transfers"})
+    janice_to_tyson = _txn(
+        "TRANSFER TO TYSON", person="janice", amount=Decimal("-100.00"), category={"transfers"}
+    )
     tyson_to_janice = Transaction(
         date=date(2024, 1, 2),
         amount=Decimal("-100.00"),

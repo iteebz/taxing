@@ -189,3 +189,63 @@ def test_score_suggestions_sorted_by_evidence():
 
     result = score_suggestions(suggestions)
     assert [s.evidence for s in result] == [100, 50, 20]
+
+
+def test_mine_suggestions_no_search():
+    """Mine without search—orphan txns ignored."""
+    txns = [
+        Transaction(
+            date=date(2025, 1, 1),
+            amount=Decimal("-100"),
+            description="WOOLWORTHS",
+            bank="anz",
+            individual="alice",
+            category={"groceries"},
+        ),
+        Transaction(
+            date=date(2025, 1, 2),
+            amount=Decimal("-50"),
+            description="UNKNOWN MERCHANT XYZ",
+            bank="anz",
+            individual="alice",
+            category=None,
+        ),
+    ]
+
+    result = mine_suggestions(txns, use_search=False)
+    assert result == []
+
+
+def test_mine_suggestions_with_search_orphan():
+    """Mine with search enabled—orphans searched (mock)."""
+    from pathlib import Path
+    from unittest.mock import patch
+
+    txns = [
+        Transaction(
+            date=date(2025, 1, 1),
+            amount=Decimal("-100"),
+            description="WOOLWORTHS",
+            bank="anz",
+            individual="alice",
+            category={"groceries"},
+        ),
+        Transaction(
+            date=date(2025, 1, 2),
+            amount=Decimal("-50"),
+            description="UNKNOWNMERCHANT",
+            bank="anz",
+            individual="alice",
+            category=None,
+        ),
+    ]
+
+    cache_path = Path("/tmp/test_cache.json")
+
+    with patch("src.lib.search.search_merchant") as mock_search:
+        mock_search.return_value = ["This is an online retail store"]
+
+        result = mine_suggestions(txns, use_search=True, cache_path=cache_path)
+
+        assert len(result) > 0
+        assert any(s.source == "search" for s in result)

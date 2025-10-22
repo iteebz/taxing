@@ -43,7 +43,12 @@ def test_different_date_different_fingerprint():
 
 
 def test_transfer_same_person_same_fingerprint():
-    txn1 = _txn("TRANSFER TO OTHER BANK NETBANK SAVINGS", person="janice", bank="cba", amount=Decimal("1000.00"))
+    txn1 = _txn(
+        "TRANSFER TO OTHER BANK NETBANK SAVINGS",
+        person="janice",
+        bank="cba",
+        amount=Decimal("1000.00"),
+    )
     txn2 = _txn("TRANSFER FROM OTHER BANK", person="janice", bank="anz", amount=Decimal("1000.00"))
     assert fingerprint(txn1) == fingerprint(txn2)
 

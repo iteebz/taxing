@@ -1,6 +1,12 @@
 default:
     @just --list
 
+metrics fy *args:
+    @poetry run python -m src.cli metrics --fy {{fy}} {{args}}
+
+mine fy *args:
+    @poetry run python -m src.cli mine --fy {{fy}} {{args}}
+
 clean:
     @echo "Cleaning taxing..."
     @rm -rf dist build .pytest_cache .ruff_cache __pycache__ .venv htmlcov

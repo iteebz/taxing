@@ -49,7 +49,7 @@ def run(
 
     results = {}
     txns_classified_all = []
-    
+
     for individual in sorted({t.individual for t in txns_all}):
         txns_individual = [t for t in txns_all if t.individual == individual]
         trades_individual = [t for t in trades_all if t.individual == individual]
