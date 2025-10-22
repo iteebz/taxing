@@ -1,12 +1,24 @@
 [project]
 name = "taxing"
 version = "0.1.0"
-description = ""
+description = "Tax deduction automation for Australian households"
 authors = [
-    {name = "tyson",email = "tyson.chan@proton.me"}
+    {name = "Tyson Chan", email = "tyson.chan@proton.me"}
 ]
+license = {text = "MIT"}
 readme = "README.md"
 requires-python = ">=3.11"
+keywords = ["tax", "deductions", "capital-gains", "australia", "automation"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Office/Business :: Financial",
+]
 dependencies = [
     "pandas (>=2.3.0,<3.0.0)",
     "pyyaml (>=6.0.3,<7.0.0)",

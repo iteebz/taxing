@@ -1,6 +1,6 @@
 # taxing
 
-Reference-grade tax deduction automation for Australian households.
+Tax deduction automation for Australian households.
 
 Ingests bank & trading platform data, classifies transactions, calculates deductions, and optimizes capital gains sequencing across tax brackets.
 
