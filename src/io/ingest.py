@@ -1,3 +1,4 @@
+from collections import Counter
 from dataclasses import replace
 from decimal import Decimal
 from pathlib import Path
@@ -63,6 +64,19 @@ def _convert_row(
     return converter(row, account=account)
 
 
+def _infer_beem_user(path: str | Path) -> str:
+    """Infer beem account owner from payer/recipient frequency."""
+    df = pd.read_csv(path)
+    users = Counter()
+    for payer in df.get("Payer", []):
+        if pd.notna(payer):
+            users[payer] += 1
+    for recipient in df.get("Recipient", []):
+        if pd.notna(recipient):
+            users[recipient] += 1
+    return users.most_common(1)[0][0]
+
+
 def _parse_bank_and_account(filename: str) -> tuple[str, str | None]:
     """Parse bank code and account from filename.
 
@@ -89,7 +103,7 @@ def ingest_file(
         path: CSV file path
         bank: Bank code (anz, cba, beem, wise)
         individual: Individual identifier (for individual field)
-        beem_username: Beem username (required if bank='beem')
+        beem_username: Beem username (inferred from data if not provided for beem)
 
     Returns:
         List of Transaction objects
@@ -97,8 +111,8 @@ def ingest_file(
     if bank not in BANK_FIELD_SPECS:
         raise ValueError(f"Unknown bank: {bank}")
 
-    if bank == "beem" and not beem_username:
-        raise ValueError("beem_username required for Beem bank")
+    if bank == "beem":
+        beem_username = beem_username or _infer_beem_user(path)
 
     spec = BANK_FIELD_SPECS[bank]
     df = pd.read_csv(
@@ -123,7 +137,6 @@ def ingest_file(
 def ingest_dir(
     base_dir: str | Path,
     persons: list[str] | None = None,
-    beem_usernames: dict[str, str] | None = None,
 ) -> list[Transaction]:
     """
     Load all bank CSVs from directory structure.
@@ -135,12 +148,10 @@ def ingest_dir(
     Args:
         base_dir: Base directory
         persons: List of persons to load (if None, scan flat structure)
-        beem_usernames: Map person -> beem username
 
     Returns:
         Combined list of all transactions
     """
-    beem_usernames = beem_usernames or {}
     all_txns = []
     base = Path(base_dir)
 
@@ -157,8 +168,7 @@ def ingest_dir(
             converter = CONVERTERS[bank]
             for _, row in df.iterrows():
                 individual = row["individual"]
-                beem_user = beem_usernames.get(individual) if bank == "beem" else None
-                txn = _convert_row(row.to_dict(), bank, converter, beem_user)
+                txn = _convert_row(row.to_dict(), bank, converter, None)
                 all_txns.append(txn)
     else:
         for individual in persons:
@@ -170,8 +180,7 @@ def ingest_dir(
                 bank, account = _parse_bank_and_account(csv_file.name)
                 if bank not in BANK_FIELD_SPECS:
                     continue
-                beem_user = beem_usernames.get(individual) if bank == "beem" else None
-                txns = ingest_file(csv_file, bank, individual, beem_user)
+                txns = ingest_file(csv_file, bank, individual)
                 if account:
                     txns = [replace(t, account=account) for t in txns]
                 all_txns.extend(txns)
@@ -233,7 +242,9 @@ def ingest_trades_dir(base_dir: str | Path, persons: list[str] | None = None) ->
 
 
 def ingest_year(
-    base_dir: str | Path, year: int, persons: list[str] | None = None
+    base_dir: str | Path,
+    year: int,
+    persons: list[str] | None = None,
 ) -> list[Transaction]:
     """
     Load all transactions for a fiscal year using standardized structure.

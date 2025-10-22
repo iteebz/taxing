@@ -1,5 +1,5 @@
-account servicing fee
 account fee
+account servicing fee
 adjust purchase adjustment
 adjust purchase dispute adjustment
 atm withdrawal
@@ -7,11 +7,11 @@ cardless cash
 cash deposit cba atm
 commbank app tfr
 credit interest adjusted
+debit interest charged
 excess interest
 international transaction fee
 julias jonathan
 nsw courts service ctr
-debit interest charged
 overdraw fee
 payment fee
 recoveries corp

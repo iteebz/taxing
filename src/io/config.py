@@ -21,7 +21,6 @@ class Config:
     fy: str
     persons: list[str]
     base_dir: str | Path
-    beem_usernames: dict[str, str]
 
     @classmethod
     def from_env(cls, config_file: str | Path | None = None) -> "Config":
@@ -31,7 +30,6 @@ class Config:
         Env vars (optional):
         - FY: Financial year (e.g., 'fy25')
         - PERSONS: Comma-separated person names
-        - BEEM_USERNAMES: JSON dict of person -> beem username
 
         File format (one person per line):
         fy/person
@@ -44,7 +42,6 @@ class Config:
         """
         fy = os.getenv("FY")
         persons_str = os.getenv("PERSONS")
-        beem_json = os.getenv("BEEM_USERNAMES", "{}")
 
         if not fy or not persons_str:
             if not config_file:
@@ -67,16 +64,8 @@ class Config:
 
         persons = [p.strip() for p in persons_str.split(",")]
 
-        import json
-
-        try:
-            beem_usernames = json.loads(beem_json)
-        except json.JSONDecodeError:
-            beem_usernames = {}
-
         return cls(
             fy=fy,
             persons=persons,
             base_dir=fy,
-            beem_usernames=beem_usernames,
         )

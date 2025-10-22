@@ -43,8 +43,8 @@ def test_different_date_different_fingerprint():
 
 
 def test_transfer_same_person_same_fingerprint():
-    txn1 = _txn("TRANSFER CBA TO ANZ", person="janice", bank="cba")
-    txn2 = _txn("TRANSFER FROM CBA", person="janice", bank="anz")
+    txn1 = _txn("TRANSFER TO OTHER BANK NETBANK SAVINGS", person="janice", bank="cba", amount=Decimal("1000.00"))
+    txn2 = _txn("TRANSFER FROM OTHER BANK", person="janice", bank="anz", amount=Decimal("1000.00"))
     assert fingerprint(txn1) == fingerprint(txn2)
 
 
@@ -52,16 +52,16 @@ def test_p2p_transfer_both_sides_same_fingerprint():
     janice_sends = Transaction(
         date=date(2024, 1, 1),
         amount=Decimal("100.00"),
-        description="TRANSFER TO TYSON",
-        bank="beemit",
+        description="TRANSFER TO TYSON PAYID PHONE FROM COMMBANK APP",
+        bank="cba",
         individual="janice",
         category={"transfers"},
     )
     tyson_receives = Transaction(
         date=date(2024, 1, 1),
         amount=Decimal("100.00"),
-        description="DIRECT CREDIT FROM JANICE",
-        bank="beemit",
+        description="DIRECT CREDIT 141000 JANICE",
+        bank="anz",
         individual="tyson",
         category={"transfers"},
     )
@@ -110,22 +110,22 @@ def test_merge_p2p_transfer():
     janice_debit = Transaction(
         date=date(2024, 1, 1),
         amount=Decimal("100.00"),
-        description="TRANSFER TO TYSON",
-        bank="beemit",
+        description="TRANSFER TO TYSON PAYID PHONE FROM COMMBANK APP",
+        bank="cba",
         individual="janice",
         category={"transfers"},
     )
     tyson_credit = Transaction(
         date=date(2024, 1, 1),
         amount=Decimal("100.00"),
-        description="DIRECT CREDIT FROM JANICE",
-        bank="beemit",
+        description="DIRECT CREDIT 141000 JANICE",
+        bank="anz",
         individual="tyson",
         category={"transfers"},
     )
     result = dedupe([janice_debit, tyson_credit])
     assert len(result) == 1
-    assert result[0].sources == frozenset({"beemit"})
+    assert result[0].sources == frozenset({"cba", "anz"})
 
 
 def test_preserves_non_duplicate_txns():

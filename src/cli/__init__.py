@@ -1,6 +1,6 @@
 import argparse
 
-from src.cli.commands import assets, gains, household, metrics, optimize, property_, rules
+from src.cli.commands import assets, gains, household, metrics, optimize, property_, rules, run
 
 
 def main():
@@ -10,6 +10,7 @@ def main():
     )
     subparsers = parser.add_subparsers(dest="command")
 
+    run.register(subparsers)
     optimize.register(subparsers)
     property_.register(subparsers)
     gains.register(subparsers)

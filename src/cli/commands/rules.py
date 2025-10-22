@@ -1,7 +1,97 @@
+import json
 from pathlib import Path
 
+from src.core.mining import MiningConfig, mine_suggestions, score_suggestions
+from src.core.models import Transaction
+from src.io.persist import from_csv
 
-def handle(args):
+
+def _load_classified_txns(base_dir: Path, fy: int | None = None) -> list[Transaction]:
+    """Load classified transactions from output CSVs.
+
+    If fy is None, loads all FY dirs.
+    """
+    data_dir = base_dir / "data"
+    if not data_dir.exists():
+        return []
+
+    txns = []
+
+    if fy is not None:
+        fy_dirs = [data_dir / f"fy{fy}"]
+    else:
+        fy_dirs = sorted(d for d in data_dir.iterdir() if d.is_dir() and d.name.startswith("fy"))
+
+    for fy_dir in fy_dirs:
+        if not fy_dir.exists():
+            continue
+        for person_dir in fy_dir.iterdir():
+            if not person_dir.is_dir():
+                continue
+            csv_path = person_dir / "data" / "transactions.csv"
+            if csv_path.exists():
+                txns.extend(from_csv(csv_path, Transaction))
+
+    return txns
+
+
+def handle_suggest(args):
+    """Mine high-confidence rule suggestions from classified transactions."""
+    base_dir = Path(args.base_dir or ".")
+    fy = args.fy
+    json_output = args.json
+
+    config = MiningConfig(
+        consensus_threshold=args.consensus or 0.6,
+        min_evidence=args.min_evidence or 10,
+    )
+
+    all_txns = _load_classified_txns(base_dir, fy)
+    if not all_txns:
+        fy_str = f"FY{fy}" if fy else "any fiscal year"
+        print(f"No classified transactions found in {fy_str}")
+        return
+
+    suggestions = mine_suggestions(all_txns)
+    if not suggestions:
+        print("No suggestions found.")
+        return
+
+    scored = score_suggestions(suggestions, config)
+    if not scored:
+        print(
+            f"No suggestions met threshold (min_evidence={config.min_evidence}, "
+            f"consensus={config.consensus_threshold:.0%})."
+        )
+        return
+
+    fy_label = f"FY{fy}" if fy else "All FYs"
+
+    if json_output:
+        data = [
+            {
+                "keyword": s.keyword,
+                "category": s.category,
+                "evidence": s.evidence,
+            }
+            for s in scored
+        ]
+        print(json.dumps(data, indent=2))
+    else:
+        print(f"\nRule Suggestions - {fy_label}")
+        print("-" * 70)
+        print(f"{'Keyword':<30} {'Category':<20} {'Evidence':<10}")
+        print("-" * 70)
+        for s in scored:
+            print(f"{s.keyword:<30} {s.category:<20} {s.evidence:<10}")
+        print()
+        print(
+            f"Total: {len(scored)} suggestions (min_evidence={config.min_evidence}, consensus={config.consensus_threshold:.0%})"
+        )
+        print("\nUsage: tax rules add --category CATEGORY --keyword KEYWORD")
+
+
+def handle_add(args):
     """Add a new classification rule to rules/<category>.txt."""
     category = args.category
     keyword = args.keyword
@@ -9,7 +99,7 @@ def handle(args):
     rule_file = Path("rules") / f"{category}.txt"
 
     if not rule_file.exists():
-        print(f"\nError: Category file not found: {rule_file}")
+        print(f"Error: Category file not found: {rule_file}")
         available = sorted(p.stem for p in Path("rules").glob("*.txt"))
         print(f"Available categories: {', '.join(available)}")
         return
@@ -18,7 +108,7 @@ def handle(args):
         existing = {line.strip() for line in f if line.strip() and not line.strip().startswith("#")}
 
     if keyword in existing:
-        print(f"\n✓ Rule already exists: {keyword} -> {category}")
+        print(f"✓ Rule already exists: {keyword} -> {category}")
         return
 
     existing.add(keyword)
@@ -28,13 +118,36 @@ def handle(args):
         for rule in sorted_rules:
             f.write(f"{rule}\n")
 
-    print(f"\n✓ Added rule: {keyword} -> {category}")
+    print(f"✓ Added rule: {keyword} -> {category}")
     print(f"  File: {rule_file}")
 
 
 def register(subparsers):
-    """Register add-rule command."""
-    parser = subparsers.add_parser("add-rule", help="Add classification rule")
-    parser.add_argument("--category", required=True, help="Category name (e.g., groceries)")
-    parser.add_argument("--keyword", required=True, help="Keyword/phrase to match")
-    parser.set_defaults(func=handle)
+    """Register rules subcommands."""
+    parser = subparsers.add_parser("rules", help="Manage classification rules")
+    rules_subparsers = parser.add_subparsers(dest="rules_command")
+
+    suggest_parser = rules_subparsers.add_parser("suggest", help="Mine rule suggestions")
+    suggest_parser.add_argument(
+        "--fy", type=int, default=None, help="Fiscal year (e.g., 25). If omitted, uses all FY dirs"
+    )
+    suggest_parser.add_argument("--base-dir", default=".", help="Base directory (default: .)")
+    suggest_parser.add_argument("--json", action="store_true", help="Output JSON")
+    suggest_parser.add_argument(
+        "--consensus",
+        type=float,
+        default=0.6,
+        help="Consensus threshold 0.0-1.0 (default: 0.6)",
+    )
+    suggest_parser.add_argument(
+        "--min-evidence",
+        type=int,
+        default=10,
+        help="Minimum evidence count (default: 10)",
+    )
+    suggest_parser.set_defaults(func=handle_suggest)
+
+    add_parser = rules_subparsers.add_parser("add", help="Add classification rule")
+    add_parser.add_argument("--category", required=True, help="Category name (e.g., groceries)")
+    add_parser.add_argument("--keyword", required=True, help="Keyword/phrase to match")
+    add_parser.set_defaults(func=handle_add)

@@ -12,6 +12,18 @@ class RuleSuggestion:
     evidence: int
     source: str
     unlabeled_desc: str
+    total_category_evidence: int = 0
+
+
+@dataclass(frozen=True)
+class MiningConfig:
+    """Configuration for rule mining and scoring."""
+
+    consensus_threshold: float = 0.6
+    min_evidence: int = 10
+    min_unlabeled_coverage: int = 1
+    min_keyword_len: int = 3
+    keyword_length_bonus: int = 5
 
 
 GENERIC_WORDS = {
@@ -40,13 +52,19 @@ GENERIC_WORDS = {
     "in",
     "to",
     "at",
+    "ltd",
+    "pty",
+    "aust",
+    "inc",
+    "co",
 }
 
 
 def extract_keywords(desc: str, min_len: int = 3) -> list[str]:
     """Extract candidate keywords from description (alphanumeric, min length)."""
     words = desc.lower().split()
-    return [w.strip(".,!?;:") for w in words if len(w.strip(".,!?;:")) >= min_len]
+    cleaned = [w.strip(".,!?;:") for w in words if len(w.strip(".,!?;:")) >= min_len]
+    return [w for w in cleaned if not w.isdigit()]
 
 
 def find_similar_labeled(txns: list[Transaction], unlabeled_desc: str) -> list[Transaction]:
@@ -109,13 +127,25 @@ def mine_suggestions(txns: list[Transaction]) -> list[RuleSuggestion]:
     return suggestions
 
 
-def score_suggestions(suggestions: list[RuleSuggestion]) -> list[RuleSuggestion]:
-    """Score and filter suggestions by consensus (60%+ threshold)."""
+def score_suggestions(
+    suggestions: list[RuleSuggestion],
+    config: MiningConfig | None = None,
+) -> list[RuleSuggestion]:
+    """Score and filter suggestions by consensus and evidence thresholds.
+
+    Args:
+        suggestions: Raw suggestions from mine_suggestions()
+        config: MiningConfig with thresholds (uses defaults if None)
+
+    Returns:
+        Filtered, scored suggestions ranked by evidence
+    """
     if not suggestions:
         return []
 
-    filtered_suggestions = [s for s in suggestions if s.keyword.lower() not in GENERIC_WORDS]
+    cfg = config or MiningConfig()
 
+    filtered_suggestions = [s for s in suggestions if s.keyword.lower() not in GENERIC_WORDS]
     if not filtered_suggestions:
         return []
 
@@ -135,6 +165,7 @@ def score_suggestions(suggestions: list[RuleSuggestion]) -> list[RuleSuggestion]
                 evidence=total_ev,
                 source="keyword",
                 unlabeled_desc="",
+                total_category_evidence=total_ev,
             )
         )
 
@@ -144,7 +175,11 @@ def score_suggestions(suggestions: list[RuleSuggestion]) -> list[RuleSuggestion]
         total_ev = sum(s.evidence for s in kw_rules)
 
         dominant = max(kw_rules, key=lambda s: s.evidence)
-        if dominant.evidence / total_ev > 0.6:
+
+        if (
+            dominant.evidence >= cfg.min_evidence
+            and dominant.evidence / total_ev >= cfg.consensus_threshold
+        ):
             filtered.append(dominant)
 
     return sorted(filtered, key=lambda s: s.evidence, reverse=True)

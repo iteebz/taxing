@@ -67,34 +67,38 @@ def beem(row: dict, beem_username: str, account: str | None = None) -> Transacti
 def wise(row: dict, account: str | None = None) -> Transaction:
     """Convert Wise CSV row to Transaction, converting to AUD."""
     direction = row["direction"].lower()
-    target_fee_str = row.get("target_fee_amount", "0") or "0"
-    try:
-        target_fee = Decimal(str(target_fee_str))
-    except (ValueError, TypeError):
-        target_fee = Decimal("0")
-    target_amt = Decimal(str(row["target_amount_after_fees"]))
-    exchange_rate = Decimal(str(row.get("exchange_rate", "1")))
+    target_currency = row.get("target_currency", "").upper()
+    source_currency = row.get("source_currency", "").upper()
 
-    target_currency = row["target_currency"].upper()
-    source_currency = row["source_currency"].upper()
-
-    if direction == "in":
-        total_amt = target_amt + target_fee
-        if target_currency != "AUD":
-            amt = to_aud(total_amt, target_currency, exchange_rate)
-        else:
-            amt = total_amt
-        desc = f"wise deposit from {source_currency} to {target_currency}"
-    elif direction in ["neutral", "cancelled"]:
+    if direction in ["neutral", "cancelled"]:
         amt = Decimal("0")
         desc = f"wise {direction} conversion from {source_currency} to {target_currency}"
-    else:  # out
-        total_amt = target_amt + target_fee
-        if target_currency != "AUD":
-            amt = -to_aud(total_amt, target_currency, exchange_rate)
-        else:
-            amt = -total_amt
-        desc = f"wise payment in {target_currency} to {row['target_name']}"
+    else:
+        target_fee_str = row.get("target_fee_amount", "0") or "0"
+        try:
+            target_fee = Decimal(str(target_fee_str))
+        except (ValueError, TypeError):
+            target_fee = Decimal("0")
+        try:
+            target_amt = Decimal(str(row["target_amount_after_fees"]))
+        except (ValueError, TypeError):
+            target_amt = Decimal("0")
+        exchange_rate = Decimal(str(row.get("exchange_rate", "1")))
+
+        if direction == "in":
+            total_amt = target_amt + target_fee
+            if target_currency != "AUD":
+                amt = to_aud(total_amt, target_currency, exchange_rate)
+            else:
+                amt = total_amt
+            desc = f"wise deposit from {source_currency} to {target_currency}"
+        else:  # out
+            total_amt = target_amt + target_fee
+            if target_currency != "AUD":
+                amt = -to_aud(total_amt, target_currency, exchange_rate)
+            else:
+                amt = -total_amt
+            desc = f"wise payment in {target_currency} to {row.get('target_name', 'unknown')}"
 
     return Transaction(
         date=_parse_date(row["created_on"], dayfirst=False),

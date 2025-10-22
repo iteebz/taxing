@@ -9,13 +9,11 @@ from src.io.config import Config
 def test_from_env(monkeypatch):
     monkeypatch.setenv("FY", "fy25")
     monkeypatch.setenv("PERSONS", "tyson,janice")
-    monkeypatch.setenv("BEEM_USERNAMES", '{"tyson": "tysonchan"}')
 
     cfg = Config.from_env()
 
     assert cfg.fy == "fy25"
     assert cfg.persons == ["tyson", "janice"]
-    assert cfg.beem_usernames == {"tyson": "tysonchan"}
 
 
 def test_from_file():
@@ -55,13 +53,3 @@ def test_empty_file():
 
         with pytest.raises(ValueError):
             Config.from_env(config_file)
-
-
-def test_default_beem_usernames():
-    with tempfile.TemporaryDirectory() as tmpdir:
-        config_file = Path(tmpdir) / "config"
-        config_file.write_text("fy25/tyson\n")
-
-        cfg = Config.from_env(config_file)
-
-        assert cfg.beem_usernames == {}

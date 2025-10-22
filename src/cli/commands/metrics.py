@@ -1,7 +1,34 @@
 from pathlib import Path
 
 from src.core.metrics import coverage, household_metrics
+from src.core.models import Transaction
 from src.io.ingest import ingest_year
+from src.io.persist import from_csv
+
+
+def _load_classified_txns(base_dir: Path, fy: int, person: str | None = None) -> list[Transaction]:
+    """Load classified transactions from output CSVs, falling back to raw if not found."""
+    persons = [person] if person else None
+    fy_dir = base_dir / "data" / f"fy{fy}"
+
+    if not fy_dir.exists():
+        return ingest_year(base_dir, fy, persons=persons)
+
+    txns = []
+    if persons:
+        dirs = [fy_dir / p for p in persons if (fy_dir / p).exists()]
+    else:
+        dirs = [d for d in fy_dir.iterdir() if d.is_dir() and (d / "data").exists()]
+
+    for person_dir in dirs:
+        csv_path = person_dir / "data" / "transactions.csv"
+        if csv_path.exists():
+            txns.extend(from_csv(csv_path, Transaction))
+
+    if txns:
+        return txns
+
+    return ingest_year(base_dir, fy, persons=persons)
 
 
 def handle(args):
@@ -10,10 +37,7 @@ def handle(args):
     fy = args.fy
     person = args.person
 
-    if person:
-        all_txns = ingest_year(base_dir, fy, persons=[person])
-    else:
-        all_txns = ingest_year(base_dir, fy)
+    all_txns = _load_classified_txns(base_dir, fy, person)
 
     if not all_txns:
         print(f"\nNo transactions found for FY{fy}")

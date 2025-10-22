@@ -16,7 +16,9 @@ from src.io import (
 
 
 def run(
-    base_dir: str | Path, year: int, persons: list[str] | None = None
+    base_dir: str | Path,
+    year: int,
+    persons: list[str] | None = None,
 ) -> dict[str, dict[str, object]]:
     """Execute full pipeline: ingest → classify → deduce → trades → persist.
 
@@ -46,6 +48,8 @@ def run(
         return {}
 
     results = {}
+    txns_classified_all = []
+    
     for individual in sorted({t.individual for t in txns_all}):
         txns_individual = [t for t in txns_all if t.individual == individual]
         trades_individual = [t for t in trades_all if t.individual == individual]
@@ -58,6 +62,7 @@ def run(
             )
             for t in txns_individual
         ]
+        txns_classified_all.extend(txns_classified)
 
         validate_transactions(txns_classified, year)
 
@@ -65,7 +70,7 @@ def run(
 
         summary_dict = {}
         for t in txns_classified:
-            if t.category and not t.is_transfer:
+            if t.category and not t.is_transfer and t.amount is not None and not t.amount.is_nan():
                 for cat in t.category:
                     if cat not in summary_dict:
                         summary_dict[cat] = (Decimal(0), Decimal(0))
@@ -94,7 +99,13 @@ def run(
             "gains_count": len(gains),
         }
 
-    transfers = reconcile_transfers(txns_all)
+    transfers = reconcile_transfers(txns_classified_all)
+
+    if transfers:
+        transfer_list = list(transfers.values())
+        transfers_path = base / "data" / f"fy{year}" / "transfers.csv"
+        to_csv(transfer_list, transfers_path)
+
     results["_transfers"] = transfers
 
     return results

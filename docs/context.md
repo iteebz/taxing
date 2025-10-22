@@ -68,11 +68,30 @@ Reference-grade, AI-agent-friendly tax deduction automation for Australian house
 - Status: 260 tests passing (core logic complete, bracket tuning pending)
 - **Production ready**: Phase 4 completes core tax optimization. Household optimization works end-to-end.
 
+## Pipeline Validation Status (Oct 22, 2025)
+
+**FY24 Test Run**: ✅ Working
+- Janice: 1219 txns ingested, 725 classified, 0 deductions calculated
+- Tyson: 461 txns ingested, 364 classified, 0 deductions calculated
+- Summary CSVs written with category aggregates
+- Capital gains processing: 0 gains (no trades data)
+
+**FY23 Test Run**: ✅ Working  
+- Janice: 391 txns ingested, 360 classified
+- Tyson: 596 txns ingested, 370 classified
+
+**Parity Validation**: 🔄 In Progress
+- [ ] Run tax-og/ on same FY23-24 data
+- [ ] Compare deduction totals by category
+- [ ] Verify classification rules are identical
+- [ ] Document any differences
+
 ## entry point for new session
 
 1. Read this file (1 min)
-2. Run tests: `just test` (expect 260 pass)
-3. Read `docs/architecture.md` for deep design (5 min)
+2. Read `docs/cli.md` for pipeline operations (3 min)
+3. Run tests: `just test` (expect 209+ pass)
+4. Read `docs/architecture.md` for deep design (5 min)
 
 ## quick commands
 

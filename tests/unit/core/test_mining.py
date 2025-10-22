@@ -114,14 +114,14 @@ def test_score_suggestions_generic_words():
         RuleSuggestion(
             keyword="transfer",
             category="transfers",
-            evidence=5,
+            evidence=50,
             source="keyword",
             unlabeled_desc="test",
         ),
         RuleSuggestion(
             keyword="WOOLWORTHS",
             category="groceries",
-            evidence=3,
+            evidence=30,
             source="keyword",
             unlabeled_desc="test",
         ),
@@ -140,14 +140,14 @@ def test_score_suggestions_consensus():
         RuleSuggestion(
             keyword="COFFEE",
             category="dining",
-            evidence=7,
+            evidence=70,
             source="keyword",
             unlabeled_desc="",
         ),
         RuleSuggestion(
             keyword="COFFEE",
             category="groceries",
-            evidence=3,
+            evidence=30,
             source="keyword",
             unlabeled_desc="",
         ),
@@ -156,7 +156,7 @@ def test_score_suggestions_consensus():
     result = score_suggestions(suggestions)
     assert len(result) == 1
     assert result[0].category == "dining"
-    assert result[0].evidence == 7
+    assert result[0].evidence == 70
 
 
 def test_score_suggestions_sorted_by_evidence():
@@ -167,25 +167,25 @@ def test_score_suggestions_sorted_by_evidence():
         RuleSuggestion(
             keyword="BREAD",
             category="groceries",
-            evidence=2,
+            evidence=20,
             source="keyword",
             unlabeled_desc="",
         ),
         RuleSuggestion(
             keyword="MILK",
             category="groceries",
-            evidence=10,
+            evidence=100,
             source="keyword",
             unlabeled_desc="",
         ),
         RuleSuggestion(
             keyword="EGGS",
             category="groceries",
-            evidence=5,
+            evidence=50,
             source="keyword",
             unlabeled_desc="",
         ),
     ]
 
     result = score_suggestions(suggestions)
-    assert [s.evidence for s in result] == [10, 5, 2]
+    assert [s.evidence for s in result] == [100, 50, 20]

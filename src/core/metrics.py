@@ -32,6 +32,8 @@ def coverage(txns: list[Transaction]) -> dict[str, float]:
             "credit_total": Decimal("0"),
         }
 
+    txns = [t for t in txns if t.amount is not None and not t.amount.is_nan()]
+
     labeled = [t for t in txns if t.category is not None and t.category]
     count_labeled = len(labeled)
     count_total = len(txns)
@@ -85,7 +87,9 @@ def household_metrics(txns: list[Transaction]) -> dict[str, any]:
     income_by_person = {}
     transfers_by_person = {}
 
-    for txn in txns:
+    valid_txns = [t for t in txns if t.amount is not None and not t.amount.is_nan()]
+
+    for txn in valid_txns:
         individual = txn.individual
         is_transfer = txn.is_transfer or (txn.category is not None and "transfers" in txn.category)
 

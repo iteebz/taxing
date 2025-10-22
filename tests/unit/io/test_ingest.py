@@ -89,11 +89,6 @@ def test_unknown_bank(anz_csv):
         ingest_file(anz_csv, "unknown", "tyson")
 
 
-def test_beem_requires_user(anz_csv):
-    with pytest.raises(ValueError, match="beem_username required"):
-        ingest_file(anz_csv, "beem", "tyson")
-
-
 def test_dir():
     with tempfile.TemporaryDirectory() as tmpdir:
         base = Path(tmpdir)
