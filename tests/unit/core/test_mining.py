@@ -242,8 +242,10 @@ def test_mine_suggestions_with_search_orphan():
 
     cache_path = Path("/tmp/test_cache.json")
 
-    with patch("src.lib.search.search_merchant") as mock_search:
-        mock_search.return_value = ["This is an online retail store"]
+    with patch("src.lib.search.search_description") as mock_search:
+        mock_search.return_value = [
+            {"title": "Online Store", "body": "This is an online retail store"}
+        ]
 
         result = mine_suggestions(txns, use_search=True, cache_path=cache_path)
 

@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from src.lib.sanitize import sanitize
+
 
 def dedupe_keywords(keywords: list[str]) -> list[str]:
     """Remove subsumed keywords and duplicates.
@@ -47,7 +49,9 @@ def load_rules(base_dir: str | Path) -> dict[str, list[str]]:
             for line in f:
                 line = line.strip()
                 if line and not line.startswith("#"):
-                    keywords.append(line)
+                    keyword = sanitize(line)
+                    if keyword:
+                        keywords.append(keyword)
 
         if keywords:
             rules[category] = dedupe_keywords(keywords)

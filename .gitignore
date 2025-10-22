@@ -5,6 +5,7 @@ dist/
 .ruff_cache
 .coverage
 *.pyc
+.search_cache.json
 
 data/
 output/

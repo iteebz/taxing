@@ -3,6 +3,7 @@ from pathlib import Path
 
 from src.core.mining import MiningConfig, mine_suggestions, score_suggestions
 from src.core.models import Transaction
+from src.lib.sanitize import sanitize
 from src.io.persist import from_csv
 
 
@@ -112,21 +113,55 @@ def handle_add(args):
         return
 
     with open(rule_file) as f:
-        existing = {line.strip() for line in f if line.strip() and not line.strip().startswith("#")}
+        existing = [line.strip() for line in f if line.strip() and not line.strip().startswith("#")]
 
     if keyword in existing:
         print(f"✓ Rule already exists: {keyword} -> {category}")
         return
 
-    existing.add(keyword)
-    sorted_rules = sorted(existing, key=str.lower)
+    existing.append(keyword)
 
     with open(rule_file, "w") as f:
-        for rule in sorted_rules:
+        for rule in existing:
             f.write(f"{rule}\n")
 
     print(f"✓ Added rule: {keyword} -> {category}")
-    print(f"  File: {rule_file}")
+    handle_clean(quiet=True)
+
+
+def handle_clean(args=None, quiet=False):
+    """Remove duplicates, strip comments, sort alphabetically. All rule files."""
+    rules_dir = Path("rules")
+
+    if not rules_dir.exists():
+        if not quiet:
+            print("Error: rules/ directory not found")
+        return
+
+    cleaned_count = 0
+    for rule_file in sorted(rules_dir.glob("*.txt")):
+        with open(rule_file) as f:
+            lines = [line.rstrip() for line in f]
+
+        deduplicated = []
+        seen = set()
+        for line in lines:
+            if line and not line.startswith("#"):
+                keyword = sanitize(line)
+                if keyword and keyword not in seen:
+                    deduplicated.append(keyword)
+                    seen.add(keyword)
+
+        deduplicated.sort()
+        
+        if deduplicated != [sanitize(l) for l in lines if l and not l.startswith("#")]:
+            with open(rule_file, "w") as f:
+                for kw in deduplicated:
+                    f.write(f"{kw}\n")
+            cleaned_count += 1
+
+    if not quiet:
+        print(f"✓ Cleaned {cleaned_count} rule files (deduped, stripped comments, sorted)")
 
 
 def register(subparsers):
@@ -163,3 +198,6 @@ def register(subparsers):
     add_parser.add_argument("--category", required=True, help="Category name (e.g., groceries)")
     add_parser.add_argument("--keyword", required=True, help="Keyword/phrase to match")
     add_parser.set_defaults(func=handle_add)
+
+    clean_parser = rules_subparsers.add_parser("clean", help="Remove duplicates & inline comments")
+    clean_parser.set_defaults(func=handle_clean)

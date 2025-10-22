@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from src.core.models import Transaction
-from src.lib.search import extract_search_categories, load_cache, search_merchant
+from src.lib.search import load_cache, search_description
 
 
 @dataclass(frozen=True)
@@ -134,20 +134,23 @@ def mine_suggestions(
                                 )
                             )
         elif use_search and cache_path:
-            merchant = desc.split()[0] if desc else ""
-            if merchant:
-                snippets = search_merchant(merchant, cache, cache_path)
-                hints = extract_search_categories(snippets)
-                for hint in hints:
-                    suggestions.append(
-                        RuleSuggestion(
-                            keyword=merchant,
-                            category=hint,
-                            evidence=1,
-                            source="search",
-                            unlabeled_desc=desc[:60],
-                        )
+            results = search_description(desc, cache, cache_path)
+            for result in results:
+                if isinstance(result, dict):
+                    title = result.get('title', '')[:30]
+                    body = result.get('body', '')[:60]
+                else:
+                    title = str(result)[:30]
+                    body = str(result)[:60]
+                suggestions.append(
+                    RuleSuggestion(
+                        keyword=title,
+                        category="[search]",
+                        evidence=1,
+                        source="search",
+                        unlabeled_desc=body,
                     )
+                )
 
     return suggestions
 
@@ -183,12 +186,13 @@ def score_suggestions(
 
     scored = []
     for (kw, cat), total_ev in keyword_cat_evidence.items():
+        source = next((s.source for s in filtered_suggestions if s.keyword == kw and s.category == cat), "keyword")
         scored.append(
             RuleSuggestion(
                 keyword=kw,
                 category=cat,
                 evidence=total_ev,
-                source="keyword",
+                source=source,
                 unlabeled_desc="",
                 total_category_evidence=total_ev,
             )

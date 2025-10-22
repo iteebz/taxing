@@ -17,41 +17,24 @@ def save_cache(cache: dict[str, list[str]], cache_path: Path) -> None:
         json.dump(cache, f, indent=2)
 
 
-def search_merchant(
-    merchant: str,
-    cache: dict[str, list[str]],
+def search_description(
+    description: str,
+    cache: dict[str, list[dict]],
     cache_path: Path,
     max_results: int = 3,
-) -> list[str]:
-    if merchant in cache:
-        return cache[merchant]
+) -> list[dict]:
+    """Search sanitized description, return top results with title + snippet."""
+    if description in cache:
+        return cache[description]
 
     try:
-        results = DDGS().text(merchant, max_results=max_results)
-        snippets = [r.get("body", "") for r in results]
-        cache[merchant] = snippets
+        results = DDGS().text(description, max_results=max_results)
+        results_data = [
+            {"title": r.get("title", ""), "body": r.get("body", "")}
+            for r in results
+        ]
+        cache[description] = results_data
         save_cache(cache, cache_path)
-        return snippets
+        return results_data
     except Exception:
         return []
-
-
-def extract_search_categories(snippets: list[str]) -> list[str]:
-    keyword_map = {
-        "dining": ["restaurant", "café", "cafe", "pizzeria", "taverna", "bistro", "cuisine"],
-        "accom": ["hotel", "accommodation", "hostel", "airbnb", "resort"],
-        "travel": ["airline", "flight", "airport", "rail", "train", "tourism"],
-        "supermarket": ["supermarket", "grocer", "grocery", "market"],
-        "software": ["software", "app", "saas", "subscription", "platform"],
-        "medical": ["doctor", "hospital", "clinic", "pharmacy", "health"],
-        "electronics": ["electronics", "computer", "tech", "digital"],
-        "online_retail": ["retail", "store", "shop", "online"],
-    }
-
-    text = " ".join(snippets).lower()
-    hints = []
-    for cat, keywords in keyword_map.items():
-        if any(kw in text for kw in keywords):
-            hints.append(cat)
-
-    return list(set(hints))
