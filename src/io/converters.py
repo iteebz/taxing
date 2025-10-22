@@ -163,11 +163,62 @@ def stake_dividend(row: dict) -> Transaction:
     )
 
 
+BANK_REGISTRY = {
+    "anz": {
+        "converter": anz,
+        "fields": ["date_raw", "amount", "description_raw"],
+        "skiprows": 0,
+        "requires_beem_user": False,
+    },
+    "cba": {
+        "converter": cba,
+        "fields": ["date_raw", "amount", "description_raw", "balance"],
+        "skiprows": 0,
+        "requires_beem_user": False,
+    },
+    "beem": {
+        "converter": beem,
+        "fields": [
+            "datetime",
+            "type",
+            "reference",
+            "amount_str",
+            "payer",
+            "recipient",
+            "message",
+        ],
+        "skiprows": 1,
+        "requires_beem_user": True,
+    },
+    "wise": {
+        "converter": wise,
+        "fields": [
+            "id",
+            "status",
+            "direction",
+            "created_on",
+            "finished_on",
+            "source_fee_amount",
+            "source_fee_currency",
+            "target_fee_amount",
+            "target_fee_currency",
+            "source_name",
+            "source_amount_after_fees",
+            "source_currency",
+            "target_name",
+            "target_amount_after_fees",
+            "target_currency",
+            "exchange_rate",
+            "reference",
+            "batch",
+        ],
+        "skiprows": 1,
+        "requires_beem_user": False,
+    },
+}
+
 CONVERTERS = {
-    "anz": anz,
-    "cba": cba,
-    "beem": beem,
-    "wise": wise,
-    "stake_activity": stake_activity,
-    "stake_dividend": stake_dividend,
+    code: cfg["converter"]
+    for code, cfg in BANK_REGISTRY.items()
+    if code in ["anz", "cba", "beem", "wise"]
 }

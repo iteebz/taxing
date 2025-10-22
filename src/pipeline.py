@@ -1,5 +1,4 @@
 from dataclasses import replace
-from decimal import Decimal
 from pathlib import Path
 
 from src.core import classify, deduce, load_rules, process_trades
@@ -68,19 +67,7 @@ def run(
 
         deductions = deduce(txns_classified, fy=year, business_percentages={})
 
-        summary_dict = {}
-        for t in txns_classified:
-            if t.category and not t.is_transfer and t.amount is not None and not t.amount.is_nan():
-                for cat in t.category:
-                    if cat not in summary_dict:
-                        summary_dict[cat] = (Decimal(0), Decimal(0))
-                    credit, debit = summary_dict[cat]
-                    amt = t.amount
-                    if amt > 0:
-                        summary_dict[cat] = (credit + amt, debit)
-                    else:
-                        summary_dict[cat] = (credit, debit + abs(amt))
-        summary = [Summary(cat, credit, debit) for cat, (credit, debit) in summary_dict.items()]
+        summary = Summary.from_transactions(txns_classified)
 
         gains = process_trades(trades_individual)
 

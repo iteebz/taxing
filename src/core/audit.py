@@ -2,6 +2,11 @@ from decimal import Decimal
 
 from src.core.models import Deduction, Individual, Loss
 
+AUDIT_THRESHOLDS = {
+    "deduction_rate_warning": Decimal("0.50"),
+    "deduction_rate_critical": Decimal("0.75"),
+}
+
 
 def validate_loss_reconciliation(losses: list[Loss], current_fy: int) -> list[str]:
     """Validate loss carryforward reconciliation for audit compliance.
@@ -47,15 +52,15 @@ def detect_suspicious_patterns(
                 )
         else:
             deduction_rate = total_deductions / individual.income
-            if deduction_rate > Decimal("0.50"):
+            if deduction_rate > AUDIT_THRESHOLDS["deduction_rate_warning"]:
                 alerts.append(
                     f"{name}: Deductions {deduction_rate:.1%} of income "
                     f"(suspiciously high, typical 5-20%; Division 19AA risk)"
                 )
 
-            if deduction_rate > Decimal("0.75"):
+            if deduction_rate > AUDIT_THRESHOLDS["deduction_rate_critical"]:
                 alerts.append(
-                    f"{name}: Deductions exceed 75% of income "
+                    f"{name}: Deductions exceed {AUDIT_THRESHOLDS['deduction_rate_critical']:.0%} of income "
                     f"(extreme, likely to be challenged in audit)"
                 )
 

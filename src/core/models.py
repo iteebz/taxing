@@ -4,6 +4,15 @@ from decimal import Decimal
 from typing import Literal, Protocol
 
 
+def _validate_pct_field(name: str, value) -> Decimal:
+    """Validate and coerce percentage field to Decimal in range [0, 1]."""
+    if not isinstance(value, Decimal):
+        value = Decimal(str(value))
+    if value < 0 or value > 1:
+        raise ValueError(f"{name} must be 0.0-1.0, got {value}")
+    return value
+
+
 @dataclass(frozen=True)
 class Transaction:
     date: date
@@ -23,10 +32,8 @@ class Transaction:
     def __post_init__(self):
         if self.sources is None:
             object.__setattr__(self, "sources", frozenset({self.bank}))
-        if not isinstance(self.personal_pct, Decimal):
-            object.__setattr__(self, "personal_pct", Decimal(str(self.personal_pct)))
-        if self.personal_pct < 0 or self.personal_pct > 1:
-            raise ValueError(f"personal_pct must be 0.0-1.0, got {self.personal_pct}")
+        pct = _validate_pct_field("personal_pct", self.personal_pct)
+        object.__setattr__(self, "personal_pct", pct)
         if not isinstance(self.confidence, float) or self.confidence < 0 or self.confidence > 1:
             raise ValueError(f"confidence must be 0.0-1.0, got {self.confidence}")
 
@@ -64,10 +71,8 @@ class Car:
     deductible_pct: Decimal
 
     def __post_init__(self):
-        if not isinstance(self.deductible_pct, Decimal):
-            object.__setattr__(self, "deductible_pct", Decimal(str(self.deductible_pct)))
-        if self.deductible_pct < 0 or self.deductible_pct > 1:
-            raise ValueError(f"deductible_pct must be 0.0-1.0, got {self.deductible_pct}")
+        pct = _validate_pct_field("deductible_pct", self.deductible_pct)
+        object.__setattr__(self, "deductible_pct", pct)
 
     @property
     def implied_km(self) -> Decimal:
@@ -83,6 +88,28 @@ class Summary:
     category: str
     credit_amount: Decimal
     debit_amount: Decimal
+
+    @classmethod
+    def from_transactions(cls, txns: list["Transaction"]) -> list["Summary"]:
+        """Aggregate transactions into summaries by category.
+
+        Filters out transfers and transactions without categories.
+        Sums credit (positive) and debit (negative) amounts separately.
+        """
+        summary_dict = {}
+        for t in txns:
+            if t.category and not t.is_transfer and t.amount is not None and not t.amount.is_nan():
+                for cat in t.category:
+                    if cat not in summary_dict:
+                        summary_dict[cat] = (Decimal(0), Decimal(0))
+                    credit, debit = summary_dict[cat]
+                    amt = t.amount
+                    if amt > 0:
+                        summary_dict[cat] = (credit + amt, debit)
+                    else:
+                        summary_dict[cat] = (credit, debit + abs(amt))
+
+        return [cls(cat, credit, debit) for cat, (credit, debit) in summary_dict.items()]
 
 
 @dataclass(frozen=True)
@@ -188,10 +215,8 @@ class Property:
     interests: list[Interest] = field(default_factory=list)
 
     def __post_init__(self):
-        if not isinstance(self.occupancy_pct, Decimal):
-            object.__setattr__(self, "occupancy_pct", Decimal(str(self.occupancy_pct)))
-        if self.occupancy_pct < 0 or self.occupancy_pct > 1:
-            raise ValueError(f"occupancy_pct must be 0.0-1.0, got {self.occupancy_pct}")
+        pct = _validate_pct_field("occupancy_pct", self.occupancy_pct)
+        object.__setattr__(self, "occupancy_pct", pct)
 
     @property
     def total_rental_income(self) -> Decimal:

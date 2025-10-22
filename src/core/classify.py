@@ -2,6 +2,8 @@ def classify(description: str, rules: dict[str, list[str]]) -> set[str]:
     """
     Classify a transaction description against rules.
 
+    Case-insensitive matching: description and keywords normalized to uppercase.
+
     Args:
         description: Transaction description string
         rules: Dict mapping category -> list of keywords

@@ -13,6 +13,7 @@ def _load_txns(base_dir: Path, fy: int, person: str | None = None) -> list[Trans
 
     txns = []
     if fy_dir.exists():
+        if person:
             dirs = [fy_dir / person]
         else:
             dirs = [d for d in fy_dir.iterdir() if d.is_dir() and (d / "data").exists()]

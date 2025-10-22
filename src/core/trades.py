@@ -15,6 +15,13 @@ def is_cgt_discount_eligible(hold_days: int) -> bool:
     return hold_days >= 365
 
 
+def _fee_per_unit(total_fee: Decimal, units: Decimal) -> Decimal:
+    """Calculate fee allocated per unit."""
+    if not units or units <= 0:
+        return Decimal("0")
+    return total_fee / units
+
+
 def get_positions(trades: list[Trade]) -> dict[str, Position]:
     """Derive current positions from trade history."""
     positions: dict[str, tuple[Decimal, Decimal]] = {}
@@ -65,9 +72,7 @@ def process_trades(trades: list[Trade]) -> list[Gain]:
             units_to_sell = trade.units
             fy = calc_fy(trade.date)
 
-            sell_fee_per_unit = (
-                trade.fee / trade.units if trade.units and trade.units > 0 else Decimal("0")
-            )
+            sell_fee_per_unit = _fee_per_unit(trade.fee, trade.units)
 
             while buff and units_to_sell > Decimal(0):
                 sell_lot = min(buff, key=lambda t: sort_priority(t, trade.price, trade.date))

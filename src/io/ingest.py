@@ -6,53 +6,7 @@ from pathlib import Path
 import pandas as pd
 
 from src.core.models import Trade, Transaction
-from src.io.converters import CONVERTERS
-
-BANK_FIELD_SPECS = {
-    "anz": {
-        "fields": ["date_raw", "amount", "description_raw"],
-        "skiprows": 0,
-    },
-    "cba": {
-        "fields": ["date_raw", "amount", "description_raw", "balance"],
-        "skiprows": 0,
-    },
-    "beem": {
-        "fields": [
-            "datetime",
-            "type",
-            "reference",
-            "amount_str",
-            "payer",
-            "recipient",
-            "message",
-        ],
-        "skiprows": 1,
-    },
-    "wise": {
-        "fields": [
-            "id",
-            "status",
-            "direction",
-            "created_on",
-            "finished_on",
-            "source_fee_amount",
-            "source_fee_currency",
-            "target_fee_amount",
-            "target_fee_currency",
-            "source_name",
-            "source_amount_after_fees",
-            "source_currency",
-            "target_name",
-            "target_amount_after_fees",
-            "target_currency",
-            "exchange_rate",
-            "reference",
-            "batch",
-        ],
-        "skiprows": 1,
-    },
-}
+from src.io.converters import BANK_REGISTRY, CONVERTERS
 
 
 def _convert_row(
@@ -108,23 +62,24 @@ def ingest_file(
     Returns:
         List of Transaction objects
     """
-    if bank not in BANK_FIELD_SPECS:
+    if bank not in BANK_REGISTRY:
         raise ValueError(f"Unknown bank: {bank}")
 
-    if bank == "beem":
+    cfg = BANK_REGISTRY[bank]
+
+    if cfg["requires_beem_user"]:
         beem_username = beem_username or _infer_beem_user(path)
 
-    spec = BANK_FIELD_SPECS[bank]
     df = pd.read_csv(
         path,
-        names=spec["fields"],
+        names=cfg["fields"],
         header=None,
-        skiprows=spec["skiprows"],
+        skiprows=cfg["skiprows"],
     )
 
     df["individual"] = individual
 
-    converter = CONVERTERS[bank]
+    converter = cfg["converter"]
     txns = []
 
     for _, row in df.iterrows():
@@ -178,7 +133,7 @@ def ingest_dir(
 
             for csv_file in sorted(individual_dir.glob("*.csv")):
                 bank, account = _parse_bank_and_account(csv_file.name)
-                if bank not in BANK_FIELD_SPECS:
+                if bank not in BANK_REGISTRY:
                     continue
                 txns = ingest_file(csv_file, bank, individual)
                 if account:
