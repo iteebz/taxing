@@ -1,11 +1,12 @@
 direct credit 013402 quach j
 direct credit 141000 janice quach
-tyson zheng tong consolidation
-wise deposit in aud
-wise conversion
-transfer to janice quach
 transfer from janice quac
-transfer to other bank netbank savings
 transfer from xx7568 commbank app
-transfer to xx7568 commbank app
+transfer to janice quach
 transfer to other bank netbank cash
+transfer to other bank netbank savings
+transfer to xx7568 commbank app
+tyson zheng tong consolidation
+wise conversion
+wise deposit from aud
+wise deposit in aud

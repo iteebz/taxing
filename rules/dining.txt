@@ -77,7 +77,6 @@ coca cola amatil
 coco cubano
 coco fresh tea
 coffee
-coffee 
 coffee alchemy
 continental delicate
 convent hunter valley
@@ -86,7 +85,6 @@ costi rhodes
 crafty cuts
 crust
 cuckoo callay
-cuisine
 cuisine
 cyc trading pty ltd
 da mario
@@ -150,7 +148,7 @@ harrys cf de
 haven specialty co
 heatherbrae pies
 heycha
-hj 
+hj
 ho jiak
 hojiak
 holy basil
@@ -273,14 +271,14 @@ oven bake
 pad ka nai
 pastry
 patisserie
-patisserie
 paulhouse pty ltd
 pepper lunch
 peters fish market
 philly up
-pho 
+pho
 pie in the sky
 pizza
+pizza hut
 poke rhodes
 pork roll
 porkies
@@ -336,7 +334,7 @@ strathfield sports c
 suburgia
 sushi
 sydneyparkkiosk
-t2   sydney
+t2  sydney
 tap at phillip
 taste of shang
 tau bay cabramatta

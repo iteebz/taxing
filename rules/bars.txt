@@ -9,10 +9,8 @@ big beat australia
 bourbon street
 bourbonstreet amsterdam
 brewing
+brouwerij
 bucket boys
-hazy ipa
-goros
-k2 cash
 bungalow 8
 cargo sydney
 charlie chans bar
@@ -27,11 +25,13 @@ frankies pizza
 gallon qps
 gasoline pony
 goldilocks melbourne
-goros 
+goros
+hazy ipa
 hilton sydney
-k2 room hire
 hyatt regency
 ivy level 1
+k2 cash
+k2 room hire
 keg & brew hotel
 keg brew hotel
 ksb hospitality
@@ -56,9 +56,8 @@ the peakhurst
 tios cerveceria
 universal civic pty
 village crown zetland
+waterkant amsterdam
 wildflower beer
 yangga pty ltd rhodes
+yard king
 young henrys
-yard king # brewery
-brouwerij
-waterkant amsterdam

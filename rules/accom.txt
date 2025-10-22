@@ -1,4 +1,4 @@
-hotel
-booking.com
 agoda
 airbnb
+booking.com
+hotel

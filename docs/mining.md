@@ -36,9 +36,15 @@ Mines rule suggestions from labeled txns. Shows keyword → category mappings wi
 - `--threshold N`: Min evidence required (default: 10)
 - `--dominance F`: Category dominance threshold 0.0-1.0 (default: 0.6)
 - `--limit N`: Max suggestions to show (default: 20)
-- `--search`: Enable merchant DDGS search for orphans (slower, higher recall)
+- `--search`: Enable merchant search for categorization hints
+- `--show-unlabeled`: Display unclassified txns with search results (manual review mode)
 
 **Output**: Ranked suggestions (keyword → category | evidence | source).
+
+### `tax mine --fy 24 --show-unlabeled --search --limit N`
+Manual review mode: Shows unclassified transactions with verbatim search results (title + snippet).
+
+Use this to identify patterns in unlabeled data and decide categories before adding rules.
 
 ### `tax run --fy 24`
 Re-runs pipeline with current rules.
@@ -78,11 +84,11 @@ Example:
 
 ### Search Enhancement (`src/lib/search.py`)
 
-For unlabeled txns with no keyword match (orphans):
-1. Search merchant name via DDGS (3 results)
-2. Extract category hints from snippets (dining, accom, travel, supermarket, software, medical, electronics, online_retail)
-3. Cache results → no API spam on re-runs
-4. Emit suggestions with source="search"
+For unclassified txns (via `--show-unlabeled` flag):
+1. Search full sanitized description via DDGS
+2. Return top 2-3 results verbatim (title + body snippet)
+3. Cache results to `.search_cache.json` → no API spam on re-runs
+4. Manual categorization: review results, then `tax rules add` to codify decisions
 
 ---
 
