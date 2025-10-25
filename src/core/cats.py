@@ -129,6 +129,12 @@ CATEGORY_META = {
         tier1="vehicle",
         treatment="actual_cost",
     ),
+    "parking": CategoryMeta(
+        tier2="vehicle/maintenance",
+        deductible=True,
+        tier1="vehicle",
+        treatment="actual_cost",
+    ),
     # health
     "medical": CategoryMeta(
         tier2="health/medical",

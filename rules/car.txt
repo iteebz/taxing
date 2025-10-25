@@ -14,8 +14,6 @@ eg group
 emerald square
 enhance robertson
 fuelco
-goulburn street cp
-hume st car park
 jax quickfit tyres
 leichhardt municipal
 mansours
@@ -24,14 +22,10 @@ memocorp australia qps darlinghurst
 metro padstow
 mobil mittagong
 nrma travel pty
-park
-parking
-pay & display park
 petrol
 port stephens counci
 puma tea gardens
 rms internet
-secure a spot
 service nsw
 shell dunedoo
 speedway
@@ -39,8 +33,4 @@ stop n save
 super cheap auto
 supercheap auto
 sw plus petrol
-syd aprt intnl carp
 sydney city toyota
-waverley council
-westfield chatswood
-wilson parking
