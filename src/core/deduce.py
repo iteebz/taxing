@@ -10,7 +10,7 @@ def _accumulate_actual_cost(
     sub_to_main_cat: dict[str, str],
     txn: Transaction,
 ) -> None:
-    for cat in txn.category:
+    for cat in txn.cats:
         if cat in sub_to_main_cat:
             main_cat = sub_to_main_cat[cat]
             actual_cost_totals[main_cat] += txn.amount
@@ -43,7 +43,7 @@ def _process_fixed_rate(
     txn: Transaction,
     fy: int,
 ) -> None:
-    for cat in txn.category:
+    for cat in txn.cats:
         if cat not in config.fixed_rates:
             continue
         try:
@@ -107,14 +107,14 @@ def deduce(
     }
 
     for txn in txns:
-        if txn.category is None or not txn.category or txn.confidence < min_confidence:
+        if txn.cats is None or not txn.cats or txn.confidence < min_confidence:
             continue
         _accumulate_actual_cost(actual_cost_totals, sub_to_main_cat, txn)
 
     deductions.update(_process_actual_cost(actual_cost_totals, business_percentages, fy))
 
     for txn in txns:
-        if txn.category is None or not txn.category or txn.confidence < min_confidence:
+        if txn.cats is None or not txn.cats or txn.confidence < min_confidence:
             continue
         _process_fixed_rate(deductions, config, txn, fy)
 

@@ -99,6 +99,9 @@ def from_csv(path: str | Path, model: type[T]) -> list[T]:
     if df.empty:
         return []
 
+    if model.__name__ == "Transaction" and "category" in df.columns and "cats" not in df.columns:
+        df = df.rename(columns={"category": "cats"})
+
     objs = []
     type_map = {f.name: f.type for f in dc_fields(model)}
 

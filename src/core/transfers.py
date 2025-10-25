@@ -21,7 +21,7 @@ def is_transfer(txn: Transaction) -> bool:
 
     Transfer: marked with 'transfers' category via rules/transfers.txt
     """
-    return txn.category is not None and "transfers" in txn.category
+    return txn.cats is not None and "transfers" in txn.cats
 
 
 def extract_recipient(description: str) -> str | None:

@@ -14,7 +14,7 @@ def _txn(
     desc: str,
     person: str = "janice",
     amount: Decimal = Decimal("100.00"),
-    category: set[str] | None = None,
+    cats: set[str] | None = None,
 ):
     """Helper to create test transactions."""
     return Transaction(
@@ -23,22 +23,22 @@ def _txn(
         description=desc,
         bank="anz",
         individual=person,
-        category=category,
+        cats=cats,
     )
 
 
 def test_is_transfer_marked():
-    txn = _txn("transfer to alice", category={"transfers"})
+    txn = _txn("transfer to alice", cats={"transfers"})
     assert is_transfer(txn)
 
 
 def test_is_transfer_unmarked():
-    txn = _txn("woolworths", category={"groceries"})
+    txn = _txn("woolworths", cats={"groceries"})
     assert not is_transfer(txn)
 
 
 def test_is_transfer_none_category():
-    txn = _txn("random", category=None)
+    txn = _txn("random", cats=None)
     assert not is_transfer(txn)
 
 
@@ -78,13 +78,13 @@ def test_extract_recipient_transfer_to_person_with_noise():
 
 
 def test_reconcile_empty():
-    txns = [_txn("random", category={"groceries"})]
+    txns = [_txn("random", cats={"groceries"})]
     result = reconcile_transfers(txns)
     assert result == {}
 
 
 def test_reconcile_single_transfer():
-    txn = _txn("TRANSFER TO TYSON", amount=Decimal("-100.00"), category={"transfers"})
+    txn = _txn("TRANSFER TO TYSON", amount=Decimal("-100.00"), cats={"transfers"})
     result = reconcile_transfers([txn])
     assert len(result) == 1
     key = ("janice", "tyson")
@@ -100,7 +100,7 @@ def test_reconcile_multiple_transfers_same_person():
         description="TRANSFER TO TYSON",
         bank="anz",
         individual="janice",
-        category={"transfers"},
+        cats={"transfers"},
     )
     txn2 = Transaction(
         date=date(2024, 1, 5),
@@ -108,7 +108,7 @@ def test_reconcile_multiple_transfers_same_person():
         description="TRANSFER TO TYSON",
         bank="cba",
         individual="janice",
-        category={"transfers"},
+        cats={"transfers"},
     )
     result = reconcile_transfers([txn1, txn2])
     key = ("janice", "tyson")
@@ -125,7 +125,7 @@ def test_net_position_owes():
                 "TRANSFER TO ALICE",
                 person="janice",
                 amount=Decimal("-100.00"),
-                category={"transfers"},
+                cats={"transfers"},
             )
         ]
     )
@@ -140,7 +140,7 @@ def test_net_position_owed():
                 "TRANSFER TO TYSON",
                 person="janice",
                 amount=Decimal("-100.00"),
-                category={"transfers"},
+                cats={"transfers"},
             )
         ]
     )
@@ -150,7 +150,7 @@ def test_net_position_owed():
 
 def test_net_position_balanced():
     janice_to_tyson = _txn(
-        "TRANSFER TO TYSON", person="janice", amount=Decimal("-100.00"), category={"transfers"}
+        "TRANSFER TO TYSON", person="janice", amount=Decimal("-100.00"), cats={"transfers"}
     )
     tyson_to_janice = Transaction(
         date=date(2024, 1, 2),
@@ -158,7 +158,7 @@ def test_net_position_balanced():
         description="TRANSFER TO JANICE",
         bank="anz",
         individual="tyson",
-        category={"transfers"},
+        cats={"transfers"},
     )
     transfers = reconcile_transfers([janice_to_tyson, tyson_to_janice])
     janice_net = net_position(transfers, "janice")

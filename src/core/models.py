@@ -20,7 +20,7 @@ class Transaction:
     description: str
     bank: str
     individual: str
-    category: set[str] | None = None
+    cats: set[str] | None = None
     is_transfer: bool = False
     claimant: str | None = None
     sources: frozenset[str] = None
@@ -98,8 +98,8 @@ class Summary:
         """
         summary_dict = {}
         for t in txns:
-            if t.category and not t.is_transfer and t.amount is not None and not t.amount.is_nan():
-                for cat in t.category:
+            if t.cats and not t.is_transfer and t.amount is not None and not t.amount.is_nan():
+                for cat in t.cats:
                     if cat not in summary_dict:
                         summary_dict[cat] = (Decimal(0), Decimal(0))
                     credit, debit = summary_dict[cat]

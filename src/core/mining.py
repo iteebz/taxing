@@ -77,7 +77,7 @@ def find_similar_labeled(txns: list[Transaction], unlabeled_desc: str) -> list[T
 
     similar = []
     for txn in txns:
-        if txn.category is None or not txn.category:
+        if txn.cats is None or not txn.cats:
             continue
 
         desc_upper = txn.description.upper()
@@ -104,8 +104,8 @@ def mine_suggestions(
         use_search: Enable DDGS merchant search for orphan txns
         cache_path: Path to search cache file
     """
-    unlabeled = [t for t in txns if t.category is None or not t.category]
-    labeled = [t for t in txns if t.category is not None and t.category]
+    unlabeled = [t for t in txns if t.cats is None or not t.cats]
+    labeled = [t for t in txns if t.cats is not None and t.cats]
 
     if not unlabeled or not labeled:
         return []
@@ -123,7 +123,7 @@ def mine_suggestions(
                 for labeled_txn in similar:
                     desc_upper = labeled_txn.description.upper()
                     if kw.upper() in desc_upper:
-                        for cat in labeled_txn.category:
+                        for cat in labeled_txn.cats:
                             suggestions.append(
                                 RuleSuggestion(
                                     keyword=kw,

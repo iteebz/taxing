@@ -85,5 +85,5 @@ def sample_txn_with_category():
         description="groceries",
         bank="anz",
         individual="tyson",
-        category={"supermarkets", "groceries"},
+        cats={"supermarkets", "groceries"},
     )
