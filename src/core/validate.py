@@ -54,7 +54,7 @@ def validate_unlabeled(txns: list[Transaction]) -> None:
 
     Raises if any transaction has None category.
     """
-    unlabeled = [t for t in txns if t.category is None]
+    unlabeled = [t for t in txns if t.cats is None]
     if unlabeled:
         raise ValidationError(
             f"{len(unlabeled)} unlabeled transactions found: "

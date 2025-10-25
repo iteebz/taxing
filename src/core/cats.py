@@ -4,12 +4,15 @@ from dataclasses import dataclass
 from typing import Literal
 
 TaxTreatment = Literal["actual_cost", "fixed_rate", "non_expense"]
-DeductionType = Literal["home_office", "vehicle", "meals", "health", "donations", "income", "transfers"]
+DeductionType = Literal[
+    "home_office", "vehicle", "meals", "health", "donations", "income", "transfers"
+]
 
 
 @dataclass(frozen=True)
 class CategoryMeta:
     """Metadata for a category."""
+
     tier2: str
     deductible: bool
     tier1: DeductionType | None = None

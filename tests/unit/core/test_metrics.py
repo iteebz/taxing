@@ -14,7 +14,7 @@ def test_coverage_all_labeled():
             description="WOOLWORTHS",
             bank="anz",
             individual="alice",
-            category={"groceries"},
+            cats={"groceries"},
         ),
         Transaction(
             date=date(2025, 1, 2),
@@ -22,7 +22,7 @@ def test_coverage_all_labeled():
             description="SALARY",
             bank="anz",
             individual="alice",
-            category={"income"},
+            cats={"income"},
         ),
     ]
 
@@ -43,7 +43,7 @@ def test_coverage_partial():
             description="WOOLWORTHS",
             bank="anz",
             individual="alice",
-            category={"groceries"},
+            cats={"groceries"},
         ),
         Transaction(
             date=date(2025, 1, 2),
@@ -51,7 +51,7 @@ def test_coverage_partial():
             description="UNKNOWN MERCHANT",
             bank="anz",
             individual="alice",
-            category=None,
+            cats=None,
         ),
     ]
 
@@ -71,7 +71,7 @@ def test_household_metrics_single_person():
             description="WOOLWORTHS",
             bank="anz",
             individual="alice",
-            category={"groceries"},
+            cats={"groceries"},
         ),
         Transaction(
             date=date(2025, 1, 2),
@@ -79,7 +79,7 @@ def test_household_metrics_single_person():
             description="SALARY",
             bank="anz",
             individual="alice",
-            category={"income"},
+            cats={"income"},
         ),
     ]
 
@@ -100,7 +100,7 @@ def test_household_metrics_transfers():
             description="TRANSFER TO BOB",
             bank="anz",
             individual="alice",
-            category={"transfers"},
+            cats={"transfers"},
             is_transfer=True,
         ),
         Transaction(
@@ -109,7 +109,7 @@ def test_household_metrics_transfers():
             description="TRANSFER FROM ALICE",
             bank="anz",
             individual="bob",
-            category=None,
+            cats=None,
         ),
     ]
 
@@ -128,7 +128,7 @@ def test_household_metrics_multi_person():
             description="GROCERIES",
             bank="anz",
             individual="alice",
-            category={"groceries"},
+            cats={"groceries"},
         ),
         Transaction(
             date=date(2025, 1, 2),
@@ -136,7 +136,7 @@ def test_household_metrics_multi_person():
             description="SALARY",
             bank="anz",
             individual="alice",
-            category={"income"},
+            cats={"income"},
         ),
         Transaction(
             date=date(2025, 1, 3),
@@ -144,7 +144,7 @@ def test_household_metrics_multi_person():
             description="CAFE",
             bank="cba",
             individual="bob",
-            category={"dining"},
+            cats={"dining"},
         ),
         Transaction(
             date=date(2025, 1, 4),
@@ -152,7 +152,7 @@ def test_household_metrics_multi_person():
             description="SALARY",
             bank="cba",
             individual="bob",
-            category={"income"},
+            cats={"income"},
         ),
     ]
 

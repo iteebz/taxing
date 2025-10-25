@@ -35,7 +35,7 @@ def test_find_similar_labeled_basic():
             description="WOOLWORTHS NORTH SYDNEY",
             bank="anz",
             individual="alice",
-            category={"groceries"},
+            cats={"groceries"},
         ),
         Transaction(
             date=date(2025, 1, 2),
@@ -43,7 +43,7 @@ def test_find_similar_labeled_basic():
             description="COLES BONDI",
             bank="anz",
             individual="alice",
-            category={"groceries"},
+            cats={"groceries"},
         ),
     ]
 
@@ -67,7 +67,7 @@ def test_mine_suggestions_no_unlabeled():
             description="WOOLWORTHS",
             bank="anz",
             individual="alice",
-            category={"groceries"},
+            cats={"groceries"},
         )
     ]
     result = mine_suggestions(txns)
@@ -83,7 +83,7 @@ def test_mine_suggestions_basic():
             description="WOOLWORTHS NORTH SYDNEY",
             bank="anz",
             individual="alice",
-            category={"groceries"},
+            cats={"groceries"},
         ),
         Transaction(
             date=date(2025, 1, 2),
@@ -91,7 +91,7 @@ def test_mine_suggestions_basic():
             description="UNKNOWN WOOLWORTHS STORE",
             bank="anz",
             individual="alice",
-            category=None,
+            cats=None,
         ),
     ]
 
@@ -200,7 +200,7 @@ def test_mine_suggestions_no_search():
             description="WOOLWORTHS",
             bank="anz",
             individual="alice",
-            category={"groceries"},
+            cats={"groceries"},
         ),
         Transaction(
             date=date(2025, 1, 2),
@@ -208,7 +208,7 @@ def test_mine_suggestions_no_search():
             description="UNKNOWN MERCHANT XYZ",
             bank="anz",
             individual="alice",
-            category=None,
+            cats=None,
         ),
     ]
 
@@ -228,7 +228,7 @@ def test_mine_suggestions_with_search_orphan():
             description="WOOLWORTHS",
             bank="anz",
             individual="alice",
-            category={"groceries"},
+            cats={"groceries"},
         ),
         Transaction(
             date=date(2025, 1, 2),
@@ -236,7 +236,7 @@ def test_mine_suggestions_with_search_orphan():
             description="UNKNOWNMERCHANT",
             bank="anz",
             individual="alice",
-            category=None,
+            cats=None,
         ),
     ]
 

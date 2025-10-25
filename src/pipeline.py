@@ -56,8 +56,8 @@ def run(
         txns_classified = [
             replace(
                 t,
-                category=(cat := classify(t.description, rules)),
-                is_transfer=is_transfer(replace(t, category=cat)),
+                cats=(cat := classify(t.description, rules)),
+                is_transfer=is_transfer(replace(t, cats=cat)),
             )
             for t in txns_individual
         ]
@@ -81,7 +81,7 @@ def run(
 
         results[individual] = {
             "txn_count": len(txns_individual),
-            "classified_count": sum(1 for t in txns_classified if t.category),
+            "classified_count": sum(1 for t in txns_classified if t.cats),
             "deductions": deductions,
             "gains_count": len(gains),
         }

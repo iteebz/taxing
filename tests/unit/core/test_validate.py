@@ -21,7 +21,7 @@ def valid_txn():
         description="Test transaction",
         bank="cba",
         individual="tyson",
-        category={"expenses"},
+        cats={"expenses"},
     )
 
 
@@ -33,7 +33,7 @@ def test_fy_boundary_valid():
             description="Start of FY2025",
             bank="cba",
             individual="tyson",
-            category={"expenses"},
+            cats={"expenses"},
         ),
         Transaction(
             date=date(2025, 6, 30),
@@ -41,7 +41,7 @@ def test_fy_boundary_valid():
             description="End of FY2025",
             bank="cba",
             individual="tyson",
-            category={"expenses"},
+            cats={"expenses"},
         ),
     ]
     validate_fy_boundary(txns, 25)
@@ -55,7 +55,7 @@ def test_fy_boundary_before_start():
             description="Before FY2025",
             bank="cba",
             individual="tyson",
-            category={"expenses"},
+            cats={"expenses"},
         ),
     ]
     with pytest.raises(ValidationError, match="outside FY25 boundary"):
@@ -70,7 +70,7 @@ def test_fy_boundary_after_end():
             description="After FY2025",
             bank="cba",
             individual="tyson",
-            category={"expenses"},
+            cats={"expenses"},
         ),
     ]
     with pytest.raises(ValidationError, match="outside FY25 boundary"):
@@ -89,7 +89,7 @@ def test_no_duplicates_exact_match():
         description="Same transaction",
         bank="cba",
         individual="tyson",
-        category={"expenses"},
+        cats={"expenses"},
     )
     txn2 = Transaction(
         date=date(2024, 9, 15),
@@ -97,7 +97,7 @@ def test_no_duplicates_exact_match():
         description="Same transaction",
         bank="anz",
         individual="tyson",
-        category={"expenses"},
+        cats={"expenses"},
     )
     with pytest.raises(ValidationError, match="Duplicate transaction"):
         validate_no_duplicates([txn1, txn2])
@@ -110,7 +110,7 @@ def test_no_duplicates_different_amount():
         description="Transaction",
         bank="cba",
         individual="tyson",
-        category={"expenses"},
+        cats={"expenses"},
     )
     txn2 = Transaction(
         date=date(2024, 9, 15),
@@ -118,7 +118,7 @@ def test_no_duplicates_different_amount():
         description="Transaction",
         bank="cba",
         individual="tyson",
-        category={"expenses"},
+        cats={"expenses"},
     )
     validate_no_duplicates([txn1, txn2])
 
@@ -134,7 +134,7 @@ def test_unlabeled_missing_category():
         description="Unlabeled",
         bank="cba",
         individual="tyson",
-        category=None,
+        cats=None,
     )
     with pytest.raises(ValidationError, match="unlabeled transactions"):
         validate_unlabeled([txn])
@@ -151,7 +151,7 @@ def test_fails_on_boundary():
         description="Out of bounds",
         bank="cba",
         individual="tyson",
-        category={"expenses"},
+        cats={"expenses"},
     )
     with pytest.raises(ValidationError, match="FY25"):
         validate_transactions([txn], 25)

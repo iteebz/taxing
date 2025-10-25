@@ -43,7 +43,7 @@ def sample_txns():
             description="Electricity Bill",
             bank="anz",
             individual="tyson",
-            category={"electricity"},
+            cats={"electricity"},
             personal_pct=Decimal("0"),
         ),
         Transaction(
@@ -52,7 +52,7 @@ def sample_txns():
             description="Internet Bill",
             bank="anz",
             individual="tyson",
-            category={"internet"},
+            cats={"internet"},
             personal_pct=Decimal("0"),
         ),
         Transaction(
@@ -61,7 +61,7 @@ def sample_txns():
             description="Fuel for Car",
             bank="anz",
             individual="tyson",
-            category={"fuel"},
+            cats={"fuel"},
             personal_pct=Decimal("0"),
         ),
         Transaction(
@@ -70,7 +70,7 @@ def sample_txns():
             description="Donation to Charity",
             bank="anz",
             individual="tyson",
-            category={"donations"},
+            cats={"donations"},
             personal_pct=Decimal("0"),
         ),
         Transaction(
@@ -79,7 +79,7 @@ def sample_txns():
             description="Work Lunch",
             bank="anz",
             individual="tyson",
-            category={"meals"},
+            cats={"meals"},
             personal_pct=Decimal("0"),
         ),
         Transaction(
@@ -88,7 +88,7 @@ def sample_txns():
             description="Personal Shopping",
             bank="anz",
             individual="tyson",
-            category={"clothing"},
+            cats={"clothing"},
             personal_pct=Decimal("1"),
         ),
     ]
@@ -181,7 +181,7 @@ def test_txn_no_category(mock_safe_load, mock_config_fy25):
         description="RANDOM",
         bank="anz",
         individual="tyson",
-        category=None,
+        cats=None,
     )
     ded_list = deduce([txn], fy=25, business_percentages={})
     assert ded_list == []
@@ -196,7 +196,7 @@ def test_personal_pct_fixed_rate(mock_safe_load, mock_config_fy25):
         description="Work Lunch",
         bank="anz",
         individual="tyson",
-        category={"meals"},
+        cats={"meals"},
         personal_pct=Decimal("0.5"),
     )
     ded_list = deduce([txn], fy=25, business_percentages={})
@@ -222,7 +222,7 @@ def test_confidence_filtering(mock_safe_load, mock_config_fy25):
         description="Electricity Bill",
         bank="anz",
         individual="tyson",
-        category={"electricity"},
+        cats={"electricity"},
         confidence=0.9,
     )
     low_conf = Transaction(
@@ -231,7 +231,7 @@ def test_confidence_filtering(mock_safe_load, mock_config_fy25):
         description="Electricity Bill",
         bank="anz",
         individual="tyson",
-        category={"electricity"},
+        cats={"electricity"},
         confidence=0.3,
     )
     ded_list = deduce(
@@ -250,7 +250,7 @@ def test_category_not_in_config_skipped(mock_safe_load, mock_config_fy25):
         description="Unknown Category",
         bank="anz",
         individual="tyson",
-        category={"unknown_category"},
+        cats={"unknown_category"},
     )
     ded_list = deduce([txn], fy=25, business_percentages={})
     assert len(ded_list) == 0
@@ -265,7 +265,7 @@ def test_actual_cost_personal_pct(mock_safe_load, mock_config_fy25):
         description="Electricity Bill",
         bank="anz",
         individual="tyson",
-        category={"electricity"},
+        cats={"electricity"},
         personal_pct=Decimal("0.2"),  # This personal_pct should be ignored for actual cost
     )
     business_percentages = {"home_office": 0.8}
@@ -286,7 +286,7 @@ def test_fixed_rate_no_pct(mock_safe_load, mock_config_fy25):
         description="Donation to Charity",
         bank="anz",
         individual="tyson",
-        category={"donations"},
+        cats={"donations"},
         personal_pct=Decimal("0"),
     )
     ded_list = deduce([txn], fy=25, business_percentages={})
@@ -306,7 +306,7 @@ def test_actual_cost_no_pct(mock_safe_load, mock_config_fy25):
         description="Electricity Bill",
         bank="anz",
         individual="tyson",
-        category={"electricity"},
+        cats={"electricity"},
     )
     ded_list = deduce([txn], fy=25, business_percentages={})
 

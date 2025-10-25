@@ -19,7 +19,7 @@ def test_txns_roundtrip(sample_txn, sample_txn_with_category):
         assert len(loaded) == 2
         assert loaded[0].date == sample_txn.date
         assert loaded[0].amount == sample_txn.amount
-        assert loaded[1].category == {"groceries", "supermarkets"}
+        assert loaded[1].cats == {"groceries", "supermarkets"}
 
 
 def test_txns_csv_creates_dir():
@@ -71,13 +71,13 @@ def test_txns_no_cat():
             description="uncategorized",
             bank="wise",
             individual="tyson",
-            category=None,
+            cats=None,
         )
 
         to_csv([txn], path)
         loaded = from_csv(path, Transaction)
 
-        assert loaded[0].category is None
+        assert loaded[0].cats is None
 
 
 def test_summary_roundtrip():

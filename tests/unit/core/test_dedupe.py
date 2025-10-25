@@ -11,7 +11,7 @@ def _txn(
     amount: Decimal = Decimal("100.00"),
     bank: str = "cba",
     date_val: date = date(2024, 1, 1),
-    category: set[str] | None = None,
+    cats: set[str] | None = None,
 ):
     """Helper to create test transactions."""
     return Transaction(
@@ -20,7 +20,7 @@ def _txn(
         description=desc,
         bank=bank,
         individual=person,
-        category=category,
+        cats=cats,
     )
 
 
@@ -60,7 +60,7 @@ def test_p2p_transfer_both_sides_same_fingerprint():
         description="TRANSFER TO TYSON PAYID PHONE FROM COMMBANK APP",
         bank="cba",
         individual="janice",
-        category={"transfers"},
+        cats={"transfers"},
     )
     tyson_receives = Transaction(
         date=date(2024, 1, 1),
@@ -68,7 +68,7 @@ def test_p2p_transfer_both_sides_same_fingerprint():
         description="DIRECT CREDIT 141000 JANICE",
         bank="anz",
         individual="tyson",
-        category={"transfers"},
+        cats={"transfers"},
     )
     assert fingerprint(janice_sends) == fingerprint(tyson_receives)
 
@@ -81,7 +81,7 @@ def test_different_person_different_fingerprint():
 
 def test_category_ignored_in_fingerprint():
     txn1 = _txn("WOOLWORTHS")
-    txn2 = _txn("WOOLWORTHS", category={"groceries"})
+    txn2 = _txn("WOOLWORTHS", cats={"groceries"})
     assert fingerprint(txn1) == fingerprint(txn2)
 
 
@@ -118,7 +118,7 @@ def test_merge_p2p_transfer():
         description="TRANSFER TO TYSON PAYID PHONE FROM COMMBANK APP",
         bank="cba",
         individual="janice",
-        category={"transfers"},
+        cats={"transfers"},
     )
     tyson_credit = Transaction(
         date=date(2024, 1, 1),
@@ -126,7 +126,7 @@ def test_merge_p2p_transfer():
         description="DIRECT CREDIT 141000 JANICE",
         bank="anz",
         individual="tyson",
-        category={"transfers"},
+        cats={"transfers"},
     )
     result = dedupe([janice_debit, tyson_credit])
     assert len(result) == 1
@@ -148,7 +148,7 @@ def test_merge_uses_first_txn_as_base():
         description="WOOLWORTHS CHECKOUT",
         bank="cba",
         individual="janice",
-        category={"groceries"},
+        cats={"groceries"},
     )
     txn2 = Transaction(
         date=date(2024, 1, 1),
@@ -156,12 +156,12 @@ def test_merge_uses_first_txn_as_base():
         description="WOOLWORTHS CHECKOUT",
         bank="anz",
         individual="janice",
-        category=None,
+        cats=None,
     )
     result = dedupe([txn1, txn2])
     assert len(result) == 1
     assert result[0].description == "WOOLWORTHS CHECKOUT"
-    assert result[0].category == {"groceries"}
+    assert result[0].cats == {"groceries"}
     assert result[0].sources == frozenset({"cba", "anz"})
 
 
