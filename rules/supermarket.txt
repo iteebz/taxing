@@ -3,5 +3,6 @@ aldi
 coles
 iga
 lidl
+store
 woolworths
 ww metro

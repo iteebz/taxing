@@ -9,6 +9,7 @@ commbank app tfr
 credit interest adjusted
 debit interest charged
 excess interest
+fee
 international transaction fee
 julias jonathan
 nsw courts service ctr

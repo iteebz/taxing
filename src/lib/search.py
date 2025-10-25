@@ -29,10 +29,7 @@ def search_description(
 
     try:
         results = DDGS().text(description, max_results=max_results)
-        results_data = [
-            {"title": r.get("title", ""), "body": r.get("body", "")}
-            for r in results
-        ]
+        results_data = [{"title": r.get("title", ""), "body": r.get("body", "")} for r in results]
         cache[description] = results_data
         save_cache(cache, cache_path)
         return results_data

@@ -137,8 +137,8 @@ def mine_suggestions(
             results = search_description(desc, cache, cache_path)
             for result in results:
                 if isinstance(result, dict):
-                    title = result.get('title', '')[:30]
-                    body = result.get('body', '')[:60]
+                    title = result.get("title", "")[:30]
+                    body = result.get("body", "")[:60]
                 else:
                     title = str(result)[:30]
                     body = str(result)[:60]
@@ -186,7 +186,10 @@ def score_suggestions(
 
     scored = []
     for (kw, cat), total_ev in keyword_cat_evidence.items():
-        source = next((s.source for s in filtered_suggestions if s.keyword == kw and s.category == cat), "keyword")
+        source = next(
+            (s.source for s in filtered_suggestions if s.keyword == kw and s.category == cat),
+            "keyword",
+        )
         scored.append(
             RuleSuggestion(
                 keyword=kw,

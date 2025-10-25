@@ -1,3 +1,4 @@
+deposit
 direct credit 013402 quach j
 direct credit 141000 janice quach
 transfer from janice quac

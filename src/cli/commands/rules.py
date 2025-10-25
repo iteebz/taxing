@@ -3,8 +3,8 @@ from pathlib import Path
 
 from src.core.mining import MiningConfig, mine_suggestions, score_suggestions
 from src.core.models import Transaction
-from src.lib.sanitize import sanitize
 from src.io.persist import from_csv
+from src.lib.sanitize import sanitize
 
 
 def _load_classified_txns(base_dir: Path, fy: int | None = None) -> list[Transaction]:
@@ -153,7 +153,7 @@ def handle_clean(args=None, quiet=False):
                     seen.add(keyword)
 
         deduplicated.sort()
-        
+
         if deduplicated != [sanitize(l) for l in lines if l and not l.startswith("#")]:
             with open(rule_file, "w") as f:
                 for kw in deduplicated:

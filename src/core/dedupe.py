@@ -70,15 +70,19 @@ def dedupe(txns: list[Transaction]) -> list[Transaction]:
             base = group[0]
             sources = set()
             source_txn_ids = []
+            cats = set()
 
             for txn in group:
                 sources.update(txn.sources)
                 source_txn_ids.extend(txn.source_txn_ids)
+                if txn.category:
+                    cats.update(txn.category)
 
             merged = replace(
                 base,
                 sources=frozenset(sources),
                 source_txn_ids=tuple(source_txn_ids),
+                category=cats if cats else None,
             )
             result.append(merged)
 

@@ -3,12 +3,12 @@ abc tyrepower
 alogrep mechanical ryde
 ampol
 apex west ryde
-bp 
+bp
 burwood council
 calstores pty ltd
 caltex
 cinema centre car
-city of newcastle   pa
+city of newcastle  pa
 coles express
 eg group
 emerald square
@@ -24,6 +24,7 @@ memocorp australia qps darlinghurst
 metro padstow
 mobil mittagong
 nrma travel pty
+park
 parking
 pay & display park
 petrol

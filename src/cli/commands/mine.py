@@ -129,8 +129,12 @@ def register(subparsers):
         "--fy", type=int, default=None, help="Fiscal year (e.g., 25), omit to process all"
     )
     parser.add_argument("--person", help="Person name (optional, all if omitted)")
-    parser.add_argument("--search", action="store_true", help="Enable search for categorization hints")
-    parser.add_argument("--show-unlabeled", action="store_true", help="Show unlabeled txns + search results")
+    parser.add_argument(
+        "--search", action="store_true", help="Enable search for categorization hints"
+    )
+    parser.add_argument(
+        "--show-unlabeled", action="store_true", help="Show unlabeled txns + search results"
+    )
     parser.add_argument(
         "--threshold", type=int, default=10, help="Minimum evidence threshold (default: 10)"
     )
