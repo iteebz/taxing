@@ -199,3 +199,37 @@ def test_multiple_sells_fifo():
     assert len(results) == 1
     result = results[0]
     assert result.raw_profit == Decimal(500)
+
+
+def test_process_trades_crypto_ticker():
+    """Verify that crypto tickers are processed correctly."""
+    trades = [
+        Trade(
+            date=date(2024, 1, 1),
+            code="CRYPTO:BTC",
+            action="buy",
+            units=Decimal("0.5"),
+            price=Decimal("40000"),
+            fee=Decimal("10"),
+            individual="tyson",
+        ),
+        Trade(
+            date=date(2024, 7, 1),
+            code="CRYPTO:BTC",
+            action="sell",
+            units=Decimal("0.5"),
+            price=Decimal("50000"),
+            fee=Decimal("15"),
+            individual="tyson",
+        ),
+    ]
+
+    results = process_trades(trades)
+
+    assert len(results) == 1
+    result = results[0]
+    assert result.fy == 2025  # FY starts July 1
+    # (50000 * 0.5 - 40000 * 0.5) - 10 - 15 = 25000 - 20000 - 25 = 4975
+    assert result.raw_profit == Decimal("4975")
+    # Held for 182 days (not >365), so no CGT discount
+    assert result.taxable_gain == Decimal("4975")

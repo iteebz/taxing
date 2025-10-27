@@ -12,8 +12,8 @@ tax coverage --fy 24 --sample 10
 tax mine --fy 24 --threshold 10 --limit 20
 
 # 3. Add high-confidence rules
-tax rules add --category dining --keyword CAFE
-tax rules add --category groceries --keyword COLES
+tax rule dining "CAFE"
+tax rule groceries "COLES"
 
 # 4. Re-run pipeline
 tax run --fy 24
@@ -59,8 +59,8 @@ Household metrics (spending, income, transfers by person).
 1. **Scout**: `tax coverage --fy 24 --sample 20` → see what's unclassified
 2. **Mine**: `tax mine --fy 24` → get keyword suggestions ranked by evidence
 3. **Review**: Pick high-evidence suggestions (evidence ≥10 with 60% dominance)
-4. **Add**: `tax rules add --category X --keyword Y` for each rule
-5. **Validate**: `tax run --fy 24` → `tax coverage --fy 24` → check improvement
+4. **Add**: `Ready to add? Run: tax rule {category} \"{keyword}\"` for each rule
+5. **Validate**: tax run --fy 24 (Note: Deduction calculation now uses ATO-backed rates, not arbitrary weights) → tax coverage --fy 24 → check improvement
 6. **Iterate**: Repeat until coverage ≥90%
 
 ---

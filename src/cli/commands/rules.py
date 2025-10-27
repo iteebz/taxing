@@ -98,19 +98,21 @@ def handle_suggest(args):
         print(
             f"Total: {len(scored)} suggestions (threshold={config.threshold}, dominance={config.dominance:.0%})"
         )
-        print("\nUsage: tax rules add --category CATEGORY --keyword KEYWORD")
+        print('\nUsage: tax rule CATEGORY "KEYWORD"')
 
 
-def handle_add(args):
+def handle_add(args, rules_base_path: Path | None = None):
+    if rules_base_path is None:
+        rules_base_path = Path("rules")
     """Add a new classification rule to rules/<category>.txt."""
     category = args.category
     keyword = args.keyword
 
-    rule_file = Path("rules") / f"{category}.txt"
+    rule_file = rules_base_path / f"{category}.txt"
 
     if not rule_file.exists():
         print(f"Error: Category file not found: {rule_file}")
-        available = sorted(p.stem for p in Path("rules").glob("*.txt"))
+        available = sorted(p.stem for p in rules_base_path.glob("*.txt"))
         print(f"Available categories: {', '.join(available)}")
         return
 
@@ -120,7 +122,6 @@ def handle_add(args):
     if keyword in existing:
         print(f"✓ Rule already exists: {keyword} -> {category}")
         return
-
     existing.append(keyword)
 
     with open(rule_file, "w") as f:
@@ -128,12 +129,14 @@ def handle_add(args):
             f.write(f"{rule}\n")
 
     print(f"✓ Added rule: {keyword} -> {category}")
-    handle_clean(quiet=True)
+    handle_clean(quiet=True, rules_base_path=rules_base_path)
 
 
-def handle_clean(args=None, quiet=False):
+def handle_clean(args=None, quiet=False, rules_base_path: Path | None = None):
+    if rules_base_path is None:
+        rules_base_path = Path("rules")
     """Remove duplicates, strip comments, sort alphabetically. All rule files."""
-    rules_dir = Path("rules")
+    rules_dir = rules_base_path
 
     if not rules_dir.exists():
         if not quiet:
@@ -143,23 +146,33 @@ def handle_clean(args=None, quiet=False):
     cleaned_count = 0
     for rule_file in sorted(rules_dir.glob("*.txt")):
         with open(rule_file) as f:
-            lines = [line.rstrip() for line in f]
+            original_lines = [line.rstrip() for line in f]
 
-        deduplicated = []
+        # Get the desired clean, deduplicated, and sorted version
+        desired_clean_lines = []
         seen = set()
-        for line in lines:
+        for line in original_lines:
             if line and not line.startswith("#"):
                 keyword = sanitize(line)
                 if keyword and keyword not in seen:
-                    deduplicated.append(keyword)
+                    desired_clean_lines.append(keyword)
                     seen.add(keyword)
+        desired_clean_lines.sort()
 
-        deduplicated.sort()
+        # Construct the string representation of the desired clean file
+        desired_file_content_string = "\n".join(desired_clean_lines) + "\n"
 
-        if deduplicated != [sanitize(line) for line in lines if line and not line.startswith("#")]:
+        # Construct the string representation of the original file, but only with sanitized keywords
+        original_keywords_sanitized = []
+        for line in original_lines:
+            if line and not line.startswith("#"):
+                original_keywords_sanitized.append(sanitize(line))
+        original_file_content_string = "\n".join(original_keywords_sanitized) + "\n"
+
+        # If the desired content is different from the original content (after sanitization), rewrite
+        if desired_file_content_string != original_file_content_string:
             with open(rule_file, "w") as f:
-                for kw in deduplicated:
-                    f.write(f"{kw}\n")
+                f.write(desired_file_content_string)
             cleaned_count += 1
 
     if not quiet:
@@ -209,14 +222,18 @@ def handle_test(args):
             f"{(txn.description[:50] if txn.description else '—'):<50} {existing_cats:<15}"
         )
 
-    print("-" * 100)
+    print(
+        "----------------------------------------------------------------------------------------------------"
+    )
     print(f"Total matches: {len(matching_txns)} txns | ${total:.2f}")
-    print(f"\nReady to add? Run: tax rules add --category {category} --keyword '{keyword}'")
+    print(f'\nReady to add? Run: tax rule {category} "{keyword}"')
 
 
 def register(subparsers):
-    """Register rules subcommands."""
-    parser = subparsers.add_parser("rules", help="Manage classification rules")
+    """Register rules subcommands (suggest, test, clean)."""
+    parser = subparsers.add_parser(
+        "rules", help="Manage classification rules (suggest, test, clean)"
+    )
     rules_subparsers = parser.add_subparsers(dest="rules_command")
 
     suggest_parser = rules_subparsers.add_parser("suggest", help="Mine rule suggestions")
@@ -251,10 +268,15 @@ def register(subparsers):
     test_parser.add_argument("--base-dir", default=".", help="Base directory (default: .)")
     test_parser.set_defaults(func=handle_test)
 
-    add_parser = rules_subparsers.add_parser("add", help="Add classification rule")
-    add_parser.add_argument("--category", required=True, help="Category name (e.g., groceries)")
-    add_parser.add_argument("--keyword", required=True, help="Keyword/phrase to match")
-    add_parser.set_defaults(func=handle_add)
-
     clean_parser = rules_subparsers.add_parser("clean", help="Remove duplicates & inline comments")
     clean_parser.set_defaults(func=handle_clean)
+
+
+def register_add_rule_command(subparsers):
+    """Register the top-level 'rule' command for adding classification rules."""
+    rule_parser = subparsers.add_parser(
+        "rule", help='Add a classification rule (e.g., tax rule groceries "WOOLWORTHS")'
+    )
+    rule_parser.add_argument("category", help="Category name (e.g., groceries)")
+    rule_parser.add_argument("keyword", help="Keyword/phrase to match")
+    rule_parser.set_defaults(func=handle_add)

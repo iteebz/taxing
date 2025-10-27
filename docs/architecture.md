@@ -6,27 +6,20 @@
 - **Pure functions**: Logic is side-effect-free, testable without I/O
 - **Immutability**: Frozen dataclasses prevent accidental mutations
 - **Separation of concerns**: `core/` (domain), `io/` (adapters), `pipeline/` (orchestration)
-- **Type safety**: Decimal + Money prevent silent arithmetic bugs (USD vs AUD)
+- **Type safety**: Decimal prevents silent arithmetic bugs
 - **No globals**: Config passed as arguments (not `conf.py` globals)
 
 ## domain model
 
-### Money (type-safe arithmetic)
-```python
-@dataclass(frozen=True)
-class Money:
-    amount: Decimal        # Precise, no float rounding
-    currency: str          # "AUD", "USD", etc.
-```
-
-Prevents silent bugs like USD + AUD = wrong total. All arithmetic explicit.
+### Monetary Amounts (Decimal for precision)
+All monetary amounts are represented using Python's `Decimal` type for precise calculations, avoiding floating-point inaccuracies.
 
 ### Transaction (immutable record)
 ```python
 @dataclass(frozen=True)
 class Transaction:
     date: date
-    amount: Money
+    amount: Decimal
     description: str
     source_bank: str       # "ANZ", "CBA", "Wise"
     source_person: str     # "tyson", "janice"
@@ -44,8 +37,8 @@ class Trade:
     code: str              # "ASX:BHP", "CRYPTO:BTC"
     action: str            # "buy" or "sell"
     units: Decimal
-    price: Money           # Price per unit
-    fee: Money
+    price: Decimal           # Price per unit
+    fee: Decimal
     source_person: str
 ```
 
@@ -56,9 +49,8 @@ Fully specified trade record. No implied data.
 @dataclass(frozen=True)
 class Gain:
     fy: int                # Financial year (1=July-June)
-    raw_profit: Money      # Before CGT discount
-    taxable_gain: Money    # After CGT discount (50% if held >365 days)
-    action: str            # "loss", "discount", "fifo" (audit trail)
+    raw_profit: Decimal      # Before CGT discount
+    taxable_gain: Decimal    # After CGT discount (50% if held >365 days)
 ```
 
 Immutable result. Action field tracks which priority rule fired.
@@ -78,14 +70,14 @@ def classify(description: str, rules: dict[str, list[str]]) -> set[str]:
 
 Simple + auditable. No ML = defensible to ATO. Keywords case-insensitive + deduplicated on load.
 
-### deduce (transactions + weights → deductions)
+### deduce (transactions + ATO rates → deductions)
 ```python
-def deduce(txns: list[Transaction], weights: dict[str, float]) -> dict[str, Money]:
-    """Apply percentage weights to categorized transactions.
+def deduce(txns: list[Transaction], weights: dict, fy: int, conservative: bool) -> list[Deduction]:
+    """Calculate deductions based on ATO rates and transaction details.
     
-    Multi-category handling: If txn has {"groceries", "utilities"}, split weight proportionally.
-    Aggregates by category.
-    Pure function.
+    Pure function, no side effects.
+    Applies ATO-published rates, personal_pct, and handles conservative mode.
+    Returns a list of Deduction objects.
     """
 ```
 
@@ -121,7 +113,7 @@ buff.remove(sell_lot)
 updated_lot = replace(
     sell_lot,
     units=sell_lot.units - units_to_sell,
-    fee=Money(sell_lot.fee.amount - partial_fee, AUD),
+    fee=sell_lot.fee - partial_fee,
 )
 buff[idx] = updated_lot
 ```
@@ -235,7 +227,7 @@ def run(base_dir: str | Path, fiscal_year: str) -> dict[str, dict[str, object]]:
 {fy}/raw/{person}/{bank}.csv         ← Bank CSVs
 {fy}/{person}/raw/equity.csv         ← Trade CSVs
 rules/*.txt                          ← Classification rules
-weights.csv                          ← Deduction percentages
+weights.csv                          ← (Deprecated: now uses ATO rates)
         ↓
   ingest_dir() + ingest_trades_dir()
         ↓
@@ -268,8 +260,8 @@ def test_process_trades_loss_harvesting():
     gains = process_trades(trades)
     
     # Should sell the 15 AUD lot (loss) first
-    assert gains[0].action == "loss"
-    assert gains[0].raw_profit.amount == Decimal(-300)
+    # Note: The 'action' field is part of CapitalGainResult, not the core Gain object.
+    assert gains[0].raw_profit == Decimal(-300)
 ```
 
 ### integration tests (tests/integration/)
@@ -286,7 +278,6 @@ def test_parity_with_tax_og(tax_og_equity_file):
     # Basic invariants
     assert len(gains) > 0
     assert all(g.fy > 0 for g in gains)
-    assert all(g.action in ["loss", "discount", "fifo"] for g in gains)
 ```
 
 ## known limitations

@@ -35,6 +35,7 @@ def main():
     lookalike.register(subparsers)
     household.register(subparsers)
     rules.register(subparsers)
+    rules.register_add_rule_command(subparsers)  # Register the new top-level 'rule' command
 
     args = parser.parse_args()
     if hasattr(args, "func"):

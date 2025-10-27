@@ -14,7 +14,7 @@ Sort trades by (code, date). For each ticker:
    - **Priority 2**: Discount-eligible lots (365+ days old)
    - **Priority 3**: FIFO (first in, first out)
 3. Calculate profit, apply CGT discount (50% if 365+ days)
-4. Emit Gain with action audit trail
+4. Emit Gain object
 
 ### Example
 
@@ -36,7 +36,7 @@ When selling less than a buy lot, use `dataclasses.replace()`:
 updated_lot = replace(
     buy_lot,
     units=buy_lot.units - units_to_sell,
-    fee=Money(buy_lot.fee.amount - partial_fee, AUD),
+    fee=buy_lot.fee - partial_fee, # Assuming fee is Decimal, direct subtraction
 )
 ```
 
@@ -47,10 +47,8 @@ No mutation → full auditability.
 ```python
 if held_days > 365:
     taxable_gain = raw_profit * Decimal("0.5")  # 50% discount
-    action = "discount"
 else:
     taxable_gain = raw_profit
-    action = "fifo"
 ```
 
 ---
@@ -100,21 +98,21 @@ def _tax_rate(income, fy):
 ### Algorithm
 
 ```python
-def _tax_liability(income, fy):
+def _tax_liability(income: Decimal, fy: int) -> Decimal:
     """Accumulate tax across all brackets up to income level."""
-    if income.amount <= 18200:
-        return Money(0, AUD)  # Tax-free threshold
+    if income <= 18200:
+        return Decimal("0")  # Tax-free threshold
     
     tax = Decimal("0")
     for i, (threshold, rate) in enumerate(brackets):
-        if income.amount <= threshold:
+        if income <= threshold:
             break
-        next_threshold = brackets[i+1][0] if i+1 < len(brackets) else income.amount
-        taxable_in_bracket = min(income.amount, next_threshold) - threshold
+        next_threshold = brackets[i+1][0] if i+1 < len(brackets) else income
+        taxable_in_bracket = min(income, next_threshold) - threshold
         if taxable_in_bracket > 0:
             tax += taxable_in_bracket * rate
     
-    return Money(tax, AUD)
+    return tax
 ```
 
 ### Example: $50,000 income
@@ -154,24 +152,24 @@ def allocate_deductions(your_income, janice_income, shared_deductions, fy):
     total_ded = sum(shared_deductions)
     
     # Phase 1: Fill thresholds
-    your_buf = max(0, threshold - your_income.amount)
-    janice_buf = max(0, threshold - janice_income.amount)
+    your_buf = max(Decimal("0"), threshold - your_income)
+    janice_buf = max(Decimal("0"), threshold - janice_income)
     
-    your_alloc = Money(min(your_buf, total_ded), AUD)
-    remain = total_ded.amount - your_alloc.amount
+    your_alloc = min(your_buf, total_ded)
+    remain = total_ded - your_alloc
     
-    if remain > 0 and janice_buf > 0:
-        janice_alloc = Money(min(janice_buf, remain), AUD)
-        remain -= janice_alloc.amount
+    if remain > Decimal("0") and janice_buf > Decimal("0"):
+        janice_alloc = min(janice_buf, remain)
+        remain -= janice_alloc
     
     # Phase 2: Route by bracket
-    if remain > 0:
-        your_rate = _tax_rate(your_income.amount, fy)
-        janice_rate = _tax_rate(janice_income.amount, fy)
+    if remain > Decimal("0"):
+        your_rate = _tax_rate(your_income, fy)
+        janice_rate = _tax_rate(janice_income, fy)
         if janice_rate < your_rate:
-            janice_alloc = Money(janice_alloc.amount + remain, AUD)
+            janice_alloc = janice_alloc + remain
         else:
-            your_alloc = Money(your_alloc.amount + remain, AUD)
+            your_alloc = your_alloc + remain
     
     return your_alloc, janice_alloc
 ```
@@ -206,8 +204,8 @@ Result: A=$10,000, B=$0
 
 ```python
 def optimize_household(yours, janice):
-    your_rate = _tax_rate(yours.income.amount, yours.fy)
-    janice_rate = _tax_rate(janice.income.amount, janice.fy)
+    your_rate = _tax_rate(yours.income, yours.fy)
+    janice_rate = _tax_rate(janice.income, janice.fy)
     
     if janice_rate < your_rate:
         # Consolidate deductions to Janice
@@ -265,29 +263,28 @@ Result: {"groceries"}
 
 ## 7. Deduction weighting (transaction → deduction)
 
-**File**: `src/core/deduce.py` → `deduce(txns: list[Transaction], weights: dict) -> dict[str, Money]`
+**File**: `src/core/deduce.py` → `deduce(txns: list[Transaction], weights: dict, fy: int, conservative: bool) -> list[Deduction]`
 
-### Algorithm
+### Algorithm (simplified for documentation)
 
 ```python
-def deduce(txns, weights):
-    """Apply category weights to classified transactions."""
-    deductions = defaultdict(lambda: Money(0, AUD))
-    
+def deduce(txns, weights, fy, conservative):
+    """Calculate deductions based on ATO rates and transaction details."""
+    deductions = []
     for txn in txns:
-        if not txn.category:
-            continue  # Skip unclassified
+        if not txn.cats:
+            continue # Skip unclassified
         
-        # Split weight proportionally if multi-category
-        cat_count = len(txn.category)
-        weight_per_cat = Decimal("1") / Decimal(cat_count)
+        # Simplified logic for documentation:
+        # In reality, this involves looking up ATO rates,
+        # applying personal_pct, and creating Deduction objects.
         
-        for category in txn.category:
-            rate = weights.get(category, Decimal("0"))
-            deduction = txn.amount * float(rate * weight_per_cat)
-            deductions[category] += deduction
+        for cat in txn.cats:
+            # Placeholder for actual deduction calculation
+            amount = txn.amount * Decimal("0.5") # Example deduction
+            deductions.append(Deduction(category=cat, amount=amount, rate=Decimal("0.5"), rate_basis="EXAMPLE", fy=fy))
     
-    return dict(deductions)
+    return deductions
 ```
 
 ### Example

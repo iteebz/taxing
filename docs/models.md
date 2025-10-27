@@ -4,21 +4,9 @@ All domain objects are frozen dataclasses (immutable, hashable, type-safe).
 
 ## money & currency
 
-```python
-@dataclass(frozen=True)
-class Money:
-    amount: Decimal       # Precise, no float rounding
-    currency: Currency    # NewType("Currency", str) → "AUD"
-    
-    # Operators (type-safe)
-    def __add__(self, other: Money) -> Money:        # Raises if currencies differ
-    def __sub__(self, other: Money) -> Money:        # Raises if currencies differ
-    def __mul__(self, scalar: float) -> Money:       # Money * 0.5
-```
+All monetary amounts are represented using Python's `Decimal` type for precise calculations, avoiding floating-point inaccuracies.
 
 **Why Decimal?** Prevents silent rounding errors. `0.1 + 0.2 ≠ 0.3` in float.
-
-**Why NewType Currency?** Prevents `Money(100, "USD") + Money(100, "AUD")` → type error at development time.
 
 ---
 
@@ -28,7 +16,7 @@ class Money:
 @dataclass(frozen=True)
 class Transaction:
     date: date
-    amount: Money
+    amount: Decimal
     description: str
     source_bank: str              # "ANZ", "CBA", "Beem", "Wise"
     source_person: str            # "tyson", "janice"
@@ -61,21 +49,21 @@ class Trade:
     code: str                     # "ASX:BHP", "CRYPTO:BTC"
     action: str                   # "buy" or "sell"
     units: Decimal
-    price: Money                  # Per-unit price
-    fee: Money
+    price: Decimal                # Per-unit price
+    fee: Decimal
     source_person: str
 
 @dataclass(frozen=True)
 class Gain:
     fy: int                       # Financial year (25 = FY2024-25)
-    raw_profit: Money             # Before CGT discount
-    taxable_gain: Money           # After 50% discount if held >365 days
+    raw_profit: Decimal           # Before CGT discount
+    taxable_gain: Decimal         # After 50% discount if held >365 days
     action: str                   # "loss" | "discount" | "fifo" (priority fired)
 
 @dataclass(frozen=True)
 class Loss:
     fy: int
-    amount: Money                 # Loss to carry forward
+    amount: Decimal               # Loss to carry forward
     source_fy: int                # Original FY where loss occurred
 ```
 
@@ -94,32 +82,32 @@ class Loss:
 @dataclass(frozen=True)
 class Rent:
     date: date
-    amount: Money
+    amount: Decimal
     tenant: str
     fy: int
 
 @dataclass(frozen=True)
 class Water:
     date: date
-    amount: Money
+    amount: Decimal
     fy: int
 
 @dataclass(frozen=True)
 class Council:
     date: date
-    amount: Money
+    amount: Decimal
     fy: int
 
 @dataclass(frozen=True)
 class Strata:
     date: date
-    amount: Money
+    amount: Decimal
     fy: int
 
 @dataclass(frozen=True)
 class CapitalWorks:
     date: date
-    amount: Money
+    amount: Decimal
     description: str
     life_years: int               # Depreciation schedule
     asset_id: str
@@ -128,7 +116,7 @@ class CapitalWorks:
 @dataclass(frozen=True)
 class Interest:
     date: date
-    amount: Money
+    amount: Decimal
     loan_id: str
     fy: int
 
@@ -147,16 +135,16 @@ class Property:
     
     # Computed properties
     @property
-    def total_rental_income(self) -> Money:        # Sum of all rents
+    def total_rental_income(self) -> Decimal:        # Sum of all rents
     
     @property
-    def total_expenses(self) -> Money:             # Waters + councils + stratas only
+    def total_expenses(self) -> Decimal:             # Waters + councils + stratas only
     
     @property
-    def deductible_expenses(self) -> Money:        # total_expenses * occupancy_pct
+    def deductible_expenses(self) -> Decimal:        # total_expenses * occupancy_pct
     
     @property
-    def net_rental_income(self) -> Money:          # rental - deductible_expenses
+    def net_rental_income(self) -> Decimal:          # rental - deductible_expenses
 ```
 
 **Occupancy allocation**: Only `occupancy_pct` of expenses deductible (if home office / shared rental).
@@ -170,32 +158,32 @@ class Property:
 class Individual:
     name: str
     fy: int
-    income: Money                 # Employment/business income
-    deductions: list[Money] = None
+    income: Decimal                 # Employment/business income
+    deductions: list[Decimal] = None
     gains: list[Gain] = None
     losses: list[Loss] = None
     
     @property
-    def total_deductions(self) -> Money:           # Sum of deductions[]
+    def total_deductions(self) -> Decimal:           # Sum of deductions[]
     
     @property
-    def total_gains(self) -> Money:                # Sum of gains[].taxable_gain
+    def total_gains(self) -> Decimal:                # Sum of gains[].taxable_gain
     
     @property
-    def total_losses(self) -> Money:               # Sum of losses[].amount
+    def total_losses(self) -> Decimal:               # Sum of losses[].amount
     
     @property
-    def taxable_income(self) -> Money:             # income + gains - deductions - losses
+    def taxable_income(self) -> Decimal:             # income + gains - deductions - losses
 
 @dataclass(frozen=True)
 class Allocation:
     yours: Individual
     janice: Individual
-    your_tax: Money
-    janice_tax: Money
+    your_tax: Decimal
+    janice_tax: Decimal
     
     @property
-    def total(self) -> Money:                      # your_tax + janice_tax
+    def total(self) -> Decimal:                      # your_tax + janice_tax
 ```
 
 **Allocation strategy** (in household.py):
@@ -210,7 +198,7 @@ class Allocation:
 @dataclass(frozen=True)
 class Deduction:
     category: str                 # "groceries", "utilities", etc.
-    amount: Money
+    amount: Decimal
     rate: Decimal                 # Weight applied (0.0-1.0)
     rate_basis: str               # "percentage" or "fixed"
     fy: int
@@ -231,14 +219,14 @@ class Summary:
 class Holding:
     ticker: str                   # "ASX:BHP", "VAS"
     units: Decimal
-    cost_basis: Money             # Total purchase cost
-    current_price: Money          # Per-unit market price
+    cost_basis: Decimal             # Total purchase cost
+    current_price: Decimal          # Per-unit market price
     
     @property
-    def current_value(self) -> Money:              # units * current_price
+    def current_value(self) -> Decimal:              # units * current_price
     
     @property
-    def unrealized_gain(self) -> Money:            # current_value - cost_basis
+    def unrealized_gain(self) -> Decimal:            # current_value - cost_basis
 ```
 
 ---
@@ -247,7 +235,6 @@ class Holding:
 
 All dataclasses enforce invariants in `__post_init__`:
 
-- **Money**: Always paired with Currency
 - **Transaction**: `personal_pct` must be 0.0-1.0
 - **Property**: `occupancy_pct` must be 0.0-1.0
 - **Individual**: List fields default to `[]` (mutable default prevention)

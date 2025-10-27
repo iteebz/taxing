@@ -93,6 +93,26 @@ python -m src.cli property --fy 25 --person alice
 ```
 Aggregate property expenses.
 
+### rule
+```bash
+tax rule groceries "WOOLWORTHS"
+```
+Adds a new classification rule. This command takes the category name and keyword as positional arguments.
+
+**Note**: This is a streamlined version of the old `tax rules add --category CATEGORY --keyword KEYWORD` command.
+
+### rules
+```bash
+tax rules suggest --fy 24
+tax rules test --category dining --keyword CAFE
+tax rules clean
+```
+Manages classification rules for mining, testing, and cleaning.
+
+- `suggest`: Mine high-confidence rule suggestions.
+- `test`: Test a rule against classified transactions before adding.
+- `clean`: Remove duplicates, strip comments, and sort alphabetically in rule files.
+
 ## Architecture
 
 ### Pipeline (`src/pipeline.py`)

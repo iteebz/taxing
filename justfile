@@ -20,7 +20,7 @@ install:
 ci: format fix test build
 
 test:
-    @poetry run pytest tests/ -v
+    @poetry run pytest tests/ -q
 
 build:
     @poetry build
