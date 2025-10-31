@@ -20,10 +20,12 @@ def _sanitize_desc(desc: str) -> str:
     return desc.lower().strip().replace('"', "").replace("-", " ").replace("'", "")
 
 
-def _std_bank(row: dict, bank: str, account: str | None = None) -> Transaction:
-    """Convert standard bank CSV row (ANZ, CBA) to Transaction."""
+def _std_txn(
+    row: dict, bank: str, date_key: str = "date_raw", dayfirst: bool = True, account: str | None = None
+) -> Transaction:
+    """Convert standard bank CSV row to Transaction."""
     return Transaction(
-        date=_parse_date(row["date_raw"], dayfirst=True),
+        date=_parse_date(row[date_key], dayfirst=dayfirst),
         amount=Decimal(str(row["amount"])),
         description=_sanitize_desc(row["description_raw"]),
         bank=bank,
@@ -34,12 +36,12 @@ def _std_bank(row: dict, bank: str, account: str | None = None) -> Transaction:
 
 def anz(row: dict, account: str | None = None) -> Transaction:
     """Convert ANZ CSV row to Transaction."""
-    return _std_bank(row, "anz", account)
+    return _std_txn(row, "anz", account=account)
 
 
 def cba(row: dict, account: str | None = None) -> Transaction:
     """Convert CBA CSV row to Transaction."""
-    return _std_bank(row, "cba", account)
+    return _std_txn(row, "cba", account=account)
 
 
 def beem(row: dict, beem_username: str, account: str | None = None) -> Transaction:
@@ -178,39 +180,19 @@ BANK_REGISTRY = {
     },
     "beem": {
         "converter": beem,
-        "fields": [
-            "datetime",
-            "type",
-            "reference",
-            "amount_str",
-            "payer",
-            "recipient",
-            "message",
-        ],
+        "fields": ["datetime", "type", "reference", "amount_str", "payer", "recipient", "message"],
         "skiprows": 1,
         "requires_beem_user": True,
     },
     "wise": {
         "converter": wise,
         "fields": [
-            "id",
-            "status",
-            "direction",
-            "created_on",
-            "finished_on",
-            "source_fee_amount",
-            "source_fee_currency",
-            "target_fee_amount",
-            "target_fee_currency",
-            "source_name",
-            "source_amount_after_fees",
-            "source_currency",
-            "target_name",
-            "target_amount_after_fees",
-            "target_currency",
-            "exchange_rate",
-            "reference",
-            "batch",
+            "id", "status", "direction", "created_on", "finished_on",
+            "source_fee_amount", "source_fee_currency",
+            "target_fee_amount", "target_fee_currency", "source_name",
+            "source_amount_after_fees", "source_currency", "target_name",
+            "target_amount_after_fees", "target_currency", "exchange_rate",
+            "reference", "batch",
         ],
         "skiprows": 1,
         "requires_beem_user": False,

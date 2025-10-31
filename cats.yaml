@@ -1,0 +1,40 @@
+level1:
+  home_office:
+    level2:
+      home/utilities: [electricity, gas, internet, utilities]
+      home/furnishing: [home_stores, home_office, pet]
+      home/rent: [rent]
+  vehicle:
+    level2:
+      vehicle/fuel: [fuel]
+      vehicle/maintenance: [car, taxi, transport, registration, maintenance, parking]
+      vehicle/insurance: [insurance]
+  meals:
+    level2:
+      meals: [dining, bars, food_delivery, liquor]
+  health:
+    level2:
+      health/medical: [medical, therapy, pharmacy]
+  donations:
+    level2:
+      donations: [donations]
+  income:
+    level2:
+      income: [income]
+  transfers:
+    level2:
+      transfers: [transfers, trust, bnpl, debts, refunds, scam, fees, taxation, investment, beems, craft, property]
+
+non_deductible:
+  level2:
+    groceries: [groceries, supermarket, convenience]
+    personal/clothing: [clothing, accessories, electronics, mobile_accessories, online_retail]
+    personal/wellness: [cosmetics, nicotine, self_care]
+    personal/gifts: [gifts]
+    entertainment: [entertainment, events, hobbies, sports, accom, travel]
+    subscriptions: [software, subscriptions, books, mobile]
+    work/business: [business, work_accessories, self_education]
+
+fixed_rates:
+  meals: 0.5
+  donations: 1.0

@@ -9,6 +9,20 @@ from src.core.models import Trade, Transaction
 from src.io.converters import BANK_REGISTRY, CONVERTERS
 
 
+def _parse_bank_and_account(filename: str) -> tuple[str, str | None]:
+    """Parse bank code and account from filename.
+
+    Examples:
+        "anz.csv" → ("anz", None)
+        "anz_hl.csv" → ("anz", "hl")
+    """
+    stem = Path(filename).stem
+    parts = stem.split("_", 1)
+    bank = parts[0]
+    account = parts[1] if len(parts) > 1 else None
+    return bank, account
+
+
 def _convert_row(
     row: dict, bank: str, converter, beem_username: str | None, account: str | None = None
 ) -> Transaction:
@@ -29,22 +43,6 @@ def _infer_beem_user(path: str | Path) -> str:
         if pd.notna(recipient):
             users[recipient] += 1
     return users.most_common(1)[0][0]
-
-
-def _parse_bank_and_account(filename: str) -> tuple[str, str | None]:
-    """Parse bank code and account from filename.
-
-    Examples:
-        "anz.csv" → ("anz", None)
-        "anz_hl.csv" → ("anz", "hl")
-        "anz_cc.csv" → ("anz", "cc")
-        "cba.csv" → ("cba", None)
-    """
-    stem = Path(filename).stem
-    parts = stem.split("_", 1)
-    bank = parts[0]
-    account = parts[1] if len(parts) > 1 else None
-    return bank, account
 
 
 def ingest_file(

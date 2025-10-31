@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from src.core.cats import get_category_meta
+from src.core import cats
 from src.core.classify import classify
 from src.core.mining import MiningConfig, mine_suggestions, score_suggestions
 from src.core.models import Transaction
@@ -203,12 +203,12 @@ def handle_test(args):
         print(f"No matches found for keyword '{keyword}' in category '{category}'")
         return
 
-    meta = get_category_meta(category)
-    tier2 = meta.tier2 if meta else "unknown"
+    meta = cats.get(category)
+    level2_val = meta.level2 if meta else "unknown"
     deductible = meta.deductible if meta else False
 
     print(f"\nTest Results: '{keyword}' → {category}")
-    print(f"Tier 2: {tier2} | Deductible: {'Yes' if deductible else 'No'}")
+    print(f"Level 2: {level2_val} | Deductible: {'Yes' if deductible else 'No'}")
     print("-" * 100)
     print(f"{'Date':<12} {'Amount':<12} {'Person':<10} {'Description':<50} {'Existing Cat':<15}")
     print("-" * 100)

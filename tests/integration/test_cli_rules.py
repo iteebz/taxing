@@ -1,4 +1,3 @@
-
 from src.cli.commands.rules import handle_add, handle_clean
 
 

@@ -1,7 +1,25 @@
 from decimal import Decimal
 
-from src.core.household import _tax_liability, allocate_deductions, optimize_household
+from src.core.household import (
+    _tax_liability,
+    allocate_deductions,
+    calculate_tax,
+    optimize_household,
+)
 from src.core.models import Gain, Individual, Loss
+
+
+def test_calculate_tax_single():
+    ind = Individual(
+        name="alice",
+        fy=25,
+        income=Decimal("60000"),
+        deductions=[Decimal("5000")],
+    )
+    result = calculate_tax(ind)
+    assert result.individual == ind
+    assert result.liability.income_tax > Decimal("0")
+    assert result.liability.total > Decimal("0")
 
 
 def test_taxable_with_deduc():

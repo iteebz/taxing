@@ -17,10 +17,14 @@ install:
     @poetry lock
     @poetry install --with dev
 
-ci: format fix test build
+ci:
+    @poetry run ruff format . -q
+    @poetry run ruff check . --fix --unsafe-fixes -q
+    @poetry run pytest tests/ -q
+    @poetry build -q
 
 test:
-    @poetry run pytest tests/ -q
+    @poetry run pytest tests/
 
 build:
     @poetry build
@@ -39,6 +43,9 @@ fix:
 
 type:
     @echo "Note: Python type checking can be added with pyright or mypy"
+
+repomix:
+    repomix
 
 commits:
     @git --no-pager log --pretty=format:"%h | %ar | %s"

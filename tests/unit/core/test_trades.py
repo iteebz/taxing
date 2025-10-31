@@ -2,7 +2,7 @@ from datetime import date
 from decimal import Decimal
 
 from src.core.models import Trade
-from src.core.trades import calc_fy, is_cgt_discount_eligible, process_trades
+from src.core.trades import _lot_sort_priority, calc_fy, is_cgt_discount_eligible, process_trades
 
 
 def test_calc_fy_before_july():
@@ -19,6 +19,34 @@ def test_cgt_discount_eligible_over_365_days():
 
 def test_cgt_discount_not_eligible_under_365_days():
     assert is_cgt_discount_eligible(364) is False
+
+
+def test_lot_sort_priority_prioritizes_losses():
+    loss_lot = Trade(
+        date=date(2024, 1, 1),
+        code="ABC",
+        action="buy",
+        units=Decimal(100),
+        price=Decimal(20),
+        fee=Decimal(0),
+        individual="tyson",
+    )
+    profit_lot = Trade(
+        date=date(2024, 1, 1),
+        code="ABC",
+        action="buy",
+        units=Decimal(100),
+        price=Decimal(10),
+        fee=Decimal(0),
+        individual="tyson",
+    )
+    sell_price = Decimal(15)
+    sell_date = date(2024, 6, 1)
+
+    loss_priority = _lot_sort_priority(loss_lot, sell_price, sell_date)
+    profit_priority = _lot_sort_priority(profit_lot, sell_price, sell_date)
+
+    assert loss_priority < profit_priority
 
 
 def test_process_trades_simple_buy_sell():

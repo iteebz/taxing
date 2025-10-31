@@ -10,7 +10,6 @@ from src.core.models import Transaction
 
 @pytest.fixture
 def mock_config_fy25():
-    # Mock the config for FY25 to control test behavior
     return {
         "fy_2025": {
             "brackets": [],

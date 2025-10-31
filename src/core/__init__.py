@@ -1,10 +1,12 @@
 from src.core.classify import classify
 from src.core.deduce import deduce
+from src.core.household import calculate_tax
 from src.core.models import Gain, Trade, Transaction
 from src.core.rules import dedupe_keywords, load_rules
 from src.core.trades import process_trades
 
 __all__ = [
+    "calculate_tax",
     "classify",
     "deduce",
     "dedupe_keywords",

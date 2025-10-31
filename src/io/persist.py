@@ -2,7 +2,7 @@ from dataclasses import fields as dc_fields
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
-from typing import TypeVar, get_args, get_origin
+from typing import TypeVar
 
 import pandas as pd
 
@@ -26,40 +26,70 @@ def _serialize(value: object) -> str:
             return str(value)
 
 
+def _to_date(s: str) -> date | None:
+    """Decode date from ISO string."""
+    if not s or s.isspace():
+        return None
+    return pd.to_datetime(s).date()
+
+
+def _to_decimal(s: str) -> Decimal | None:
+    """Decode Decimal from string."""
+    if not s or s.isspace():
+        return None
+    return Decimal(s)
+
+
+def _to_set(s: str) -> set[str]:
+    """Decode set from comma-separated string."""
+    if not s or s.isspace():
+        return set()
+    return set(s.split(","))
+
+
+def _to_bool(s: str) -> bool:
+    """Decode bool from string."""
+    return s.lower() in ("true", "1", "yes") if s else False
+
+
+def _to_int(s: str) -> int | None:
+    """Decode int from string."""
+    if not s or s.isspace():
+        return None
+    return int(float(s))
+
+
+def _to_float(s: str) -> float | None:
+    """Decode float from string."""
+    if not s or s.isspace():
+        return None
+    return float(s)
+
+
 def _deserialize(value: str, field_type: type) -> object:
-    """Reconstruct typed value from CSV string."""
+    """Reconstruct typed value from CSV string using explicit codecs."""
     if value is None or (isinstance(value, float) and pd.isna(value)):
         return None
 
     value = str(value).strip()
-    if not value:
-        origin = get_origin(field_type)
-        if origin is set or field_type is set:
-            return set()
-        return None
 
-    origin = get_origin(field_type)
-    args = get_args(field_type)
-
-    if field_type is date:
-        return pd.to_datetime(value).date()
-    if field_type is Decimal:
-        return Decimal(value)
-    if (
-        field_type is set
-        or origin is set
-        or (args and (get_origin(args[0]) is set or args[0] is set))
-    ):
-        return set(value.split(",")) if value else set()
-    if field_type is bool:
-        return value.lower() in ("true", "1", "yes")
-    if field_type is int:
-        return int(float(value))
-    if field_type is float:
-        return float(value)
-    if field_type is str:
-        return str(value)
-    return value
+    match field_type:
+        case _ if field_type is date:
+            return _to_date(value)
+        case _ if field_type is Decimal:
+            return _to_decimal(value)
+        case _ if field_type is set or str(field_type).startswith("set"):
+            return _to_set(value)
+        case _ if field_type is bool:
+            return _to_bool(value)
+        case _ if field_type is int:
+            return _to_int(value)
+        case _ if field_type is float:
+            return _to_float(value)
+        case _ if field_type is str or field_type is type(None):
+            return value if value else None
+        case _:
+            return value
 
 
 def to_csv(objects: list[T], path: str | Path, model_type: type | None = None) -> None:

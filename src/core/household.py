@@ -33,6 +33,12 @@ class Allocation:
         return self.your_liability.total + self.janice_liability.total
 
 
+@dataclass(frozen=True)
+class TaxResult:
+    individual: Individual
+    liability: Liability
+
+
 def _quantize(amount: Decimal) -> Decimal:
     return amount.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
@@ -283,7 +289,31 @@ def allocate_deductions(
     )
 
 
+def calculate_tax(individual: Individual) -> TaxResult:
+    """Calculate single person's tax liability.
+
+    Args:
+        individual: Person with income, deductions, and tax attributes
+
+    Returns:
+        TaxResult with calculated liability
+    """
+    taxable = individual.taxable_income
+    liability = _tax_liability(
+        taxable,
+        individual.fy,
+        medicare_status="single",
+        has_private_health_cover=individual.has_private_health_cover,
+    )
+    return TaxResult(individual=individual, liability=liability)
+
+
 def optimize_household(yours: Individual, janice: Individual) -> Allocation:
+    """Optimize deduction allocation for 2-person household.
+
+    Exhaustively searches all deduction allocations to minimize total tax liability.
+    Current implementation is hardcoded for exactly 2 people.
+    """
     deductions = _combine_deductions(yours, janice)
     best_allocation: Allocation | None = None
     best_total: Decimal | None = None

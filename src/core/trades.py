@@ -49,14 +49,16 @@ def get_positions(trades: list[Trade]) -> dict[str, Position]:
     }
 
 
+def _lot_sort_priority(lot: Trade, sell_price: Decimal, sell_date: date) -> tuple:
+    """Sort key for lot selection: prioritize losses, then discounted positions, then FIFO."""
+    is_loss = lot.price >= sell_price
+    hold_days = (sell_date - lot.date).days
+    is_discounted = is_cgt_discount_eligible(hold_days)
+    return (not is_loss, not is_discounted, lot.date)
+
+
 def process_trades(trades: list[Trade]) -> list[Gain]:
     """Process trades using FIFO with loss harvesting + CGT discount prioritization."""
-
-    def sort_priority(lot: Trade, sell_price: Decimal, sell_date: date) -> tuple:
-        is_loss = lot.price >= sell_price
-        hold_days = (sell_date - lot.date).days
-        is_discounted = is_cgt_discount_eligible(hold_days)
-        return (not is_loss, not is_discounted, lot.date)
 
     results = []
     buffers: dict[str, list[Trade]] = {}
@@ -75,7 +77,7 @@ def process_trades(trades: list[Trade]) -> list[Gain]:
             sell_fee_per_unit = _fee_per_unit(trade.fee, trade.units)
 
             while buff and units_to_sell > Decimal(0):
-                sell_lot = min(buff, key=lambda t: sort_priority(t, trade.price, trade.date))
+                sell_lot = min(buff, key=lambda t: _lot_sort_priority(t, trade.price, trade.date))
                 hold_days = (trade.date - sell_lot.date).days
                 is_discounted = is_cgt_discount_eligible(hold_days)
 
