@@ -61,6 +61,7 @@ select = [
     "RET",  # flake8-return (cleaner returns)
 ]
 ignore = [
+    "B008",   # function-call-in-default-arg (typer.Option requires this pattern)
     "SIM108", # if-else-block-instead-of-if-exp (ternary not always clearer)
     "SIM117", # combine-multiple-isinstance (sometimes separate is clearer)
     "E501",   # line-too-long (prompts and test data often legitimately long)
