@@ -102,3 +102,42 @@ def generate_audit_statement(
         statement.append("")
 
     return "\n".join(statement)
+
+
+def audit(
+    deductions: list[Deduction],
+) -> list[str]:
+    """Audit deductions for suspicious patterns (Division 19AA compliance).
+
+    Args:
+        deductions: All deductions from pipeline
+
+    Returns:
+        List of audit alerts (empty if clean)
+    """
+    if not deductions:
+        return []
+
+    by_person = {}
+    for ded in deductions:
+        if ded.individual not in by_person:
+            by_person[ded.individual] = []
+        by_person[ded.individual].append(ded)
+
+    alerts = []
+    for person, ded_list in sorted(by_person.items()):
+        total = sum((d.amount for d in ded_list), Decimal("0"))
+
+        if total == 0:
+            continue
+
+        AUDIT_THRESHOLDS["deduction_rate_warning"]
+        deduction_rate_critical = AUDIT_THRESHOLDS["deduction_rate_critical"]
+
+        if total > Decimal("10000") and deduction_rate_critical and total > Decimal("0"):
+            alerts.append(
+                f"{person}: Large deductions ${total:.2f} claimed "
+                f"(verify nexus and rate basis before submission)"
+            )
+
+    return alerts

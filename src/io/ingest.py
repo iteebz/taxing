@@ -7,6 +7,7 @@ import pandas as pd
 
 from src.core.models import Trade, Transaction
 from src.io.converters import BANK_REGISTRY, CONVERTERS
+from src.lib.paths import data_raw, data_raw_fy
 
 
 def _parse_bank_and_account(filename: str) -> tuple[str, str | None]:
@@ -200,9 +201,9 @@ def ingest_year(
     persons: list[str] | None = None,
 ) -> list[Transaction]:
     """
-    Load all transactions for a fiscal year using standardized structure.
+    Load all transactions for a fiscal year.
 
-    Structure: {base_dir}/data/fy{year}/{person}/raw/*.csv
+    Structure: {base_dir}/data/raw/fy{year}/{person}/*.csv
 
     Args:
         base_dir: Root directory
@@ -212,14 +213,13 @@ def ingest_year(
     Returns:
         Combined list of all transactions for the year
     """
-    base = Path(base_dir)
-    fy_dir = base / "data" / f"fy{year}"
+    fy_dir = data_raw_fy(base_dir, year)
 
     if not fy_dir.exists():
         return []
 
     if persons is None:
-        persons = [p.name for p in fy_dir.iterdir() if p.is_dir() and p.name != "data"]
+        persons = [p.name for p in fy_dir.iterdir() if p.is_dir()]
 
     return ingest_dir(fy_dir, persons=sorted(persons))
 
@@ -231,7 +231,7 @@ def ingest_all_years(
     """
     Load all transactions across all fiscal years.
 
-    Structure: {base_dir}/data/fy*/person/raw/*.csv
+    Structure: {base_dir}/data/raw/fy*/{person}/*.csv
 
     Args:
         base_dir: Root directory
@@ -240,24 +240,23 @@ def ingest_all_years(
     Returns:
         Combined list of all transactions from all years
     """
-    base = Path(base_dir)
-    data_dir = base / "data"
-    
-    if not data_dir.exists():
+    raw_dir = data_raw(base_dir)
+
+    if not raw_dir.exists():
         return []
-    
+
     all_txns = []
-    for fy_dir in sorted(data_dir.glob("fy*")):
+    for fy_dir in sorted(raw_dir.glob("fy*")):
         if not fy_dir.is_dir():
             continue
         try:
             year = int(fy_dir.name[2:])
         except ValueError:
             continue
-        
-        txns = ingest_year(base, year, persons=persons)
+
+        txns = ingest_year(base_dir, year, persons=persons)
         all_txns.extend(txns)
-    
+
     return all_txns
 
 
@@ -267,7 +266,7 @@ def ingest_trades_year(
     """
     Load all trades for a fiscal year using standardized structure.
 
-    Structure: {base_dir}/data/fy{year}/{person}/trades.csv
+    Structure: {base_dir}/data/raw/fy{year}/{person}/trades.csv
 
     Args:
         base_dir: Root directory
@@ -277,14 +276,13 @@ def ingest_trades_year(
     Returns:
         Combined list of all trades for the year
     """
-    base = Path(base_dir)
-    fy_dir = base / "data" / f"fy{year}"
+    fy_dir = data_raw_fy(base_dir, year)
 
     if not fy_dir.exists():
         return []
 
     if persons is None:
-        persons = [p.name for p in fy_dir.iterdir() if p.is_dir() and p.name != "data"]
+        persons = [p.name for p in fy_dir.iterdir() if p.is_dir()]
 
     all_trades = []
     for individual in sorted(persons):
@@ -315,10 +313,10 @@ def ingest_all_trades(
     """
     base = Path(base_dir)
     data_dir = base / "data"
-    
+
     if not data_dir.exists():
         return []
-    
+
     all_trades = []
     for fy_dir in sorted(data_dir.glob("fy*")):
         if not fy_dir.is_dir():
@@ -327,8 +325,8 @@ def ingest_all_trades(
             year = int(fy_dir.name[2:])
         except ValueError:
             continue
-        
+
         trades = ingest_trades_year(base, year, persons=persons)
         all_trades.extend(trades)
-    
+
     return all_trades

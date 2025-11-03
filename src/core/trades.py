@@ -57,8 +57,8 @@ def _lot_sort_priority(lot: Trade, sell_price: Decimal, sell_date: date) -> tupl
     return (not is_loss, not is_discounted, lot.date)
 
 
-def process_trades(trades: list[Trade], individual: str | None = None) -> list[Gain]:
-    """Process trades using FIFO with loss harvesting + CGT discount prioritization.
+def calculate_gains(trades: list[Trade], individual: str | None = None) -> list[Gain]:
+    """Calculate capital gains from trades using FIFO with loss harvesting + CGT discount prioritization.
 
     Args:
         trades: List of Trade objects (all from same individual if individual param provided)

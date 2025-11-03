@@ -5,9 +5,10 @@
 ### core tenets
 - **Pure functions**: Logic is side-effect-free, testable without I/O
 - **Immutability**: Frozen dataclasses prevent accidental mutations
-- **Separation of concerns**: `core/` (domain), `io/` (adapters), `pipeline/` (orchestration)
-- **Type safety**: Decimal prevents silent arithmetic bugs
-- **No globals**: Config passed as arguments (not `conf.py` globals)
+- **Unified data model**: Single transaction/deduction/gains CSVs (all people, all years)
+- **Deterministic pipeline**: Raw input → classify → deduce → persist (no intermediate state)
+- **Type safety**: Decimal for monetary precision
+- **No globals**: Config passed as arguments
 
 ## domain model
 
@@ -175,22 +176,30 @@ def gains_from_csv(path: str | Path) -> list[Gain]:
 ```python
 # src/io/ingest.py
 
-def ingest_dir(base_dir: str | Path) -> list[Transaction]:
-    """Load all transactions from directory.
+def ingest_year(base_dir: str | Path, year: int, persons: list[str] | None = None) -> list[Transaction]:
+    """Load transactions for a fiscal year.
     
-    Structure: {base_dir}/{person}/raw/{bank}.csv
-    Auto-detects persons, banks.
+    Structure: {base_dir}/data/raw/fy{year}/{person}/*.csv
     """
+
+def ingest_all_years(base_dir: str | Path, persons: list[str] | None = None) -> list[Transaction]:
+    """Load all transactions across all fiscal years.
     
-def ingest_trades(path: str | Path, person: str) -> list[Trade]:
-    """Load trades from single CSV file."""
-    
-def ingest_trades_dir(base_dir: str | Path, persons: list[str] | None = None) -> list[Trade]:
-    """Load all trades from directory.
-    
-    Structure: {base_dir}/{person}/raw/equity.csv
-    Sorts by (code, date) for FIFO processing.
+    Structure: {base_dir}/data/raw/fy*/{person}/*.csv
+    Returns deduplicated, chronologically sorted transactions.
     """
+```
+
+### Path helpers
+```python
+# src/lib/paths.py - Centralized path resolution
+
+data_root(base_dir) → Path           # data/
+data_raw(base_dir) → Path            # data/raw/
+data_raw_fy(base_dir, fy) → Path     # data/raw/fy{fy}/
+transactions_csv(base_dir) → Path    # data/transactions.csv
+deductions_csv(base_dir) → Path      # data/deductions.csv
+gains_csv(base_dir) → Path           # data/gains.csv
 ```
 
 ## pipeline orchestration
@@ -199,45 +208,43 @@ def ingest_trades_dir(base_dir: str | Path, persons: list[str] | None = None) ->
 ```python
 # src/pipeline.py
 
-def run(base_dir: str | Path, fiscal_year: str) -> dict[str, dict[str, object]]:
+def run(base_dir: str | Path, persons: list[str] | None = None) -> dict[str, dict[str, object]]:
     """
-    Ingest → Classify → Deduce → Trades → Persist
+    Universe-wide pipeline: Ingest → Classify → Deduce → Trades → Persist
     
-    1. ingest_dir(): Load all txns from {fy}/raw/
-    2. ingest_trades_dir(): Load all trades from {fy}/
-    3. load_rules(): Load classification rules
-    4. weights_from_csv(): Load deduction weights
-    
-    For each person:
-       5. Filter txns by source_person
-       6. classify() each txn
-       7. deduce() weighted deductions
-       8. summarize() by category
-       9. process_trades() for capital gains
-       10. Persist: transactions.csv, deductions.csv, summary.csv, gains.csv
+    1. ingest_all_years(): Load all txns from data/raw/fy*/{person}/*.csv
+    2. ingest_all_trades(): Load all trades
+    3. dedupe(): Remove duplicates
+    4. classify(): Universe-wide classification (all txns against rules)
+    5. For each person:
+       - Filter txns by individual
+       - deduce(): ATO-based deductions
+       - process_trades(): FIFO + loss harvesting
+    6. to_csv(): Persist unified CSVs: data/transactions.csv, data/deductions.csv, data/gains.csv
     
     Returns: {person → {txn_count, classified_count, deductions, gains_count}}
     """
 ```
 
-**Single ingest pass** (all people), then per-person processing → efficient.
+**Key design**: Single ingest + classification pass (universe-wide), then per-person deduction/trade processing. Output is unified CSVs (all people, all years in one file).
 
 ### data flow diagram
 ```
-{fy}/raw/{person}/{bank}.csv         ← Bank CSVs
-{fy}/{person}/raw/equity.csv         ← Trade CSVs
-rules/*.txt                          ← Classification rules
-weights.csv                          ← (Deprecated: now uses ATO rates)
+data/raw/fy*/{person}/*.csv          ← Raw bank CSVs (inputs)
+rules/*.txt                          ← Classification keywords
         ↓
-  ingest_dir() + ingest_trades_dir()
+  ingest_all_years() + ingest_all_trades()
         ↓
-  All txns + trades (unified)
+  All txns + trades (deduplicated)
+        ↓
+  classify(): Universe-wide (single pass)
         ↓
   For each person:
-    classify() + deduce()            ← Core domain logic
-    process_trades()                 ← FIFO + loss harvesting
+    deduce() + process_trades()      ← Per-person calculations
         ↓
-  {fy}/{person}/data/{transactions,deductions,summary,gains}.csv
+  data/transactions.csv              ← All people, all years, classified
+  data/deductions.csv                ← All people, all years, by category & fy
+  data/gains.csv                     ← All trades, all people, capital gains
 ```
 
 ## testing strategy
@@ -301,4 +308,5 @@ def test_parity_with_tax_og(tax_og_equity_file):
 
 ---
 
-**Last Updated**: Oct 21, 2025
+**Last Updated**: Nov 4, 2025
+**Architecture**: Unified data model (all people, all years in single CSV tables)

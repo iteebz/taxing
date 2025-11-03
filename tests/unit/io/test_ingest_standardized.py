@@ -1,4 +1,4 @@
-"""Tests for standardized I/O structure: data/fy{year}/{person}/raw/*.csv"""
+"""Tests for standardized I/O structure: data/raw/fy{year}/{person}/*.csv"""
 
 import csv
 import tempfile
@@ -7,24 +7,23 @@ from pathlib import Path
 import pytest
 
 from src.io.ingest import ingest_trades_year, ingest_year
+from src.lib.paths import data_raw_fy_person
 
 
 @pytest.fixture
 def standard_structure():
-    """Create standard data directory: data/fy25/person/raw/"""
+    """Create standard data directory: data/raw/fy25/person/raw/"""
     with tempfile.TemporaryDirectory() as tmpdir:
         base = Path(tmpdir)
 
-        you_txns = base / "data" / "fy25" / "you" / "raw"
-        janice_txns = base / "data" / "fy25" / "janice" / "raw"
+        you_dir = data_raw_fy_person(base, 25, "you")
+        janice_dir = data_raw_fy_person(base, 25, "janice")
 
-        you_trades = base / "data" / "fy25" / "you"
-        janice_trades = base / "data" / "fy25" / "janice"
+        you_txns = you_dir / "raw"
+        janice_txns = janice_dir / "raw"
 
         you_txns.mkdir(parents=True)
         janice_txns.mkdir(parents=True)
-        you_trades.mkdir(parents=True, exist_ok=True)
-        janice_trades.mkdir(parents=True, exist_ok=True)
 
         with open(you_txns / "anz.csv", "w") as f:
             writer = csv.writer(f)
@@ -34,15 +33,13 @@ def standard_structure():
             writer = csv.writer(f)
             writer.writerow(["02/10/2024", "50.00", "BUNNINGS", "5000.00"])
 
-        with open(you_trades / "trades.csv", "w") as f:
-            writer = csv.writer(f)
-            writer.writerow(["date", "code", "action", "units", "price", "fee"])
-            writer.writerow(["2024-10-01", "ASX:BHP", "buy", "100", "50.00", "10.00"])
+        with open(you_dir / "trades.csv", "w") as f:
+            f.write("date,code,action,units,price,fee\n")
+            f.write("2024-10-01,ASX:BHP,buy,100,50.00,10.00\n")
 
-        with open(janice_trades / "trades.csv", "w") as f:
-            writer = csv.writer(f)
-            writer.writerow(["date", "code", "action", "units", "price", "fee"])
-            writer.writerow(["2024-10-01", "ASX:CBA", "buy", "50", "150.00", "5.00"])
+        with open(janice_dir / "trades.csv", "w") as f:
+            f.write("date,code,action,units,price,fee\n")
+            f.write("2024-10-01,ASX:CBA,buy,50,150.00,5.00\n")
 
         yield base
 

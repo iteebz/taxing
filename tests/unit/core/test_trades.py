@@ -2,7 +2,7 @@ from datetime import date
 from decimal import Decimal
 
 from src.core.models import Trade
-from src.core.trades import _lot_sort_priority, calc_fy, is_cgt_discount_eligible, process_trades
+from src.core.trades import _lot_sort_priority, calc_fy, calculate_gains, is_cgt_discount_eligible
 
 
 def test_calc_fy_before_july():
@@ -49,7 +49,7 @@ def test_lot_sort_priority_prioritizes_losses():
     assert loss_priority < profit_priority
 
 
-def test_process_trades_simple_buy_sell():
+def test_gains_simple_buy_sell():
     """Buy low, sell high, FIFO matching."""
     trades = [
         Trade(
@@ -72,7 +72,7 @@ def test_process_trades_simple_buy_sell():
         ),
     ]
 
-    results = process_trades(trades)
+    results = calculate_gains(trades)
 
     assert len(results) == 1
     result = results[0]
@@ -80,7 +80,7 @@ def test_process_trades_simple_buy_sell():
     assert result.raw_profit == Decimal(480)
 
 
-def test_process_trades_loss_harvesting():
+def test_gains_loss_harvesting():
     """Prioritize selling at a loss."""
     trades = [
         Trade(
@@ -112,14 +112,14 @@ def test_process_trades_loss_harvesting():
         ),
     ]
 
-    results = process_trades(trades)
+    results = calculate_gains(trades)
 
     assert len(results) == 1
     result = results[0]
     assert result.raw_profit < 0
 
 
-def test_process_trades_cgt_discount():
+def test_gains_cgt_discount():
     """Position held >365 days gets 50% discount."""
     trades = [
         Trade(
@@ -142,7 +142,7 @@ def test_process_trades_cgt_discount():
         ),
     ]
 
-    results = process_trades(trades)
+    results = calculate_gains(trades)
 
     assert len(results) == 1
     result = results[0]
@@ -182,7 +182,7 @@ def test_mixed_tickers_no_cross():
         ),
     ]
 
-    results = process_trades(trades)
+    results = calculate_gains(trades)
 
     assert len(results) == 1
     result = results[0]
@@ -190,7 +190,7 @@ def test_mixed_tickers_no_cross():
     assert result.fy == 2024
 
 
-def test_multiple_sells_fifo():
+def test_gains_multiple_sells_fifo():
     """Multiple buys and sells of same ticker, verify FIFO per ticker."""
     trades = [
         Trade(
@@ -222,14 +222,14 @@ def test_multiple_sells_fifo():
         ),
     ]
 
-    results = process_trades(trades)
+    results = calculate_gains(trades)
 
     assert len(results) == 1
     result = results[0]
     assert result.raw_profit == Decimal(500)
 
 
-def test_process_trades_crypto_ticker():
+def test_gains_crypto_ticker():
     """Verify that crypto tickers are processed correctly."""
     trades = [
         Trade(
@@ -252,7 +252,7 @@ def test_process_trades_crypto_ticker():
         ),
     ]
 
-    results = process_trades(trades)
+    results = calculate_gains(trades)
 
     assert len(results) == 1
     result = results[0]

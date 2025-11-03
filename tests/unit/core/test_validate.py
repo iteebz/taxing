@@ -6,9 +6,9 @@ import pytest
 from src.core.models import Transaction
 from src.core.validate import (
     ValidationError,
+    validate,
     validate_fy_boundary,
     validate_no_duplicates,
-    validate_transactions,
     validate_unlabeled,
 )
 
@@ -141,7 +141,7 @@ def test_unlabeled_missing_category():
 
 
 def test_full_suite(valid_txn):
-    validate_transactions([valid_txn], 25)
+    validate([valid_txn], 25)
 
 
 def test_fails_on_boundary():
@@ -154,4 +154,4 @@ def test_fails_on_boundary():
         cats={"expenses"},
     )
     with pytest.raises(ValidationError, match="FY25"):
-        validate_transactions([txn], 25)
+        validate([txn], 25)

@@ -84,17 +84,29 @@ def wise(row: dict, account: str | None = None) -> Transaction:
     else:
         target_fee_str = row.get("target_fee_amount", "0") or "0"
         try:
-            target_fee = Decimal(str(target_fee_str)) if target_fee_str and str(target_fee_str).lower() != 'nan' else Decimal("0")
+            target_fee = (
+                Decimal(str(target_fee_str))
+                if target_fee_str and str(target_fee_str).lower() != "nan"
+                else Decimal("0")
+            )
         except (ValueError, TypeError):
             target_fee = Decimal("0")
         target_amt_str = row.get("target_amount_after_fees", "0") or "0"
         try:
-            target_amt = Decimal(str(target_amt_str)) if target_amt_str and str(target_amt_str).lower() != 'nan' else Decimal("0")
+            target_amt = (
+                Decimal(str(target_amt_str))
+                if target_amt_str and str(target_amt_str).lower() != "nan"
+                else Decimal("0")
+            )
         except (ValueError, TypeError):
             target_amt = Decimal("0")
         exchange_rate_str = row.get("exchange_rate", "1") or "1"
         try:
-            exchange_rate = Decimal(str(exchange_rate_str)) if exchange_rate_str and str(exchange_rate_str).lower() != 'nan' else Decimal("1")
+            exchange_rate = (
+                Decimal(str(exchange_rate_str))
+                if exchange_rate_str and str(exchange_rate_str).lower() != "nan"
+                else Decimal("1")
+            )
         except (ValueError, TypeError):
             exchange_rate = Decimal("1")
 

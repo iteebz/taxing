@@ -4,13 +4,13 @@ from pathlib import Path
 
 import typer
 
+from src.core import load_rules
+from src.core.classify import classify
 from src.core.household import _tax_liability, optimize_household
 from src.core.metrics import coverage as calc_coverage
-from src.core.mining import MiningConfig, mine_suggestions, score_suggestions
 from src.core.models import Individual, Transaction
-from src.core.rules import load_rules
-from src.core.classify import classify
 from src.io.persist import dicts_from_csv, from_csv
+from src.lib.paths import deductions_csv, transactions_csv
 from src.lib.search import load_cache, search_description
 from src.pipeline import run as run_pipeline
 
@@ -22,26 +22,16 @@ app = typer.Typer(
 
 
 def _load_txns_all_years(base_dir: Path, person: str | None = None) -> list[Transaction]:
-    """Load and re-classify transactions from ALL FY directories."""
-    from dataclasses import replace
-    from src.io import ingest_all_years
-    from src.core.dedupe import dedupe
-    from src.core.transfers import is_transfer
-    
-    txns = ingest_all_years(base_dir, persons=[person] if person else None)
-    txns = dedupe(txns)
-    rules = load_rules(base_dir)
-    
-    txns_classified = [
-        replace(
-            t,
-            cats=(cat := classify(t.description, rules)),
-            is_transfer=is_transfer(replace(t, cats=cat)),
-        )
-        for t in txns
-    ]
-    
-    return txns_classified
+    """Load unified transactions from data/transactions.csv, optionally filtered by person."""
+    csv_path = transactions_csv(base_dir)
+    if not csv_path.exists():
+        return []
+
+    txns = from_csv(csv_path, Transaction)
+    if person:
+        txns = [t for t in txns if t.individual == person]
+
+    return txns
 
 
 def _load_employment_income(base_dir: Path, fy: int) -> dict[str, Decimal]:
@@ -60,15 +50,15 @@ def _load_employment_income(base_dir: Path, fy: int) -> dict[str, Decimal]:
 
 
 def _load_deductions(base_dir: Path, fy: int, person: str) -> Decimal:
-    """Load total deductions for a person from Phase 1 output."""
-    deductions_file = base_dir / "data" / f"fy{fy}" / person / "data" / "deductions.csv"
+    """Load total deductions for a person from unified deductions.csv."""
+    deductions_file = deductions_csv(base_dir)
     if not deductions_file.exists():
         return Decimal("0")
 
     data = dicts_from_csv(deductions_file)
     total = Decimal("0")
     for row in data:
-        if "amount" in row:
+        if row.get("individual") == person and int(row.get("fy", 0)) == fy and "amount" in row:
             total += Decimal(str(row["amount"]))
 
     return total
@@ -163,22 +153,24 @@ def cmd_mine(
 
     cache_path = base_dir / ".search_cache.json" if search else None
     cache = load_cache(cache_path) if search else {}
-    
-    unlabeled_sorted = sorted(unlabeled, key=lambda t: float(abs(t.amount)) if t.amount else 0, reverse=True)
+
+    unlabeled_sorted = sorted(
+        unlabeled, key=lambda t: float(abs(t.amount)) if t.amount else 0, reverse=True
+    )
     batch = unlabeled_sorted[batch_start : batch_start + batch_size]
-    
+
     for i, txn in enumerate(batch, batch_start + 1):
         amt_str = f"${txn.amount:>10.2f}" if txn.amount is not None else "$      None"
         print(f"{i}. {txn.description} | {txn.date} | {amt_str}")
-        
+
         if search:
             results = search_description(txn.description, cache, cache_path, max_results=2)
             if results:
                 for result in results:
                     if isinstance(result, dict):
-                        title = result.get('title', '')[:80]
+                        title = result.get("title", "")[:80]
                         print(f"   → {title}")
-    
+
     if batch_start + batch_size < len(unlabeled_sorted):
         print(f"\nNext: --batch-start {batch_start + batch_size}")
 
@@ -191,17 +183,17 @@ def cmd_classify(
     """Classify a single transaction description."""
     base_dir = Path(base_dir or ".")
     rules = load_rules(base_dir)
-    
+
     result = classify(description, rules)
-    
+
     print(f"\nDescription: {description}")
     print(f"Matches: {sorted(result) if result else 'None'}")
-    
+
     if not result:
         print("\nDebug info:")
         desc_upper = description.strip().upper()
         print(f"  Normalized: {desc_upper}")
-        for category, keywords in sorted(rules.items()):
+        for category, keywords in sorted(rules):
             matches = [kw for kw in keywords if kw in desc_upper]
             if matches:
                 print(f"  {category}: {matches}")

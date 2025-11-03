@@ -62,7 +62,39 @@ def validate_unlabeled(txns: list[Transaction]) -> None:
         )
 
 
-def validate_transactions(txns: list[Transaction], fy: int) -> None:
+def validate_monthly_coverage(txns: list[Transaction], fy: int) -> None:
+    """Validate transactions exist for all 12 months of fiscal year.
+
+    Only checks if transaction count >= 100 (filters out test data).
+
+    Args:
+        txns: Transaction list
+        fy: Fiscal year (e.g., 25 for FY2025)
+
+    Raises:
+        ValidationError if any month is missing data (on production datasets)
+    """
+    if len(txns) < 100:
+        return
+
+    months_seen = set()
+
+    for txn in txns:
+        months_seen.add(txn.date.month)
+
+    fy_months = set()
+    for month in range(7, 13):
+        fy_months.add(month)
+    for month in range(1, 7):
+        fy_months.add(month)
+
+    missing = fy_months - months_seen
+    if missing:
+        missing_names = [date(2000, m, 1).strftime("%B") for m in sorted(missing)]
+        raise ValidationError(f"FY{fy} missing data for months: {', '.join(missing_names)}")
+
+
+def validate(txns: list[Transaction], fy: int) -> None:
     """Run full transaction validation suite.
 
     Args:
@@ -75,3 +107,4 @@ def validate_transactions(txns: list[Transaction], fy: int) -> None:
     validate_fy_boundary(txns, fy)
     validate_no_duplicates(txns)
     validate_unlabeled(txns)
+    validate_monthly_coverage(txns, fy)

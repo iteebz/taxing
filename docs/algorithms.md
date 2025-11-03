@@ -233,78 +233,50 @@ def optimize_household(yours, janice):
 
 ### Algorithm
 
+Substring match (case-insensitive). Load rules via `src/core/rules.py` (handles deduplication + subsumed keyword removal).
+
 ```python
 def classify(description, rules):
-    """Match description against rule keywords (case-insensitive)."""
-    desc_lower = description.lower()
-    categories = set()
-    
+    desc_upper = description.strip().upper()
+    matches = set()
     for category, keywords in rules.items():
         for keyword in keywords:
-            if keyword.lower() in desc_lower:
-                categories.add(category)
-                break  # Match found, move to next category
-    
-    return categories
+            if keyword.upper() in desc_upper:
+                matches.add(category)
+                break
+    return matches
 ```
 
 ### Example
-
 ```
-Rules: {"groceries": ["coles", "woolies"], "utilities": ["electricity", "water"]}
+Rules: {"groceries": ["COLES", "WOOLIES"], "utilities": ["ELECTRICITY"]}
 Description: "COLES SUPERMARKET"
-
 Result: {"groceries"}
 ```
 
-**Multi-category**: One transaction can match multiple categories.
+**Multi-category**: One txn can match multiple categories (e.g., transfer + forex).
 
 ---
 
 ## 7. Deduction weighting (transaction → deduction)
 
-**File**: `src/core/deduce.py` → `deduce(txns: list[Transaction], weights: dict, fy: int, conservative: bool) -> list[Deduction]`
+**File**: `src/core/deduce.py` → `deduce(txns: list[Transaction], fy: int, individual: str, weights_path: Path) -> list[Deduction]`
 
-### Algorithm (simplified for documentation)
+### Algorithm
 
-```python
-def deduce(txns, weights, fy, conservative):
-    """Calculate deductions based on ATO rates and transaction details."""
-    deductions = []
-    for txn in txns:
-        if not txn.cats:
-            continue # Skip unclassified
-        
-        # Simplified logic for documentation:
-        # In reality, this involves looking up ATO rates,
-        # applying personal_pct, and creating Deduction objects.
-        
-        for cat in txn.cats:
-            # Placeholder for actual deduction calculation
-            amount = txn.amount * Decimal("0.5") # Example deduction
-            deductions.append(Deduction(category=cat, amount=amount, rate=Decimal("0.5"), rate_basis="EXAMPLE", fy=fy))
-    
-    return deductions
-```
+For each classified transaction:
+1. Look up category weight (from ATO rates or weights.csv)
+2. Calculate: deduction = |amount| × weight
+3. Emit Deduction object with category, amount, fy, individual
 
 ### Example
-
 ```
-Txn: $100 at Coles, categories {"groceries"}
-Weight: groceries=60%
+Txn: $100 at Coles, category {"groceries"}, weight=60%
+Deduction: Deduction(category="groceries", amount=60, fy=24, individual="janice")
+```
 
-Deduction: $100 * 0.60 = $60
+Multi-category transactions split proportionally per weight.
 
 ---
 
-Txn: $100 at Coles, categories {"groceries", "utilities"} (multi-category)
-Weight: groceries=60%, utilities=40%
-
-Deduction:
-  groceries: $100 * 0.60 * 0.5 = $30
-  utilities: $100 * 0.40 * 0.5 = $20
-```
-
----
-
-**Last Updated**: Oct 21, 2025
+**Last Updated**: Nov 4, 2025

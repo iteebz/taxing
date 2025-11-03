@@ -22,5 +22,4 @@ Thumbs.db
 repomix-output.*
 
 data/
-.search_cache/
 .search_cache.json

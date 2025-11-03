@@ -2,7 +2,7 @@ from datetime import date
 from decimal import Decimal
 
 from src.core.models import Gain, Trade
-from src.core.trades import process_trades
+from src.core.trades import calculate_gains
 from src.io import from_csv, to_csv
 
 
@@ -29,7 +29,7 @@ def test_gains_roundtrip(tmp_path):
         ),
     ]
 
-    gains = process_trades(trades)
+    gains = calculate_gains(trades)
     csv_path = tmp_path / "gains.csv"
 
     to_csv(gains, csv_path)
@@ -83,7 +83,7 @@ def test_gains_multi_ticker():
         ),
     ]
 
-    gains = process_trades(trades)
+    gains = calculate_gains(trades)
 
     assert len(gains) == 2
     assert all(g.fy == 2024 for g in gains)
