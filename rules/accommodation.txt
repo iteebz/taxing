@@ -2,6 +2,7 @@ agoda
 airbnb
 booking
 booking.com
+partners on booking
 hotel
 fraser suites
 hunter valley smelly pokolbin

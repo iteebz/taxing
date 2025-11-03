@@ -232,6 +232,11 @@ categories:
     l1: transfers
     l2: fraud
 
+  # Currency/Forex
+  forex:
+    l1: transfers
+    l2: forex
+
   # Income
   income:
     l1: income

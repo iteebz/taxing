@@ -41,8 +41,15 @@ Mines rule suggestions from labeled txns. Shows keyword → category mappings wi
 
 **Output**: Ranked suggestions (keyword → category | evidence | source).
 
-### `tax mine --fy 24 --show-unlabeled --search --limit N`
+### `tax mine --fy 24 --show-unlabeled --search [--batch-start N] [--batch-size N]`
 Manual review mode: Shows unclassified transactions with verbatim search results (title + snippet).
+
+**Batching**: For large datasets, use `--batch-start` and `--batch-size` to chunk processing (reduces network calls + memory):
+```bash
+tax mine --search --show-unlabeled --batch-size 15 --batch-start 0
+# Review, add rules, then:
+tax mine --search --show-unlabeled --batch-size 15 --batch-start 15
+```
 
 Use this to identify patterns in unlabeled data and decide categories before adding rules.
 
@@ -101,12 +108,24 @@ For unclassified txns (via `--show-unlabeled` flag):
 
 ---
 
+## workflow learnings
+
+**Pipeline → Rules → Pipeline Loop**: Rules are ingested at pipeline start. After editing rule files, must `tax run --fy N` to apply them. Check coverage with `tax coverage` afterward.
+
+**Batching**: For 600+ uncategorized txns, batch with `--batch-start` / `--batch-size` to avoid timeout + memory bloat.
+
+**Search Cache**: DDGS results cached to `.search_cache.json`. Subsequent runs reuse cached results (no network penalty).
+
+**Data Quality**: Watch for NaN amounts in converters (e.g., Wise CSV empty fields parsed as `'nan'` string → Decimal NaN). Handle gracefully in conversion logic.
+
 ## anti-patterns
 
 ❌ Add rules blindly without reviewing context
 ❌ Trust merchant search alone (can match wrong category)
 ❌ Ignore GENERIC_WORDS filter (transfer, bank, payment auto-filtered)
+❌ Assume rules take effect without re-running pipeline
 
 ✅ Start conservative, tighten if false positives appear
 ✅ Review each rule before adding
 ✅ Use `--search` for stubborn orphans only
+✅ Run pipeline after rule edits
