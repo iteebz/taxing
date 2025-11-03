@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import typer
+
 from src.core.metrics import coverage, household_metrics
 from src.core.models import Transaction
 from src.io.ingest import ingest_year
@@ -31,12 +33,13 @@ def _load_classified_txns(base_dir: Path, fy: int, person: str | None = None) ->
     return ingest_year(base_dir, fy, persons=persons)
 
 
-def handle(args):
-    """Calculate coverage and household metrics."""
-    base_dir = Path(args.base_dir or ".")
-    fy = args.fy
-    person = args.person
-
+def handle(
+    fy: int = typer.Option(..., "--fy", help="Fiscal year (e.g., 25)"),
+    person: str = typer.Option(None, "--person", help="Person name (all if omitted)"),
+    base_dir: str = typer.Option(".", "--base-dir", help="Base directory"),
+):
+    """Calculate coverage & household metrics."""
+    base_dir = Path(base_dir or ".")
     all_txns = _load_classified_txns(base_dir, fy, person)
 
     if not all_txns:
@@ -78,12 +81,3 @@ def handle(args):
         f"${household['total_income']:<17,.0f} "
         f"${household['total_transfers']:<17,.0f}"
     )
-
-
-def register(subparsers):
-    """Register metrics command."""
-    parser = subparsers.add_parser("metrics", help="Calculate coverage & household metrics")
-    parser.add_argument("--fy", type=int, required=True, help="Fiscal year (e.g., 25)")
-    parser.add_argument("--person", help="Person name (optional, all if omitted)")
-    parser.add_argument("--base-dir", default=".", help="Base directory (default: .)")
-    parser.set_defaults(func=handle)

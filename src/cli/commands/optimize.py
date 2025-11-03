@@ -2,6 +2,8 @@ import json
 from decimal import Decimal
 from pathlib import Path
 
+import typer
+
 from src.core.household import _tax_liability, optimize_household
 from src.core.models import Individual
 from src.io.persist import dicts_from_csv
@@ -37,25 +39,28 @@ def load_deductions(base_dir: Path, fy: int, person: str) -> list[Decimal]:
     return [total] if total > 0 else []
 
 
-def handle(args):
+def handle(
+    fy: int = typer.Option(..., "--fy", help="Fiscal year (e.g., 25)"),
+    persons: str = typer.Option(..., "--persons", help="Comma-separated person names"),
+    base_dir: str = typer.Option(".", "--base-dir", help="Base directory"),
+):
     """Optimize deduction allocation across persons to minimize tax liability."""
-    base_dir = Path(args.base_dir or ".")
-    fy = args.fy
-    persons = args.persons.split(",") if args.persons else []
+    base_dir = Path(base_dir or ".")
+    persons_list = persons.split(",") if persons else []
 
-    if not persons:
-        raise ValueError("--persons required (comma-separated list)")
+    if not persons_list:
+        raise typer.BadParameter("--persons required (comma-separated list)")
 
     employment_income = load_employment_income(base_dir, fy)
 
-    missing = set(persons) - set(employment_income.keys())
+    missing = set(persons_list) - set(employment_income.keys())
     if missing:
-        raise ValueError(f"Missing employment income for: {missing}")
+        raise typer.BadParameter(f"Missing employment income for: {missing}")
 
     individuals = {}
     all_deductions = []
 
-    for person in persons:
+    for person in persons_list:
         emp_income = employment_income[person]
         deductions = load_deductions(base_dir, fy, person)
         all_deductions.extend(deductions)
@@ -146,12 +151,3 @@ def handle(args):
 
         print("-" * 60)
         print(f"{'TOTAL':<15} {'':<15} ${total_deductions:<14,.0f} ${total_tax:<11,.0f}")
-
-
-def register(subparsers):
-    """Register optimize command."""
-    parser = subparsers.add_parser("optimize", help="Optimize deduction allocation")
-    parser.add_argument("--fy", type=int, required=True, help="Fiscal year (e.g., 25)")
-    parser.add_argument("--persons", required=True, help="Comma-separated person names")
-    parser.add_argument("--base-dir", default=".", help="Base directory (default: .)")
-    parser.set_defaults(func=handle)

@@ -1,14 +1,17 @@
 from pathlib import Path
 
-from src.pipeline import run
+import typer
+
+from src.pipeline import run as run_pipeline
 
 
-def handle(args):
-    """Run full pipeline: ingest → classify → deduce → persist."""
-    base_dir = Path(args.base_dir or ".")
-    fy = args.fy
-
-    result = run(base_dir, fy)
+def handle(
+    fy: int = typer.Option(..., "--fy", help="Fiscal year (e.g., 25)"),
+    base_dir: str = typer.Option(".", "--base-dir", help="Base directory"),
+):
+    """Run full tax pipeline (ingest → classify → deduce → trades → persist)."""
+    base_dir = Path(base_dir or ".")
+    result = run_pipeline(base_dir, fy)
 
     print(f"\nPipeline Results - FY{fy}")
     print("-" * 70)
@@ -27,11 +30,3 @@ def handle(args):
         print(f"\nTransfers reconciled: {len(transfers)} total")
 
     print("-" * 70)
-
-
-def register(subparsers):
-    """Register run command."""
-    parser = subparsers.add_parser("run", help="Run full tax pipeline")
-    parser.add_argument("--fy", type=int, required=True, help="Fiscal year (e.g., 25)")
-    parser.add_argument("--base-dir", default=".", help="Base directory (default: .)")
-    parser.set_defaults(func=handle)

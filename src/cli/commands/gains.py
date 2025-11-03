@@ -1,9 +1,15 @@
+import typer
+
 from src.core.planning import plan_gains
 
 
-def handle(args):
-    """Plan multi-year capital gains realization with loss carryforward."""
-    bracket_parts = args.projection.split(",")
+def handle(
+    projection: str = typer.Option(..., "--projection", help="Tax projection: 25:30%,26:45%"),
+    gains: list[float] = typer.Option(None, "--gains", help="Gains list (repeatable)"),
+    losses: list[float] = typer.Option(None, "--losses", help="Losses list (repeatable)"),
+):
+    """Plan multi-year gains realization with loss carryforward."""
+    bracket_parts = projection.split(",")
     bracket_projection = {}
 
     for part in bracket_parts:
@@ -12,14 +18,14 @@ def handle(args):
         rate = int(rate_str.rstrip("%"))
         bracket_projection[fy] = rate
 
-    gains = args.gains if hasattr(args, "gains") else []
-    losses = args.losses if hasattr(args, "losses") else []
+    gains_list = gains if gains else []
+    losses_list = losses if losses else []
 
-    if not gains:
+    if not gains_list:
         print("\nNo gains provided for planning")
         return
 
-    plan = plan_gains(gains, losses, bracket_projection)
+    plan = plan_gains(gains_list, losses_list, bracket_projection)
 
     print("\nMulti-Year Gains Plan")
     print("-" * 80)
@@ -38,18 +44,3 @@ def handle(args):
         )
 
     print("-" * 80)
-
-
-def register(subparsers):
-    """Register gains-plan command."""
-    import json
-
-    parser = subparsers.add_parser("gains-plan", help="Plan multi-year gains realization")
-    parser.add_argument(
-        "--projection",
-        required=True,
-        help="Tax projection: 25:30%,26:45%,27:30%",
-    )
-    parser.add_argument("--gains", type=json.loads, default="[]", help="Gains JSON array")
-    parser.add_argument("--losses", type=json.loads, default="[]", help="Losses JSON array")
-    parser.set_defaults(func=handle)
