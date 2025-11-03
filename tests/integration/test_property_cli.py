@@ -1,6 +1,6 @@
 """Property CLI integration tests."""
 
-from src.cli.commands.property_ import handle as cmd_property
+from src.cli.commands.property import handle as cmd_property
 
 
 class Args:

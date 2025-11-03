@@ -13,7 +13,10 @@ class DeductionDivision(Enum):
 DEDUCTIBLE_DIVISIONS = {
     "work_accessories": DeductionDivision.DIVISION_8,
     "software": DeductionDivision.DIVISION_8,
+    "furniture": DeductionDivision.DIVISION_63,
     "home_office": DeductionDivision.DIVISION_63,
+    "office_supplies": DeductionDivision.DIVISION_8,
+    "home_services": DeductionDivision.DIVISION_8,
     "vehicle": DeductionDivision.DIVISION_8,
     "clothing": DeductionDivision.PROHIBITED,
     "groceries": DeductionDivision.PROHIBITED,
@@ -27,8 +30,10 @@ DEDUCTIBLE_DIVISIONS = {
     "electronics": DeductionDivision.DIVISION_8,
     "professional_fees": DeductionDivision.DIVISION_8,
     "training": DeductionDivision.DIVISION_8,
-    "travel": DeductionDivision.DIVISION_8,
-    "accom": DeductionDivision.DIVISION_8,
+    "travel": DeductionDivision.PROHIBITED,
+    "flights": DeductionDivision.DIVISION_8,
+    "accommodation": DeductionDivision.DIVISION_8,
+    "travel_agencies": DeductionDivision.DIVISION_8,
     "meals": DeductionDivision.DIVISION_8,
     "gifts": DeductionDivision.PROHIBITED,
     "donations": DeductionDivision.DIVISION_8,
@@ -42,6 +47,9 @@ DEDUCTIBLE_DIVISIONS = {
     "refunds": DeductionDivision.PROHIBITED,
     "transfers": DeductionDivision.ERROR,
     "scam": DeductionDivision.ERROR,
+    "property_rates": DeductionDivision.DIVISION_8,
+    "property_investment": DeductionDivision.DIVISION_8,
+    "craft": DeductionDivision.PROHIBITED,
     "uncategorized": DeductionDivision.PROHIBITED,
 }
 
@@ -50,7 +58,9 @@ CATEGORY_NEXUS = {
         "Tools and equipment used in day-to-day work generating assessable income (ITAA97 s8-1)"
     ),
     "software": ("Software essential for income-producing work (ITAA97 s8-1, Division 8)"),
-    "home_office": ("Work-from-home expenses: $0.45/hour under Division 63 simplified method"),
+    "furniture": ("Office furniture for work-from-home setup (ITAA97 s8-1, Division 63)"),
+    "office_supplies": ("Office supplies and consumables for work (ITAA97 s8-1)"),
+    "home_services": ("Home services and maintenance (ITAA97 s8-1, proportional deduction)"),
     "vehicle": ("Work-related vehicle expenses: $0.67/km under ITAA97 s8-1 simplified method"),
     "clothing": (
         "Personal clothing, never deductible under ITAA97 s8-1 (prevents double-counting)"
@@ -66,8 +76,12 @@ CATEGORY_NEXUS = {
     "self_education": (
         "Self-education in field of income production (ITAA97 s8-1, excludes degree pursuit)"
     ),
-    "travel": ("Work-related travel expenses (ITAA97 s8-1, subject to nexus)"),
-    "accom": ("Accommodation for work-related travel (ITAA97 s8-1, subject to nexus)"),
+    "travel": ("Personal travel and tourism, not deductible"),
+    "flights": ("Work-related flights and airfare (ITAA97 s8-1, subject to nexus)"),
+    "accommodation": ("Accommodation for work-related travel (ITAA97 s8-1, subject to nexus)"),
+    "travel_agencies": (
+        "Travel agency fees for work-related travel (ITAA97 s8-1, subject to nexus)"
+    ),
     "meals": ("Meal expenses during work-related travel (ITAA97 s8-1, 50% deductible)"),
     "donations": ("Tax-deductible donations to endorsed organizations (ITAA97 Division 30)"),
     "gifts": ("Personal gifts, generally not deductible (no nexus to income production)"),
@@ -80,9 +94,15 @@ CATEGORY_NEXUS = {
     "bars": ("Personal bar/beverage purchases, not deductible"),
     "liquor": ("Personal alcohol purchases, not deductible"),
     "nicotine": ("Personal tobacco/nicotine, not deductible"),
+    "property_rates": ("Property council rates and water (ITAA97 s8-1, proportional deduction)"),
+    "property_investment": (
+        "Property investment and management (ITAA97 s8-1, proportional deduction)"
+    ),
+    "craft": ("Personal craft and hobby supplies, not deductible"),
 }
 
 RATE_BASIS_MAP = {
+    "furniture": "ATO_DIVISION_63_ACTUAL_COST",
     "home_office": "ATO_DIVISION_63_ACTUAL_COST",
     "vehicle": "ATO_ITAA97_S8_1_ACTUAL_COST",
     "donations": "ATO_DIVISION_30",

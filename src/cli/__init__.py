@@ -2,14 +2,14 @@ import argparse
 
 from src.cli.commands import (
     assets,
+    coverage,
     gains,
     household,
     lookalike,
     metrics,
-    mine,
     mining,
     optimize,
-    property_,
+    property,
     rules,
     run,
     sample,
@@ -25,12 +25,12 @@ def main():
 
     run.register(subparsers)
     optimize.register(subparsers)
-    property_.register(subparsers)
+    property.register(subparsers)
     gains.register(subparsers)
     assets.register(subparsers)
     metrics.register(subparsers)
-    mine.register(subparsers)
-    mining.register(subparsers)  # coverage command
+    coverage.register(subparsers)
+    mining.register(subparsers)
     sample.register(subparsers)
     lookalike.register(subparsers)
     household.register(subparsers)

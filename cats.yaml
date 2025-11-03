@@ -1,9 +1,14 @@
 level1:
-  home_office:
+  home:
     level2:
       home/utilities: [electricity, gas, internet, utilities]
-      home/furnishing: [home_stores, home_office, pet]
+      home/furnishing: [furniture, home_stores, pet]
       home/rent: [rent]
+      home/services: [home_services]
+  office:
+    level2:
+      office/supplies: [office_supplies]
+      office/services: [airtasker]
   vehicle:
     level2:
       vehicle/fuel: [fuel]
@@ -21,9 +26,16 @@ level1:
   income:
     level2:
       income: [income]
+  travel:
+    level2:
+      travel/flights: [flights]
+      travel/accommodation: [accommodation]
+      travel/agencies: [travel_agencies]
   transfers:
     level2:
-      transfers: [transfers, trust, bnpl, debts, refunds, scam, fees, taxation, investment, beems, craft, property]
+      transfers: [transfers, trust, bnpl, debts, refunds, scam, fees, taxation, investment, beems]
+      property/rates: [property_rates]
+      property/investment: [property_investment]
 
 non_deductible:
   level2:
@@ -31,7 +43,7 @@ non_deductible:
     personal/clothing: [clothing, accessories, electronics, mobile_accessories, online_retail]
     personal/wellness: [cosmetics, nicotine, self_care]
     personal/gifts: [gifts]
-    entertainment: [entertainment, events, hobbies, sports, accom, travel]
+    entertainment: [entertainment, events, hobbies, sports, craft]
     subscriptions: [software, subscriptions, books, mobile]
     work/business: [business, work_accessories, self_education]
 

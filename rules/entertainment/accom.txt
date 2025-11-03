@@ -1,5 +1,0 @@
-agoda
-airbnb
-booking
-booking.com
-hotel

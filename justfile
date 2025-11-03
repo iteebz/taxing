@@ -44,8 +44,5 @@ fix:
 type:
     @echo "Note: Python type checking can be added with pyright or mypy"
 
-repomix:
-    repomix
-
 commits:
     @git --no-pager log --pretty=format:"%h | %ar | %s"

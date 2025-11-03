@@ -1,14 +1,11 @@
 bpay 197954
-bpay 34280 8001685 rates
 bpay 96503
 canterbury bankstown
 century21
-evergy
 homezone rea
 jen and tim pty
 linfield propert
 lrl pty ltd rhodes
 payment to chan tyson zheng tong
 payment to quach janice
-sydneywater
 washington brown

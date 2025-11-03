@@ -6,9 +6,7 @@ from typing import Literal
 
 import yaml
 
-Level1 = Literal[
-    "home_office", "vehicle", "meals", "health", "donations", "income", "transfers"
-]
+Level1 = Literal["home_office", "vehicle", "meals", "health", "donations", "income", "transfers"]
 
 
 @dataclass(frozen=True)

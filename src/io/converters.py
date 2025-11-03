@@ -21,7 +21,11 @@ def _sanitize_desc(desc: str) -> str:
 
 
 def _std_txn(
-    row: dict, bank: str, date_key: str = "date_raw", dayfirst: bool = True, account: str | None = None
+    row: dict,
+    bank: str,
+    date_key: str = "date_raw",
+    dayfirst: bool = True,
+    account: str | None = None,
 ) -> Transaction:
     """Convert standard bank CSV row to Transaction."""
     return Transaction(
@@ -187,12 +191,24 @@ BANK_REGISTRY = {
     "wise": {
         "converter": wise,
         "fields": [
-            "id", "status", "direction", "created_on", "finished_on",
-            "source_fee_amount", "source_fee_currency",
-            "target_fee_amount", "target_fee_currency", "source_name",
-            "source_amount_after_fees", "source_currency", "target_name",
-            "target_amount_after_fees", "target_currency", "exchange_rate",
-            "reference", "batch",
+            "id",
+            "status",
+            "direction",
+            "created_on",
+            "finished_on",
+            "source_fee_amount",
+            "source_fee_currency",
+            "target_fee_amount",
+            "target_fee_currency",
+            "source_name",
+            "source_amount_after_fees",
+            "source_currency",
+            "target_name",
+            "target_amount_after_fees",
+            "target_currency",
+            "exchange_rate",
+            "reference",
+            "batch",
         ],
         "skiprows": 1,
         "requires_beem_user": False,
