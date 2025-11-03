@@ -57,8 +57,21 @@ def _lot_sort_priority(lot: Trade, sell_price: Decimal, sell_date: date) -> tupl
     return (not is_loss, not is_discounted, lot.date)
 
 
-def process_trades(trades: list[Trade]) -> list[Gain]:
-    """Process trades using FIFO with loss harvesting + CGT discount prioritization."""
+def process_trades(trades: list[Trade], individual: str | None = None) -> list[Gain]:
+    """Process trades using FIFO with loss harvesting + CGT discount prioritization.
+
+    Args:
+        trades: List of Trade objects (all from same individual if individual param provided)
+        individual: Individual identifier. If None, inferred from trades[0].individual
+
+    Returns:
+        List of Gain objects with individual field set
+    """
+    if not trades:
+        return []
+
+    if individual is None:
+        individual = trades[0].individual
 
     results = []
     buffers: dict[str, list[Trade]] = {}
@@ -81,8 +94,6 @@ def process_trades(trades: list[Trade]) -> list[Gain]:
                 hold_days = (trade.date - sell_lot.date).days
                 is_discounted = is_cgt_discount_eligible(hold_days)
 
-                trade.units * (trade.price - sell_lot.price)
-
                 if units_to_sell >= sell_lot.units:
                     units_matched = sell_lot.units
                     profit = units_matched * (trade.price - sell_lot.price)
@@ -92,6 +103,7 @@ def process_trades(trades: list[Trade]) -> list[Gain]:
 
                     results.append(
                         Gain(
+                            individual=individual,
                             fy=fy,
                             raw_profit=profit,
                             taxable_gain=gain,
@@ -103,13 +115,15 @@ def process_trades(trades: list[Trade]) -> list[Gain]:
                 else:
                     units_matched = units_to_sell
                     profit = units_matched * (trade.price - sell_lot.price)
-                    partial_fee = (units_matched / sell_lot.units) * sell_lot.fee
-                    profit -= partial_fee
-                    profit -= units_matched * sell_fee_per_unit
+                    partial_buy_fee = (units_matched / sell_lot.units) * sell_lot.fee
+                    partial_sell_fee = (units_matched / trade.units) * trade.fee
+                    profit -= partial_buy_fee
+                    profit -= partial_sell_fee
                     gain = profit / 2 if is_discounted else profit
 
                     results.append(
                         Gain(
+                            individual=individual,
                             fy=fy,
                             raw_profit=profit,
                             taxable_gain=gain,
@@ -119,7 +133,7 @@ def process_trades(trades: list[Trade]) -> list[Gain]:
                     updated_lot = replace(
                         sell_lot,
                         units=sell_lot.units - units_to_sell,
-                        fee=sell_lot.fee - partial_fee,
+                        fee=sell_lot.fee - partial_buy_fee,
                     )
                     buff[buff.index(sell_lot)] = updated_lot
                     units_to_sell = Decimal(0)

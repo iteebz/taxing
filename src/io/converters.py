@@ -5,6 +5,7 @@ import pandas as pd
 
 from src.core.models import Trade, Transaction
 from src.lib.currency import to_aud
+from src.lib.sanitize import normalize_spaces
 
 
 def _parse_date(date_str: str, dayfirst: bool = True) -> date:
@@ -16,8 +17,9 @@ def _parse_date(date_str: str, dayfirst: bool = True) -> date:
 
 
 def _sanitize_desc(desc: str) -> str:
-    """Normalize description: lowercase, strip punctuation."""
-    return desc.lower().strip().replace('"', "").replace("-", " ").replace("'", "")
+    """Normalize description: lowercase, strip punctuation, normalize spaces."""
+    text = desc.lower().strip().replace('"', "").replace("-", " ").replace("'", "")
+    return normalize_spaces(text)
 
 
 def _std_txn(
@@ -82,14 +84,19 @@ def wise(row: dict, account: str | None = None) -> Transaction:
     else:
         target_fee_str = row.get("target_fee_amount", "0") or "0"
         try:
-            target_fee = Decimal(str(target_fee_str))
+            target_fee = Decimal(str(target_fee_str)) if target_fee_str and str(target_fee_str).lower() != 'nan' else Decimal("0")
         except (ValueError, TypeError):
             target_fee = Decimal("0")
+        target_amt_str = row.get("target_amount_after_fees", "0") or "0"
         try:
-            target_amt = Decimal(str(row["target_amount_after_fees"]))
+            target_amt = Decimal(str(target_amt_str)) if target_amt_str and str(target_amt_str).lower() != 'nan' else Decimal("0")
         except (ValueError, TypeError):
             target_amt = Decimal("0")
-        exchange_rate = Decimal(str(row.get("exchange_rate", "1")))
+        exchange_rate_str = row.get("exchange_rate", "1") or "1"
+        try:
+            exchange_rate = Decimal(str(exchange_rate_str)) if exchange_rate_str and str(exchange_rate_str).lower() != 'nan' else Decimal("1")
+        except (ValueError, TypeError):
+            exchange_rate = Decimal("1")
 
         if direction == "in":
             total_amt = target_amt + target_fee

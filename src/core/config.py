@@ -89,12 +89,14 @@ def load_config(fy: int, config_path: Path | None = None) -> FYConfig:
         raise ValueError("Config file is empty or malformed.")
 
     resolved_fy = _resolve_year(fy)
-    available_fys = {int(k.split("_")[1]) for k in full_config}
+    available_fys = {int(k.split("_")[1]) for k in full_config if k.startswith("fy_")}
     target_fy_key = f"fy_{resolved_fy}"
 
     if target_fy_key not in full_config:
-        closest_fy = min(available_fys, key=lambda y: abs(y - resolved_fy))
-        target_fy_key = f"fy_{closest_fy}"
+        raise ValueError(
+            f"FY{resolved_fy} configuration not found in config.yaml. "
+            f"Available: {sorted(available_fys)}"
+        )
 
     fy_data = full_config[target_fy_key]
 
@@ -121,10 +123,8 @@ def load_config(fy: int, config_path: Path | None = None) -> FYConfig:
         surcharge=_parse_surcharge(medicare_raw.get("surcharge")),
     )
 
-    actual_cost = fy_data.get("actual_cost_categories", {})
-    fixed_rates = {
-        key: Decimal(str(value)) for key, value in fy_data.get("fixed_rates", {}).items()
-    }
+    actual_cost = full_config.get("deductions", {})
+    fixed_rates = {}
 
     return FYConfig(
         brackets=brackets,
@@ -132,3 +132,25 @@ def load_config(fy: int, config_path: Path | None = None) -> FYConfig:
         actual_cost_categories=actual_cost,
         fixed_rates=fixed_rates,
     )
+
+
+def get_deduction_groups(config_path: Path | None = None) -> dict[str, list[str]]:
+    """Load deduction groupings from config."""
+    if config_path is None:
+        config_path = Path(__file__).parent.parent.parent / "config.yaml"
+
+    with open(config_path) as f:
+        full_config = yaml.safe_load(f)
+
+    return full_config.get("deductions", {})
+
+
+def get_rate_basis_map(config_path: Path | None = None) -> dict[str, str]:
+    """Load rate basis mapping from config."""
+    if config_path is None:
+        config_path = Path(__file__).parent.parent.parent / "config.yaml"
+
+    with open(config_path) as f:
+        full_config = yaml.safe_load(f)
+
+    return full_config.get("rate_basis", {})

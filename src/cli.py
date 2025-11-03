@@ -8,6 +8,8 @@ from src.core.household import _tax_liability, optimize_household
 from src.core.metrics import coverage as calc_coverage
 from src.core.mining import MiningConfig, mine_suggestions, score_suggestions
 from src.core.models import Individual, Transaction
+from src.core.rules import load_rules
+from src.core.classify import classify
 from src.io.persist import dicts_from_csv, from_csv
 from src.lib.search import load_cache, search_description
 from src.pipeline import run as run_pipeline
@@ -20,23 +22,26 @@ app = typer.Typer(
 
 
 def _load_txns_all_years(base_dir: Path, person: str | None = None) -> list[Transaction]:
-    """Load classified transactions from ALL FY directories."""
-    data_dir = base_dir / "data"
-    txns = []
-    if data_dir.exists():
-        fy_dirs = sorted([d for d in data_dir.iterdir() if d.is_dir() and d.name.startswith("fy")])
-        for fy_dir in fy_dirs:
-            if person:
-                person_dirs = [fy_dir / person]
-            else:
-                person_dirs = [d for d in fy_dir.iterdir() if d.is_dir() and (d / "data").exists()]
-
-            for person_dir in person_dirs:
-                csv_path = person_dir / "data" / "transactions.csv"
-                if csv_path.exists():
-                    txns.extend(from_csv(csv_path, Transaction))
-
-    return txns
+    """Load and re-classify transactions from ALL FY directories."""
+    from dataclasses import replace
+    from src.io import ingest_all_years
+    from src.core.dedupe import dedupe
+    from src.core.transfers import is_transfer
+    
+    txns = ingest_all_years(base_dir, persons=[person] if person else None)
+    txns = dedupe(txns)
+    rules = load_rules(base_dir)
+    
+    txns_classified = [
+        replace(
+            t,
+            cats=(cat := classify(t.description, rules)),
+            is_transfer=is_transfer(replace(t, cats=cat)),
+        )
+        for t in txns
+    ]
+    
+    return txns_classified
 
 
 def _load_employment_income(base_dir: Path, fy: int) -> dict[str, Decimal]:
@@ -71,17 +76,16 @@ def _load_deductions(base_dir: Path, fy: int, person: str) -> Decimal:
 
 @app.command(name="run")
 def cmd_run(
-    fy: int = typer.Option(..., "--fy", help="Fiscal year (e.g., 25)"),
     base_dir: str = typer.Option(".", "--base-dir", help="Base directory"),
 ):
-    """Run full tax pipeline (ingest → classify → deduce → trades → persist)."""
+    """Run full tax pipeline (ingest all years → classify → deduce → trades → persist)."""
     base_dir = Path(base_dir or ".")
-    result = run_pipeline(base_dir, fy)
+    result = run_pipeline(base_dir)
 
-    print(f"\nPipeline Results - FY{fy}")
+    print("\nPipeline Results (All Years)")
     print("-" * 70)
 
-    for person in sorted([k for k in result if k != "_transfers"]):
+    for person in sorted(result.keys()):
         data = result[person]
         print(
             f"{person:<20} txns={data['txn_count']:<5} "
@@ -89,10 +93,6 @@ def cmd_run(
             f"deductions={len(data['deductions']):<5} "
             f"gains={data['gains_count']}"
         )
-
-    if "_transfers" in result:
-        transfers = result["_transfers"]
-        print(f"\nTransfers reconciled: {len(transfers)} total")
 
     print("-" * 70)
 
@@ -143,15 +143,11 @@ def cmd_coverage(
 def cmd_mine(
     person: str = typer.Option(None, "--person", help="Person name (all if omitted)"),
     search: bool = typer.Option(False, "--search", help="Enable search for categorization hints"),
-    show_unlabeled: bool = typer.Option(
-        False, "--show-unlabeled", help="Show uncategorized txns + search results"
-    ),
-    threshold: int = typer.Option(10, "--threshold", help="Minimum evidence threshold"),
-    dominance: float = typer.Option(0.6, "--dominance", help="Dominance threshold 0.0-1.0"),
-    limit: int = typer.Option(20, "--limit", help="Max suggestions to show"),
+    batch_start: int = typer.Option(0, "--batch-start", help="Start index for batch processing"),
+    batch_size: int = typer.Option(20, "--batch-size", help="Number of txns per batch"),
     base_dir: str = typer.Option(".", "--base-dir", help="Base directory"),
 ):
-    """Mine rule suggestions from all classified transactions across all fiscal years."""
+    """Review uncategorized transactions (sorted by spend) with optional search."""
     base_dir = Path(base_dir or ".")
     txns = _load_txns_all_years(base_dir, person)
 
@@ -159,54 +155,56 @@ def cmd_mine(
         print("\nNo transactions found")
         return
 
-    labeled = [t for t in txns if t.cats]
     unlabeled = [t for t in txns if not t.cats]
 
+    if not unlabeled:
+        print("All transactions categorized!")
+        return
+
     cache_path = base_dir / ".search_cache.json" if search else None
-
-    if show_unlabeled:
-        print("\nUncategorized Transactions")
-        print("-" * 100)
-        cache = load_cache(cache_path) if search else {}
-        for i, txn in enumerate(unlabeled[:limit], 1):
-            print(f"\n{i}. {txn.description}")
-            print(f"   Date: {txn.date} | Amount: {txn.amount}")
-            if search:
-                results = search_description(txn.description, cache, cache_path, max_results=2)
-                for j, result in enumerate(results, 1):
+    cache = load_cache(cache_path) if search else {}
+    
+    unlabeled_sorted = sorted(unlabeled, key=lambda t: float(abs(t.amount)) if t.amount else 0, reverse=True)
+    batch = unlabeled_sorted[batch_start : batch_start + batch_size]
+    
+    for i, txn in enumerate(batch, batch_start + 1):
+        amt_str = f"${txn.amount:>10.2f}" if txn.amount is not None else "$      None"
+        print(f"{i}. {txn.description} | {txn.date} | {amt_str}")
+        
+        if search:
+            results = search_description(txn.description, cache, cache_path, max_results=2)
+            if results:
+                for result in results:
                     if isinstance(result, dict):
-                        print(f"   {j}. {result.get('title', '')}")
-                        print(f"      {result.get('body', '')[:80]}")
-                    else:
-                        print(f"   {j}. {str(result)[:80]}")
-        return
+                        title = result.get('title', '')[:80]
+                        print(f"   → {title}")
+    
+    if batch_start + batch_size < len(unlabeled_sorted):
+        print(f"\nNext: --batch-start {batch_start + batch_size}")
 
-    if not labeled or not unlabeled:
-        print("Need both labeled and unlabeled transactions to mine rules")
-        return
 
-    print("\nMining Rules (All Years)")
-    print("-" * 70)
-    print(f"Labeled: {len(labeled)}")
-    print(f"Unlabeled: {len(unlabeled)}")
-
-    suggestions = mine_suggestions(txns, use_search=search, cache_path=cache_path)
-
-    if not suggestions:
-        print("No suggestions found")
-        return
-
-    cfg = MiningConfig(threshold=threshold, dominance=dominance)
-    scored = score_suggestions(suggestions, cfg)
-
-    if not scored:
-        print(f"No suggestions passed threshold (threshold={threshold}, dominance={dominance:.1f})")
-        return
-
-    print(f"\nTop {len(scored[:limit])} Rules (threshold={threshold}, dominance={dominance:.1f})")
-    print("-" * 70)
-    for s in scored[:limit]:
-        print(f"{s.keyword:<20} → {s.category:<18} | evidence={s.evidence:>3} | {s.source}")
+@app.command(name="classify")
+def cmd_classify(
+    description: str = typer.Argument(..., help="Transaction description to classify"),
+    base_dir: str = typer.Option(".", "--base-dir", help="Base directory"),
+):
+    """Classify a single transaction description."""
+    base_dir = Path(base_dir or ".")
+    rules = load_rules(base_dir)
+    
+    result = classify(description, rules)
+    
+    print(f"\nDescription: {description}")
+    print(f"Matches: {sorted(result) if result else 'None'}")
+    
+    if not result:
+        print("\nDebug info:")
+        desc_upper = description.strip().upper()
+        print(f"  Normalized: {desc_upper}")
+        for category, keywords in sorted(rules.items()):
+            matches = [kw for kw in keywords if kw in desc_upper]
+            if matches:
+                print(f"  {category}: {matches}")
 
 
 @app.command(name="optimize")

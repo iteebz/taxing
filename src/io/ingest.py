@@ -224,6 +224,43 @@ def ingest_year(
     return ingest_dir(fy_dir, persons=sorted(persons))
 
 
+def ingest_all_years(
+    base_dir: str | Path,
+    persons: list[str] | None = None,
+) -> list[Transaction]:
+    """
+    Load all transactions across all fiscal years.
+
+    Structure: {base_dir}/data/fy*/person/raw/*.csv
+
+    Args:
+        base_dir: Root directory
+        persons: List of persons to load (if None, auto-detect from all years)
+
+    Returns:
+        Combined list of all transactions from all years
+    """
+    base = Path(base_dir)
+    data_dir = base / "data"
+    
+    if not data_dir.exists():
+        return []
+    
+    all_txns = []
+    for fy_dir in sorted(data_dir.glob("fy*")):
+        if not fy_dir.is_dir():
+            continue
+        try:
+            year = int(fy_dir.name[2:])
+        except ValueError:
+            continue
+        
+        txns = ingest_year(base, year, persons=persons)
+        all_txns.extend(txns)
+    
+    return all_txns
+
+
 def ingest_trades_year(
     base_dir: str | Path, year: int, persons: list[str] | None = None
 ) -> list[Trade]:
@@ -257,4 +294,41 @@ def ingest_trades_year(
             all_trades.extend(trades)
 
     all_trades.sort(key=lambda t: (t.code, t.date))
+    return all_trades
+
+
+def ingest_all_trades(
+    base_dir: str | Path,
+    persons: list[str] | None = None,
+) -> list[Trade]:
+    """
+    Load all trades across all fiscal years.
+
+    Structure: {base_dir}/data/fy*/person/trades.csv
+
+    Args:
+        base_dir: Root directory
+        persons: List of persons to load (if None, auto-detect)
+
+    Returns:
+        Combined list of all trades from all years
+    """
+    base = Path(base_dir)
+    data_dir = base / "data"
+    
+    if not data_dir.exists():
+        return []
+    
+    all_trades = []
+    for fy_dir in sorted(data_dir.glob("fy*")):
+        if not fy_dir.is_dir():
+            continue
+        try:
+            year = int(fy_dir.name[2:])
+        except ValueError:
+            continue
+        
+        trades = ingest_trades_year(base, year, persons=persons)
+        all_trades.extend(trades)
+    
     return all_trades

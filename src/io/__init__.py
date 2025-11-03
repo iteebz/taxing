@@ -1,5 +1,6 @@
-from src.io.config import Config
 from src.io.ingest import (
+    ingest_all_trades,
+    ingest_all_years,
     ingest_dir,
     ingest_trades,
     ingest_trades_dir,
@@ -14,7 +15,8 @@ from src.io.persist import (
 )
 
 __all__ = [
-    "Config",
+    "ingest_all_trades",
+    "ingest_all_years",
     "ingest_dir",
     "ingest_trades",
     "ingest_trades_dir",

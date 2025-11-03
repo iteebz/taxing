@@ -1,3 +1,31 @@
+# Tax configuration for Australia FY2023-FY2025
+# Categories come from cats.yaml
+# This file: deductions, tax brackets, Medicare config
+
+# Deduction groupings: maps deduction to raw transaction categories
+# Groups categories that roll up to a single deduction
+# Apply weights from weights.csv + business percentage to get final deduction
+deductions:
+  home_office:
+    - electricity
+    - gas
+    - internet
+    - rent
+  vehicle:
+    - fuel
+    - insurance
+    - registration
+    - maintenance
+
+# Rate basis mapping for audit documentation
+rate_basis:
+  furniture: "ATO_DIVISION_63_ACTUAL_COST"
+  home_office: "ATO_DIVISION_63_ACTUAL_COST"
+  vehicle: "ATO_ITAA97_S8_1_ACTUAL_COST"
+  donations: "ATO_DIVISION_30"
+  meals: "ATO_50PCT_RULE"
+
+# FY-specific tax configuration
 fy_2023:
   brackets:
     - rate: 0.19
@@ -35,20 +63,6 @@ fy_2023:
           rate: 0.0125
         - threshold: 288000
           rate: 0.015
-  actual_cost_categories:
-    home_office:
-      - electricity
-      - gas
-      - internet
-      - rent
-    vehicle:
-      - fuel
-      - insurance
-      - registration
-      - maintenance
-  fixed_rates:
-    meals: 0.5
-    donations: 1.0
 
 fy_2024:
   brackets:
@@ -87,20 +101,6 @@ fy_2024:
           rate: 0.0125
         - threshold: 288000
           rate: 0.015
-  actual_cost_categories:
-    home_office:
-      - electricity
-      - gas
-      - internet
-      - rent
-    vehicle:
-      - fuel
-      - insurance
-      - registration
-      - maintenance
-  fixed_rates:
-    meals: 0.5
-    donations: 1.0
 
 fy_2025:
   brackets:
@@ -139,17 +139,3 @@ fy_2025:
           rate: 0.0125
         - threshold: 288000
           rate: 0.015
-  actual_cost_categories:
-    home_office:
-      - electricity
-      - gas
-      - internet
-      - rent
-    vehicle:
-      - fuel
-      - insurance
-      - registration
-      - maintenance
-  fixed_rates:
-    meals: 0.5
-    donations: 1.0

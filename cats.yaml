@@ -1,52 +1,246 @@
-level1:
-  home:
-    level2:
-      home/utilities: [electricity, gas, internet, utilities]
-      home/furnishing: [furniture, home_stores, pet]
-      home/rent: [rent]
-      home/services: [home_services]
-  office:
-    level2:
-      office/supplies: [office_supplies]
-      office/services: [airtasker]
-  vehicle:
-    level2:
-      vehicle/fuel: [fuel]
-      vehicle/maintenance: [car, taxi, transport, registration, maintenance, parking]
-      vehicle/insurance: [insurance]
-  meals:
-    level2:
-      meals: [dining, bars, food_delivery, liquor]
-  health:
-    level2:
-      health/medical: [medical, therapy, pharmacy]
-  donations:
-    level2:
-      donations: [donations]
-  income:
-    level2:
-      income: [income]
+# Comprehensive category registry for tax pipeline
+# Single source of truth for all ~62 transaction categories
+# Structure: category -> {l1, l2}
+# Deductibility is handled by weights.csv (weight=0.0 means not deductible)
+
+categories:
+  # Home/Living
+  electricity:
+    l1: home
+    l2: utilities
+  gas:
+    l1: home
+    l2: utilities
+  utilities:
+    l1: home
+    l2: utilities
+  internet:
+    l1: home
+    l2: utilities
+  water:
+    l1: home
+    l2: utilities
+  rent:
+    l1: home
+    l2: housing
+  furniture:
+    l1: home
+    l2: furnishings
+  home_stores:
+    l1: home
+    l2: furnishings
+  home_office:
+    l1: home
+    l2: office
+  home_services:
+    l1: home
+    l2: maintenance
+
+  # Vehicle
+  fuel:
+    l1: vehicle
+    l2: fuel
+  maintenance:
+    l1: vehicle
+    l2: maintenance
+  registration:
+    l1: vehicle
+    l2: registration
+  insurance:
+    l1: vehicle
+    l2: insurance
+  parking:
+    l1: vehicle
+    l2: parking
+  taxi:
+    l1: vehicle
+    l2: transport
+  transport:
+    l1: vehicle
+    l2: transport
+
+  # Work/Business
+  work_accessories:
+    l1: work
+    l2: accessories
+  software:
+    l1: work
+    l2: software
+  office_supplies:
+    l1: work
+    l2: supplies
+  electronics:
+    l1: work
+    l2: equipment
+  subscriptions:
+    l1: work
+    l2: software
+  books:
+    l1: work
+    l2: training
+  professional_fees:
+    l1: work
+    l2: fees
+  training:
+    l1: work
+    l2: training
+  self_education:
+    l1: work
+    l2: training
+  business:
+    l1: work
+    l2: business
+
+  # Travel
+  flights:
+    l1: travel
+    l2: flights
+  accommodation:
+    l1: travel
+    l2: accommodation
+  travel_agencies:
+    l1: travel
+    l2: agencies
   travel:
-    level2:
-      travel/flights: [flights]
-      travel/accommodation: [accommodation]
-      travel/agencies: [travel_agencies]
+    l1: travel
+    l2: travel
+
+  # Meals/Entertainment
+  dining:
+    l1: meals
+    l2: dining
+  food_delivery:
+    l1: meals
+    l2: delivery
+  bars:
+    l1: meals
+    l2: beverages
+  liquor:
+    l1: meals
+    l2: beverages
+  entertainment:
+    l1: entertainment
+    l2: entertainment
+  events:
+    l1: entertainment
+    l2: events
+  hobbies:
+    l1: entertainment
+    l2: hobbies
+  sports:
+    l1: entertainment
+    l2: sports
+
+  # Food/Groceries
+  groceries:
+    l1: personal
+    l2: food
+  supermarket:
+    l1: personal
+    l2: food
+  convenience:
+    l1: personal
+    l2: food
+
+  # Shopping/Retail
+  clothing:
+    l1: personal
+    l2: clothing
+  accessories:
+    l1: personal
+    l2: clothing
+  mobile_accessories:
+    l1: personal
+    l2: electronics
+  online_retail:
+    l1: personal
+    l2: shopping
+  gifts:
+    l1: personal
+    l2: shopping
+
+  # Health/Wellness
+  medical:
+    l1: personal
+    l2: health
+  pharmacy:
+    l1: personal
+    l2: health
+  therapy:
+    l1: personal
+    l2: health
+  pet:
+    l1: personal
+    l2: pet
+  self_care:
+    l1: personal
+    l2: wellness
+  cosmetics:
+    l1: personal
+    l2: wellness
+  nicotine:
+    l1: personal
+    l2: wellness
+
+  # Mobile/Communications
+  mobile:
+    l1: work
+    l2: communications
+
+  # Investment/Finance
+  investment:
+    l1: finance
+    l2: investment
+  property_investment:
+    l1: property
+    l2: investment
+  property_rates:
+    l1: property
+    l2: rates
+
+  # Donations
+  donations:
+    l1: finance
+    l2: donations
+
+  # Administrative/Transfers
   transfers:
-    level2:
-      transfers: [transfers, trust, bnpl, debts, refunds, scam, fees, taxation, investment, beems]
-      property/rates: [property_rates]
-      property/investment: [property_investment]
+    l1: transfers
+    l2: transfers
+  trust:
+    l1: transfers
+    l2: trust
+  beems:
+    l1: transfers
+    l2: transfers
+  bnpl:
+    l1: transfers
+    l2: financing
+  debts:
+    l1: transfers
+    l2: financing
+  fees:
+    l1: transfers
+    l2: fees
+  refunds:
+    l1: transfers
+    l2: refunds
+  taxation:
+    l1: transfers
+    l2: taxation
+  scam:
+    l1: transfers
+    l2: fraud
 
-non_deductible:
-  level2:
-    groceries: [groceries, supermarket, convenience]
-    personal/clothing: [clothing, accessories, electronics, mobile_accessories, online_retail]
-    personal/wellness: [cosmetics, nicotine, self_care]
-    personal/gifts: [gifts]
-    entertainment: [entertainment, events, hobbies, sports, craft]
-    subscriptions: [software, subscriptions, books, mobile]
-    work/business: [business, work_accessories, self_education]
+  # Income
+  income:
+    l1: income
+    l2: income
+  salary:
+    l1: income
+    l2: salary
 
-fixed_rates:
-  meals: 0.5
-  donations: 1.0
+  # Uncategorized
+  uncategorized:
+    l1: other
+    l2: unknown

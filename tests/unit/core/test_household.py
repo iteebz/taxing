@@ -35,11 +35,13 @@ def test_taxable_with_deduc():
 def test_taxable_gains_loss():
     gains = [
         Gain(
+            individual="you",
             fy=25,
             raw_profit=Decimal("1000"),
             taxable_gain=Decimal("500"),
         ),
         Gain(
+            individual="you",
             fy=25,
             raw_profit=Decimal("-100"),
             taxable_gain=Decimal("-100"),
@@ -107,6 +109,7 @@ def test_opt_deduc_lower_bracket():
 def test_opt_preserve_gains_loss():
     gains = [
         Gain(
+            individual="you",
             fy=25,
             raw_profit=Decimal("1000"),
             taxable_gain=Decimal("500"),

@@ -51,6 +51,7 @@ class Trade:
 
 @dataclass(frozen=True)
 class Gain:
+    individual: str
     fy: int
     raw_profit: Decimal
     taxable_gain: Decimal
@@ -58,11 +59,12 @@ class Gain:
 
 @dataclass(frozen=True)
 class Deduction:
+    individual: str
+    fy: int
     category: str
     amount: Decimal
     rate: Decimal
     rate_basis: str
-    fy: int
 
 
 @dataclass(frozen=True)

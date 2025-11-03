@@ -46,11 +46,12 @@ def test_zero_income_deduc():
     deductions = {
         "tyson": [
             Deduction(
+                individual="tyson",
+                fy=25,
                 category="software",
                 amount=Decimal("5000"),
                 rate=Decimal("1.0"),
                 rate_basis="test",
-                fy=25,
             )
         ]
     }
@@ -70,11 +71,12 @@ def test_high_deduc_rate():
     deductions = {
         "tyson": [
             Deduction(
+                individual="tyson",
+                fy=25,
                 category="software",
                 amount=Decimal("60000"),
                 rate=Decimal("1.0"),
                 rate_basis="test",
-                fy=25,
             )
         ]
     }
@@ -94,11 +96,12 @@ def test_extreme_deduc_rate():
     deductions = {
         "tyson": [
             Deduction(
+                individual="tyson",
+                fy=25,
                 category="software",
                 amount=Decimal("80000"),
                 rate=Decimal("1.0"),
                 rate_basis="test",
-                fy=25,
             )
         ]
     }
@@ -118,11 +121,12 @@ def test_normal_deduc_rate():
     deductions = {
         "tyson": [
             Deduction(
+                individual="tyson",
+                fy=25,
                 category="software",
                 amount=Decimal("10000"),
                 rate=Decimal("1.0"),
                 rate_basis="test",
-                fy=25,
             )
         ]
     }
@@ -138,11 +142,12 @@ def test_generate_audit_statement_empty():
 def test_audit_single_cat():
     deductions = [
         Deduction(
+            individual="tyson",
+            fy=25,
             category="software",
             amount=Decimal("5000"),
             rate=Decimal("1.0"),
             rate_basis="ATO_DIVISION_8",
-            fy=25,
         )
     ]
     statement = generate_audit_statement(deductions, 25)
@@ -156,18 +161,20 @@ def test_audit_single_cat():
 def test_audit_multi_cat():
     deductions = [
         Deduction(
+            individual="tyson",
+            fy=25,
             category="software",
             amount=Decimal("5000"),
             rate=Decimal("1.0"),
             rate_basis="ATO_DIVISION_8",
-            fy=25,
         ),
         Deduction(
+            individual="tyson",
+            fy=25,
             category="home_office",
             amount=Decimal("3000"),
             rate=Decimal("0.45"),
             rate_basis="ATO_DIVISION_63_SIMPLIFIED",
-            fy=25,
         ),
     ]
     statement = generate_audit_statement(deductions, 25)
