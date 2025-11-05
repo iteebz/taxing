@@ -1,4 +1,3 @@
-from copy import deepcopy
 from dataclasses import dataclass, field
 from decimal import Decimal
 from functools import lru_cache
@@ -43,27 +42,55 @@ class MedicareConfig:
 class FYConfig:
     brackets: list[Bracket]
     medicare: MedicareConfig
-    actual_cost_categories: dict[str, list[str]] = field(default_factory=dict)
-    fixed_rates: dict[str, Decimal] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class ConfigRegistry:
+    """Single source of truth for all configuration."""
+
+    fy_configs: dict[int, FYConfig]
+    deduction_groups: dict[str, list[str]]
+    rate_basis_map: dict[str, str]
 
 
 def _resolve_year(fy: int) -> int:
     return fy if fy >= 1900 else 2000 + fy
 
 
-@lru_cache(maxsize=4)
-def _load_yaml_config_cached(config_path: Path) -> dict:
-    """Load and cache the raw YAML config file (internal cached version)."""
+def _get_default_config_path() -> Path:
+    """Get default config.yaml path."""
+    return Path(__file__).parent.parent.parent / "config.yaml"
+
+
+@lru_cache(maxsize=1)
+def _load_registry(config_path: Path) -> ConfigRegistry:
+    """Load and parse entire config registry (cached).
+
+    Returns frozen ConfigRegistry with all FY configs, deduction groups, and rate basis map.
+    Single source of truth for all configuration.
+    """
     with open(config_path) as f:
-        full_config = yaml.safe_load(f)
-    if not full_config:
+        raw = yaml.safe_load(f)
+    if not raw:
         raise ValueError(f"Config file {config_path} is empty or malformed.")
-    return full_config
 
+    # Parse all FY configs
+    fy_configs = {}
+    for key, fy_data in raw.items():
+        if not key.startswith("fy_"):
+            continue
+        fy = int(key.split("_")[1])
+        fy_configs[fy] = _parse_fy_config(key, fy_data, raw)
 
-def _load_yaml_config(config_path: Path) -> dict:
-    """Load YAML config file with caching and mutation safety."""
-    return deepcopy(_load_yaml_config_cached(config_path))
+    # Extract deduction groups and rate basis map
+    deduction_groups = raw.get("deductions", {})
+    rate_basis_map = raw.get("rate_basis", {})
+
+    return ConfigRegistry(
+        fy_configs=fy_configs,
+        deduction_groups=deduction_groups,
+        rate_basis_map=rate_basis_map,
+    )
 
 
 def _parse_surcharge(
@@ -94,25 +121,8 @@ def _parse_surcharge(
     )
 
 
-def load_config(fy: int, config_path: Path | None = None) -> FYConfig:
-    """Load financial year config, with fallback to closest year."""
-    if config_path is None:
-        config_path = Path(__file__).parent.parent.parent / "config.yaml"
-
-    full_config = _load_yaml_config(config_path)
-
-    resolved_fy = _resolve_year(fy)
-    available_fys = {int(k.split("_")[1]) for k in full_config if k.startswith("fy_")}
-    target_fy_key = f"fy_{resolved_fy}"
-
-    if target_fy_key not in full_config:
-        raise ValueError(
-            f"FY{resolved_fy} configuration not found in config.yaml. "
-            f"Available: {sorted(available_fys)}"
-        )
-
-    fy_data = full_config[target_fy_key]
-
+def _parse_fy_config(fy_key: str, fy_data: dict, full_config: dict) -> FYConfig:
+    """Parse a single FY config from raw YAML data."""
     brackets = [
         Bracket(
             rate=Decimal(str(bracket["rate"])),
@@ -124,7 +134,7 @@ def load_config(fy: int, config_path: Path | None = None) -> FYConfig:
 
     medicare_raw = fy_data.get("medicare")
     if not medicare_raw:
-        raise ValueError(f"Medicare configuration missing for {target_fy_key}")
+        raise ValueError(f"Medicare configuration missing for {fy_key}")
 
     medicare = MedicareConfig(
         base_rate=Decimal(str(medicare_raw["base_rate"])),
@@ -136,30 +146,39 @@ def load_config(fy: int, config_path: Path | None = None) -> FYConfig:
         surcharge=_parse_surcharge(medicare_raw.get("surcharge")),
     )
 
-    actual_cost = full_config.get("deductions", {})
-    fixed_rates = {}
+    return FYConfig(brackets=brackets, medicare=medicare)
 
-    return FYConfig(
-        brackets=brackets,
-        medicare=medicare,
-        actual_cost_categories=actual_cost,
-        fixed_rates=fixed_rates,
-    )
+
+def load_config(fy: int, config_path: Path | None = None) -> FYConfig:
+    """Load financial year config."""
+    if config_path is None:
+        config_path = _get_default_config_path()
+
+    registry = _load_registry(config_path)
+    resolved_fy = _resolve_year(fy)
+
+    if resolved_fy not in registry.fy_configs:
+        available = sorted(registry.fy_configs.keys())
+        raise ValueError(
+            f"FY{resolved_fy} configuration not found in config.yaml. " f"Available: {available}"
+        )
+
+    return registry.fy_configs[resolved_fy]
 
 
 def get_deduction_groups(config_path: Path | None = None) -> dict[str, list[str]]:
     """Load deduction groupings from config."""
     if config_path is None:
-        config_path = Path(__file__).parent.parent.parent / "config.yaml"
+        config_path = _get_default_config_path()
 
-    full_config = _load_yaml_config(config_path)
-    return full_config.get("deductions", {})
+    registry = _load_registry(config_path)
+    return registry.deduction_groups
 
 
 def get_rate_basis_map(config_path: Path | None = None) -> dict[str, str]:
     """Load rate basis mapping from config."""
     if config_path is None:
-        config_path = Path(__file__).parent.parent.parent / "config.yaml"
+        config_path = _get_default_config_path()
 
-    full_config = _load_yaml_config(config_path)
-    return full_config.get("rate_basis", {})
+    registry = _load_registry(config_path)
+    return registry.rate_basis_map

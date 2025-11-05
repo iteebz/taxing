@@ -1,4 +1,4 @@
-def classify(description: str, rules: dict[str, list[str]]) -> set[str]:
+def classify(description: str, rules: dict[str, list[str]]) -> frozenset[str]:
     """
     Classify a transaction description against rules.
 
@@ -9,7 +9,7 @@ def classify(description: str, rules: dict[str, list[str]]) -> set[str]:
         rules: Dict mapping category -> list of keywords
 
     Returns:
-        Set of matching categories (empty if no matches)
+        Frozenset of matching categories (empty if no matches)
     """
     desc_upper = description.strip().upper()
     matches = set()
@@ -20,4 +20,4 @@ def classify(description: str, rules: dict[str, list[str]]) -> set[str]:
                 matches.add(category)
                 break
 
-    return matches
+    return frozenset(matches)

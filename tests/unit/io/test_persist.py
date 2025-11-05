@@ -19,7 +19,7 @@ def test_txns_roundtrip(sample_txn, sample_txn_with_category):
         assert len(loaded) == 2
         assert loaded[0].date == sample_txn.date
         assert loaded[0].amount == sample_txn.amount
-        assert loaded[1].cats == {"groceries", "supermarkets"}
+        assert loaded[1].cats == frozenset({"groceries", "supermarkets"})
 
 
 def test_txns_csv_creates_dir():

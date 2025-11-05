@@ -82,7 +82,7 @@ def dedupe(txns: list[Transaction]) -> list[Transaction]:
                 base,
                 sources=frozenset(sources),
                 source_txn_ids=tuple(source_txn_ids),
-                cats=cats if cats else None,
+                cats=frozenset(cats) if cats else None,
             )
             result.append(merged)
 

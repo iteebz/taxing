@@ -2,6 +2,7 @@ from dataclasses import replace
 from pathlib import Path
 
 from src.core import audit, calculate_gains, classify, deduce, dedupe, load_rules, validate
+from src.core.trades import calc_fy
 from src.core.transfers import is_transfer
 from src.io import (
     ingest_all_trades,
@@ -58,9 +59,7 @@ def run(
 
         fy_groups = {}
         for txn in txns_ind:
-            year = txn.date.year
-            month = txn.date.month
-            fy = year if month < 7 else year + 1
+            fy = calc_fy(txn.date)
             if fy not in fy_groups:
                 fy_groups[fy] = []
             fy_groups[fy].append(txn)

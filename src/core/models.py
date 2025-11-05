@@ -20,7 +20,7 @@ class Transaction:
     description: str
     bank: str
     individual: str
-    cats: set[str] | None = None
+    cats: frozenset[str] | None = None
     is_transfer: bool = False
     claimant: str | None = None
     sources: frozenset[str] = None
@@ -32,6 +32,8 @@ class Transaction:
     def __post_init__(self):
         if self.sources is None:
             object.__setattr__(self, "sources", frozenset({self.bank}))
+        if self.cats is not None and isinstance(self.cats, set):
+            object.__setattr__(self, "cats", frozenset(self.cats))
         pct = _validate_pct_field("personal_pct", self.personal_pct)
         object.__setattr__(self, "personal_pct", pct)
         if not isinstance(self.confidence, float) or self.confidence < 0 or self.confidence > 1:

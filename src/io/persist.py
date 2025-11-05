@@ -18,6 +18,8 @@ def _serialize(value: object) -> str:
             return value.isoformat()
         case Decimal():
             return str(value)
+        case frozenset():
+            return ",".join(sorted(value)) if value else ""
         case set():
             return ",".join(sorted(value)) if value else ""
         case bool():
@@ -45,6 +47,13 @@ def _to_set(s: str) -> set[str]:
     if not s or s.isspace():
         return set()
     return set(s.split(","))
+
+
+def _to_frozenset(s: str) -> frozenset[str]:
+    """Decode frozenset from comma-separated string."""
+    if not s or s.isspace():
+        return frozenset()
+    return frozenset(s.split(","))
 
 
 def _to_bool(s: str) -> bool:
@@ -78,6 +87,8 @@ def _deserialize(value: str, field_type: type) -> object:
             return _to_date(value)
         case _ if field_type is Decimal:
             return _to_decimal(value)
+        case _ if field_type is frozenset or str(field_type).startswith("frozenset"):
+            return _to_frozenset(value)
         case _ if field_type is set or str(field_type).startswith("set"):
             return _to_set(value)
         case _ if field_type is bool:
