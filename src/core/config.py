@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from decimal import Decimal
+from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
@@ -49,6 +50,16 @@ def _resolve_year(fy: int) -> int:
     return fy if fy >= 1900 else 2000 + fy
 
 
+@lru_cache(maxsize=4)
+def _load_yaml_config(config_path: Path) -> dict:
+    """Load and cache the raw YAML config file."""
+    with open(config_path) as f:
+        full_config = yaml.safe_load(f)
+    if not full_config:
+        raise ValueError(f"Config file {config_path} is empty or malformed.")
+    return full_config
+
+
 def _parse_surcharge(
     surcharge_data: dict[str, object] | None,
 ) -> MedicareSurchargeConfig | None:
@@ -82,11 +93,7 @@ def load_config(fy: int, config_path: Path | None = None) -> FYConfig:
     if config_path is None:
         config_path = Path(__file__).parent.parent.parent / "config.yaml"
 
-    with open(config_path) as f:
-        full_config = yaml.safe_load(f)
-
-    if not full_config:
-        raise ValueError("Config file is empty or malformed.")
+    full_config = _load_yaml_config(config_path)
 
     resolved_fy = _resolve_year(fy)
     available_fys = {int(k.split("_")[1]) for k in full_config if k.startswith("fy_")}
@@ -139,9 +146,7 @@ def get_deduction_groups(config_path: Path | None = None) -> dict[str, list[str]
     if config_path is None:
         config_path = Path(__file__).parent.parent.parent / "config.yaml"
 
-    with open(config_path) as f:
-        full_config = yaml.safe_load(f)
-
+    full_config = _load_yaml_config(config_path)
     return full_config.get("deductions", {})
 
 
@@ -150,7 +155,5 @@ def get_rate_basis_map(config_path: Path | None = None) -> dict[str, str]:
     if config_path is None:
         config_path = Path(__file__).parent.parent.parent / "config.yaml"
 
-    with open(config_path) as f:
-        full_config = yaml.safe_load(f)
-
+    full_config = _load_yaml_config(config_path)
     return full_config.get("rate_basis", {})

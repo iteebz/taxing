@@ -28,9 +28,9 @@ def extract_recipient(description: str) -> str | None:
     """Extract recipient name from transfer description.
 
     Patterns:
-    - "transfer to janice quach" -> "janice quach"
-    - "transfer from janice quach cash" -> "janice quach"
-    - "direct credit 141000 janice quach" -> "janice quach"
+    - "transfer to alice smith" -> "alice smith"
+    - "transfer from alice smith cash" -> "alice smith"
+    - "direct credit 141000 alice smith" -> "alice smith"
     - "transfer to xx7568 commbank app" -> "xx7568"
     """
     desc_lower = description.lower()

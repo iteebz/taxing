@@ -23,14 +23,14 @@ class Liability:
 
 @dataclass(frozen=True)
 class Allocation:
-    yours: Individual
-    janice: Individual
-    your_liability: Liability
-    janice_liability: Liability
+    person1: Individual
+    person2: Individual
+    person1_liability: Liability
+    person2_liability: Liability
 
     @property
     def total(self) -> Decimal:
-        return self.your_liability.total + self.janice_liability.total
+        return self.person1_liability.total + self.person2_liability.total
 
 
 @dataclass(frozen=True)
@@ -205,49 +205,49 @@ def _tax_liability(
 
 
 def _evaluate_allocation(
-    yours: Individual,
-    janice: Individual,
-    yours_deductions: Sequence[Decimal],
-    janice_deductions: Sequence[Decimal],
+    person1: Individual,
+    person2: Individual,
+    person1_deductions: Sequence[Decimal],
+    person2_deductions: Sequence[Decimal],
 ) -> Allocation:
-    updated_yours = replace(yours, deductions=list(yours_deductions), medicare_status="family")
-    updated_janice = replace(janice, deductions=list(janice_deductions), medicare_status="family")
+    updated_person1 = replace(person1, deductions=list(person1_deductions), medicare_status="family")
+    updated_person2 = replace(person2, deductions=list(person2_deductions), medicare_status="family")
 
-    your_taxable = updated_yours.taxable_income
-    janice_taxable = updated_janice.taxable_income
+    person1_taxable = updated_person1.taxable_income
+    person2_taxable = updated_person2.taxable_income
 
-    family_income = your_taxable + janice_taxable
-    family_dependents = updated_yours.medicare_dependents + updated_janice.medicare_dependents
+    family_income = person1_taxable + person2_taxable
+    family_dependents = updated_person1.medicare_dependents + updated_person2.medicare_dependents
 
-    your_liability = _tax_liability(
-        your_taxable,
-        updated_yours.fy,
+    person1_liability = _tax_liability(
+        person1_taxable,
+        updated_person1.fy,
         medicare_status="family",
-        medicare_dependents=updated_yours.medicare_dependents,
-        has_private_health_cover=updated_yours.has_private_health_cover,
+        medicare_dependents=updated_person1.medicare_dependents,
+        has_private_health_cover=updated_person1.has_private_health_cover,
         family_taxable_income=family_income,
         family_dependents=family_dependents,
     )
-    janice_liability = _tax_liability(
-        janice_taxable,
-        updated_janice.fy,
+    person2_liability = _tax_liability(
+        person2_taxable,
+        updated_person2.fy,
         medicare_status="family",
-        medicare_dependents=updated_janice.medicare_dependents,
-        has_private_health_cover=updated_janice.has_private_health_cover,
+        medicare_dependents=updated_person2.medicare_dependents,
+        has_private_health_cover=updated_person2.has_private_health_cover,
         family_taxable_income=family_income,
         family_dependents=family_dependents,
     )
 
     return Allocation(
-        yours=updated_yours,
-        janice=updated_janice,
-        your_liability=your_liability,
-        janice_liability=janice_liability,
+        person1=updated_person1,
+        person2=updated_person2,
+        person1_liability=person1_liability,
+        person2_liability=person2_liability,
     )
 
 
-def _combine_deductions(yours: Individual, janice: Individual) -> Sequence[Decimal]:
-    return tuple(yours.deductions + janice.deductions)
+def _combine_deductions(person1: Individual, person2: Individual) -> Sequence[Decimal]:
+    return tuple(person1.deductions + person2.deductions)
 
 
 def _iter_allocations(
@@ -255,37 +255,37 @@ def _iter_allocations(
 ) -> Iterable[tuple[Sequence[Decimal], Sequence[Decimal]]]:
     n = len(deductions)
     for i in range(1 << n):
-        yours_alloc = []
-        janice_alloc = []
+        person1_alloc = []
+        person2_alloc = []
         for j in range(n):
             if (i >> j) & 1:
-                yours_alloc.append(deductions[j])
+                person1_alloc.append(deductions[j])
             else:
-                janice_alloc.append(deductions[j])
-        yield tuple(yours_alloc), tuple(janice_alloc)
+                person2_alloc.append(deductions[j])
+        yield tuple(person1_alloc), tuple(person2_alloc)
 
 
 def allocate_deductions(
-    yours_income: Decimal,
-    janice_income: Decimal,
+    person1_income: Decimal,
+    person2_income: Decimal,
     shared_deductions: list[Decimal],
     fy: int,
 ) -> tuple[Decimal, Decimal]:
-    yours = Individual(
-        name="yours",
+    person1 = Individual(
+        name="person1",
         fy=fy,
-        income=yours_income,
+        income=person1_income,
         deductions=shared_deductions,
     )
-    janice = Individual(
-        name="janice",
+    person2 = Individual(
+        name="person2",
         fy=fy,
-        income=janice_income,
+        income=person2_income,
     )
-    allocation = optimize_household(yours, janice)
+    allocation = optimize_household(person1, person2)
     return (
-        allocation.yours.total_deductions,
-        allocation.janice.total_deductions,
+        allocation.person1.total_deductions,
+        allocation.person2.total_deductions,
     )
 
 
@@ -308,18 +308,18 @@ def calculate_tax(individual: Individual) -> TaxResult:
     return TaxResult(individual=individual, liability=liability)
 
 
-def optimize_household(yours: Individual, janice: Individual) -> Allocation:
+def optimize_household(person1: Individual, person2: Individual) -> Allocation:
     """Optimize deduction allocation for 2-person household.
 
     Exhaustively searches all deduction allocations to minimize total tax liability.
-    Current implementation is hardcoded for exactly 2 people.
+    Current implementation is for exactly 2 people.
     """
-    deductions = _combine_deductions(yours, janice)
+    deductions = _combine_deductions(person1, person2)
     best_allocation: Allocation | None = None
     best_total: Decimal | None = None
 
-    for yours_alloc, janice_alloc in _iter_allocations(deductions):
-        allocation = _evaluate_allocation(yours, janice, yours_alloc, janice_alloc)
+    for person1_alloc, person2_alloc in _iter_allocations(deductions):
+        allocation = _evaluate_allocation(person1, person2, person1_alloc, person2_alloc)
         total = allocation.total
         if best_total is None or total < best_total:
             best_total = total
@@ -327,6 +327,6 @@ def optimize_household(yours: Individual, janice: Individual) -> Allocation:
 
     if best_allocation is None:
         # No deductions to allocate, still compute baseline liabilities.
-        best_allocation = _evaluate_allocation(yours, janice, (), ())
+        best_allocation = _evaluate_allocation(person1, person2, (), ())
 
     return best_allocation

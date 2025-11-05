@@ -151,6 +151,10 @@ def cmd_mine(
         print("All transactions categorized!")
         return
 
+    if search:
+        print("⚠️  WARNING: Transaction descriptions will be sent to DuckDuckGo")
+        print("    Disable with --no-search if descriptions contain sensitive data\n")
+
     cache_path = base_dir / ".search_cache.json" if search else None
     cache = load_cache(cache_path) if search else {}
 
@@ -240,20 +244,20 @@ def cmd_optimize(
 
     if len(individuals) == 2:
         result = optimize_household(individuals[person_list[0]], individuals[person_list[1]])
-        yours_income = individuals[person_list[0]].income
-        janice_income = individuals[person_list[1]].income
-        yours_deductions = result.yours.total_deductions
-        janice_deductions = result.janice.total_deductions
-        yours_tax = result.your_liability.total
-        janice_tax = result.janice_liability.total
+        person1_income = individuals[person_list[0]].income
+        person2_income = individuals[person_list[1]].income
+        person1_deductions = result.person1.total_deductions
+        person2_deductions = result.person2.total_deductions
+        person1_tax = result.person1_liability.total
+        person2_tax = result.person2_liability.total
 
         print(
-            f"{person_list[0]:<20} ${yours_income:<17,.0f} ${yours_deductions:<17,.0f} ${yours_tax:<14,.0f}"
+            f"{person_list[0]:<20} ${person1_income:<17,.0f} ${person1_deductions:<17,.0f} ${person1_tax:<14,.0f}"
         )
         print(
-            f"{person_list[1]:<20} ${janice_income:<17,.0f} ${janice_deductions:<17,.0f} ${janice_tax:<14,.0f}"
+            f"{person_list[1]:<20} ${person2_income:<17,.0f} ${person2_deductions:<17,.0f} ${person2_tax:<14,.0f}"
         )
-        total_tax = yours_tax + janice_tax
+        total_tax = person1_tax + person2_tax
     else:
         total_tax = Decimal("0")
         for person in person_list:

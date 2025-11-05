@@ -23,7 +23,7 @@ class Transaction:
     amount: Decimal
     description: str
     source_bank: str       # "ANZ", "CBA", "Wise"
-    source_person: str     # "tyson", "janice"
+    source_person: str     # "alice", "bob"
     category: set[str] | None      # {"groceries", "transport"} or None
     is_transfer: bool = False
 ```
@@ -279,7 +279,7 @@ def test_process_trades_loss_harvesting():
 ```python
 def test_parity_with_tax_og(tax_og_equity_file):
     """Verify against real tax-og data."""
-    trades = ingest_trades(tax_og_equity_file, "tyson")
+    trades = ingest_trades(tax_og_equity_file, "alice")
     gains = process_trades(trades)
     
     # Basic invariants

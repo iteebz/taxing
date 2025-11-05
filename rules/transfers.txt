@@ -1,22 +1,22 @@
 deposit
-direct credit 013402 quach j
-direct credit 141000 janice quach
+direct credit 013402
+direct credit 141000
 direct credit 475789
-transfer from janice quach
-payment from janice quach
+transfer from other person
+payment from other person
 payment thankyou
 transfer from xx7568 commbank app
 transfer from xx3297 commbank app
-transfer to janice quach
+transfer to other person
 transfer to other bank netbank cash
 transfer to other bank netbank savings
 transfer to xx7568 commbank app
 transfer to xx3297 commbank app
 transfer to wise australia pty ltd
-transfer to vicky zhou commbank app
-transfer to joe pour commbank app
+transfer to xx0001 commbank app
+transfer to xx0002 commbank app
 transfer from anz ref
-tyson zheng tong consolidation
+consolidation transfer
 wise conversion
 wise deposit from aud
 wise deposit in aud

@@ -70,6 +70,7 @@ def _load_weights(weights_path: Path) -> dict[str, float]:
         with open(weights_path) as f:
             lines = [line.strip() for line in f if line.strip() and not line.startswith("#")]
             if not lines or lines[0] != "category,weight":
+                print(f"⚠️  Warning: {weights_path} missing header or empty")
                 return {}
 
             for line in lines[1:]:
@@ -77,7 +78,8 @@ def _load_weights(weights_path: Path) -> dict[str, float]:
                 if len(parts) == 2:
                     with contextlib.suppress(ValueError):
                         weights[parts[0].strip()] = float(parts[1].strip())
-    except Exception:
-        pass
+    except OSError as e:
+        print(f"⚠️  Warning: Failed to load weights from {weights_path}: {e}")
+        return {}
 
     return weights
