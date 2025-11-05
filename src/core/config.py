@@ -1,3 +1,4 @@
+from copy import deepcopy
 from dataclasses import dataclass, field
 from decimal import Decimal
 from functools import lru_cache
@@ -51,13 +52,18 @@ def _resolve_year(fy: int) -> int:
 
 
 @lru_cache(maxsize=4)
-def _load_yaml_config(config_path: Path) -> dict:
-    """Load and cache the raw YAML config file."""
+def _load_yaml_config_cached(config_path: Path) -> dict:
+    """Load and cache the raw YAML config file (internal cached version)."""
     with open(config_path) as f:
         full_config = yaml.safe_load(f)
     if not full_config:
         raise ValueError(f"Config file {config_path} is empty or malformed.")
     return full_config
+
+
+def _load_yaml_config(config_path: Path) -> dict:
+    """Load YAML config file with caching and mutation safety."""
+    return deepcopy(_load_yaml_config_cached(config_path))
 
 
 def _parse_surcharge(

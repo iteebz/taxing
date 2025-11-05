@@ -6,6 +6,17 @@ import pytest
 from src.core.models import Transaction
 
 
+@pytest.fixture(autouse=True)
+def clear_caches():
+    """Clear all lru_cache instances before each test to prevent pollution."""
+    from src.core.config import _load_yaml_config_cached
+    from src.core.household import _load_config
+
+    _load_yaml_config_cached.cache_clear()
+    _load_config.cache_clear()
+    yield
+
+
 @pytest.fixture
 def sample_anz_row():
     return {
