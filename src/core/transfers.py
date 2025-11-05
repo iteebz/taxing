@@ -88,12 +88,6 @@ def _extract_name(words: list[str], noise_words: set[str]) -> str | None:
     return " ".join(name_words).strip() if name_words else None
 
 
-def _is_account_number(word: str) -> bool:
-    """Check if word looks like an account number (xx + digits)."""
-    word_lower = word.lower()
-    return word_lower.startswith("xx") and len(word_lower) > 2
-
-
 def reconcile_transfers(
     txns: list[Transaction],
 ) -> dict[tuple[str, str], Transfer]:

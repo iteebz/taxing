@@ -24,6 +24,26 @@ def _parse_bank_and_account(filename: str) -> tuple[str, str | None]:
     return bank, account
 
 
+def _extract_fy_years(base_dir: Path) -> list[int]:
+    """Extract fiscal year integers from fy* directories.
+
+    Args:
+        base_dir: Directory containing fy* subdirectories
+
+    Returns:
+        Sorted list of fiscal year integers (e.g., [2023, 2024, 2025])
+    """
+    years = []
+    for fy_dir in sorted(base_dir.glob("fy*")):
+        if not fy_dir.is_dir():
+            continue
+        try:
+            years.append(int(fy_dir.name[2:]))
+        except ValueError:
+            continue
+    return years
+
+
 def _convert_row(
     row: dict, bank: str, converter, beem_username: str | None, account: str | None = None
 ) -> Transaction:
@@ -246,14 +266,7 @@ def ingest_all_years(
         return []
 
     all_txns = []
-    for fy_dir in sorted(raw_dir.glob("fy*")):
-        if not fy_dir.is_dir():
-            continue
-        try:
-            year = int(fy_dir.name[2:])
-        except ValueError:
-            continue
-
+    for year in _extract_fy_years(raw_dir):
         txns = ingest_year(base_dir, year, persons=persons)
         all_txns.extend(txns)
 
@@ -318,14 +331,7 @@ def ingest_all_trades(
         return []
 
     all_trades = []
-    for fy_dir in sorted(data_dir.glob("fy*")):
-        if not fy_dir.is_dir():
-            continue
-        try:
-            year = int(fy_dir.name[2:])
-        except ValueError:
-            continue
-
+    for year in _extract_fy_years(data_dir):
         trades = ingest_trades_year(base, year, persons=persons)
         all_trades.extend(trades)
 

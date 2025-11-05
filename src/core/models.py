@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
-from typing import Literal, Protocol
+from typing import Literal
 
 
 def _validate_pct_field(name: str, value) -> Decimal:
@@ -255,30 +255,12 @@ class Individual:
 
     @property
     def total_deductions(self) -> Decimal:
-        if not self.deductions:
-            return Decimal("0")
         return sum(self.deductions, Decimal("0"))
 
     @property
     def total_gains(self) -> Decimal:
-        if not self.gains:
-            return Decimal("0")
         return sum((g.taxable_gain for g in self.gains), Decimal("0"))
 
     @property
     def taxable_income(self) -> Decimal:
         return self.income + self.total_gains - self.total_deductions
-
-
-class Classifier(Protocol):
-    def classify(self, description: str) -> set[str]: ...
-
-
-class Deducer(Protocol):
-    def deduce(
-        self,
-        txns: list[Transaction],
-        fy: int,
-        conservative: bool = False,
-        weights: dict[str, float] | None = None,
-    ) -> list[Deduction]: ...

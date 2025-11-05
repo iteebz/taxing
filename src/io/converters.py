@@ -22,6 +22,24 @@ def _sanitize_desc(desc: str) -> str:
     return normalize_spaces(text)
 
 
+def _safe_decimal(value: str | None, default: str = "0") -> Decimal:
+    """Safely parse Decimal, handling None, 'nan', and ValueError.
+
+    Args:
+        value: String value to parse (may be None)
+        default: Default value to return on error (default "0")
+
+    Returns:
+        Parsed Decimal or default
+    """
+    if not value or str(value).lower() == "nan":
+        return Decimal(default)
+    try:
+        return Decimal(str(value))
+    except (ValueError, TypeError):
+        return Decimal(default)
+
+
 def _std_txn(
     row: dict,
     bank: str,
@@ -82,33 +100,9 @@ def wise(row: dict, account: str | None = None) -> Transaction:
         amt = Decimal("0")
         desc = f"wise {direction} conversion from {source_currency} to {target_currency}"
     else:
-        target_fee_str = row.get("target_fee_amount", "0") or "0"
-        try:
-            target_fee = (
-                Decimal(str(target_fee_str))
-                if target_fee_str and str(target_fee_str).lower() != "nan"
-                else Decimal("0")
-            )
-        except (ValueError, TypeError):
-            target_fee = Decimal("0")
-        target_amt_str = row.get("target_amount_after_fees", "0") or "0"
-        try:
-            target_amt = (
-                Decimal(str(target_amt_str))
-                if target_amt_str and str(target_amt_str).lower() != "nan"
-                else Decimal("0")
-            )
-        except (ValueError, TypeError):
-            target_amt = Decimal("0")
-        exchange_rate_str = row.get("exchange_rate", "1") or "1"
-        try:
-            exchange_rate = (
-                Decimal(str(exchange_rate_str))
-                if exchange_rate_str and str(exchange_rate_str).lower() != "nan"
-                else Decimal("1")
-            )
-        except (ValueError, TypeError):
-            exchange_rate = Decimal("1")
+        target_fee = _safe_decimal(row.get("target_fee_amount"), "0")
+        target_amt = _safe_decimal(row.get("target_amount_after_fees"), "0")
+        exchange_rate = _safe_decimal(row.get("exchange_rate"), "1")
 
         if direction == "in":
             total_amt = target_amt + target_fee
